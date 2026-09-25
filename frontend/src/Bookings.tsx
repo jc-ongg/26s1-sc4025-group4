@@ -112,56 +112,10 @@ export function Bookings({ revision, act, busy }: Actions) {
         </div>
       </section>
       <div className="my-plans-layout compact-plans">
-        <section aria-label="My parties">
+        <section aria-label="Reservations">
           <div className="section-heading">
             <h2>
-              My parties <span className="count-badge">{groups.length}</span>
-            </h2>
-          </div>
-          <State data={parties.data} error={parties.error}>
-            <ul className="plan-list">
-              {groups
-                .slice(groupPage * PAGE_SIZE, (groupPage + 1) * PAGE_SIZE)
-                .map((g) => (
-                  <li key={g.id} className="plan-row">
-                    <Art restaurant={g.slot.restaurant} />
-                    <div className="plan-content">
-                      <div className="row">
-                        <span className="small muted">Eatogether</span>
-                        <Status value={g.status} />
-                      </div>
-                      <a className="plan-title" href={`#/groups/${g.id}`} title={g.title}>
-                        {g.title}
-                      </a>
-                      <p className="plan-venue" title={g.slot.restaurant.name}>
-                        {g.slot.restaurant.name}
-                      </p>
-                      <p className="small">
-                        {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
-                      </p>
-                      <div className="row small">
-                        <span>
-                          {g.members.length}/{g.capacity} diners · {g.slot.discount}% off
-                        </span>
-                        <a href={`#/groups/${g.id}`}>View party →</a>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-            </ul>
-            {!groups.length && (
-              <Empty
-                title="No parties here yet"
-                text="Find an Eatogether party or try another filter."
-              />
-            )}
-            <ListPages page={groupPage} total={groups.length} onChange={setPartyPage} />
-          </State>
-        </section>
-        <section aria-label="My reservations">
-          <div className="section-heading">
-            <h2>
-              My reservations <span className="count-badge">{bookings.length}</span>
+              Reservations <span className="count-badge">{bookings.length}</span>
             </h2>
           </div>
           <State data={data} error={error}>
@@ -254,6 +208,52 @@ export function Bookings({ revision, act, busy }: Actions) {
               total={bookings.length}
               onChange={setBookingPage}
             />
+          </State>
+        </section>
+        <section aria-label="Eatogether">
+          <div className="section-heading">
+            <h2>
+              Eatogether <span className="count-badge">{groups.length}</span>
+            </h2>
+          </div>
+          <State data={parties.data} error={parties.error}>
+            <ul className="plan-list">
+              {groups
+                .slice(groupPage * PAGE_SIZE, (groupPage + 1) * PAGE_SIZE)
+                .map((g) => (
+                  <li key={g.id} className="plan-row">
+                    <Art restaurant={g.slot.restaurant} />
+                    <div className="plan-content">
+                      <div className="row">
+                        <span className="small muted">Eatogether</span>
+                        <Status value={g.status} />
+                      </div>
+                      <a className="plan-title" href={`#/groups/${g.id}`} title={g.title}>
+                        {g.title}
+                      </a>
+                      <p className="plan-venue" title={g.slot.restaurant.name}>
+                        {g.slot.restaurant.name}
+                      </p>
+                      <p className="small">
+                        {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
+                      </p>
+                      <div className="row small">
+                        <span>
+                          {g.members.length}/{g.capacity} diners · {g.slot.discount}% off
+                        </span>
+                        <a href={`#/groups/${g.id}`}>View party →</a>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+            </ul>
+            {!groups.length && (
+              <Empty
+                title="No parties here yet"
+                text="Find an Eatogether party or try another filter."
+              />
+            )}
+            <ListPages page={groupPage} total={groups.length} onChange={setPartyPage} />
           </State>
         </section>
       </div>
