@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String               @id @default(uuid())
+  email              String               @unique
+  name               String
+  demoPassword       String
+  sessions           Session[]
+  hostedGroups       GroupDiningSession[]
+  memberships        GroupDiningMember[]
+  bookings           Booking[]
+  discoveryDecisions DiscoveryDecision[]
+}
+
+model Restaurant {
+  id              String                      @id
+  name            String
+  cuisine         String
+  area            String
+  description     String
+  price           String
+  artwork         String
+  active          Boolean                     @default(true)
+  address         String                      @default("")
+  latitude        Float?
+  longitude       Float?
+  imagePath       String?
+  imageSource     String?
+  sourceUrl       String?
+  sourceCheckedAt String?
+  tags            String[]                    @default([])
+  signatureDishes String[]                    @default([])
+  embedding       Unsupported("vector(384)")?
+  embeddingHash   String?
+  slots           ReservationSlot[]
+}
+
+model ReservationSlot {
+  id               String               @id @default(uuid())
+  restaurantId     String
+  startsAt         DateTime
+  minimumPartySize Int
+  capacity         Int
+  discount         Int
+  restaurant       Restaurant           @relation(fields: [restaurantId], references: [id])
+  allocation       SlotAllocation?
+  groups           GroupDiningSession[]
+  bookings         Booking[]
+
+  @@unique([restaurantId, startsAt])
+}
+
+model SlotAllocation {
+  slotId    String              @id
+  groupId   String?             @unique
+  bookingId String?             @unique
+  slot      ReservationSlot     @relation(fields: [slotId], references: [id])
+  group     GroupDiningSession? @relation(fields: [groupId], references: [id])
+  booking   Booking?            @relation(fields: [bookingId], references: [id])
+}
+
+enum GroupStatus {
+  OPEN
+  FULL
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+model GroupDiningSession {
+  id            String                      @id @default(uuid())
+  hostId        String
+  slotId        String
+  title         String
+  description   String                      @default("")
+  capacity      Int
+  status        GroupStatus                 @default(OPEN)
+  createdAt     DateTime                    @default(now())
+  embedding     Unsupported("vector(384)")?
+  embeddingHash String?
+  host          User                        @relation(fields: [hostId], references: [id])
+  slot          ReservationSlot             @relation(fields: [slotId], references: [id])
+  members       GroupDiningMember[]
+  allocation    SlotAllocation?
+  booking       Booking?
+}
+
+model DiscoveryDecision {
+  userId    String
+  targetKey String
+  decision  String
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, targetKey])
+}
+
+model GroupDiningMember {
+  groupId  String
+  userId   String
+  joinedAt DateTime           @default(now())
+  group    GroupDiningSession @relation(fields: [groupId], references: [id])
+  user     User               @relation(fields: [userId], references: [id])
+
+  @@id([groupId, userId])
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model Booking {
+  id         String              @id @default(uuid())
+  slotId     String
+  userId     String
+  groupId    String?             @unique
+  partySize  Int
+  deletedFor String[]            @default([])
+  status     BookingStatus       @default(CONFIRMED)
+  createdAt  DateTime            @default(now())
+  slot       ReservationSlot     @relation(fields: [slotId], references: [id])
+  user       User                @relation(fields: [userId], references: [id])
+  group      GroupDiningSession? @relation(fields: [groupId], references: [id])
+  allocation SlotAllocation?
+}
+
+model Session {
+  token     String   @id
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}

@@ -1,0 +1,216 @@
+[
+  {
+    "id": "joya",
+    "name": "Joya Onsen Cafe",
+    "cuisine": "Japanese",
+    "area": "Joo Koon",
+    "description": "Japanese rice bowls such as chirashi, unagi and mentai salmon in an onsen-inspired setting on Upper Jurong Road.",
+    "price": "$$",
+    "artwork": "japanese",
+    "address": "511 Upper Jurong Rd, #01-06, Singapore 638366, Singapore",
+    "latitude": 1.3295449,
+    "longitude": 103.6825135,
+    "imagePath": "/images/restaurants/joya.jpg",
+    "imageSource": "https://cdn.myfunnow.com/imgs/branch/cover/_Joya Onsen Cafe @ Upper Jurong Road_BC_19c2d4",
+    "sourceUrl": "https://eatigo.com/en/branches/3394068428925",
+    "sourceCheckedAt": "2026-09-25",
+    "tags": [
+      "Rice bowls",
+      "Japanese",
+      "Relaxed"
+    ],
+    "signatureDishes": [
+      "Chirashi don",
+      "Unagi don",
+      "Mentai salmon don"
+    ],
+    "active": true
+  },
+  {
+    "id": "seorae",
+    "name": "Seorae Korean Charcoal BBQ",
+    "cuisine": "Korean",
+    "area": "Jurong East",
+    "description": "Korean charcoal barbecue at JEM, with pork skirt, pork belly and beef cuts for grilling and sharing over a lively meal.",
+    "price": "$$",
+    "artwork": "korean",
+    "address": "50 Jurong Gateway Rd #B1-10 Jem, Singapore 608549, Singapore",
+    "latitude": 1.3335763,
+    "longitude": 103.7437673,
+    "imagePath": "/images/restaurants/seorae.jpg",
+    "imageSource": "https://cdn.myfunnow.com/imgs/branch/cover/Cover Image_20bb2b.jpg",
+    "sourceUrl": "https://eatigo.com/en/branches/3370046945003",
+    "sourceCheckedAt": "2026-09-25",
+    "tags": [
+      "Barbecue",
+      "Sharing plates",
+      "Lively"
+    ],
+    "signatureDishes": [
+      "Galmaegisal",
+      "Pork belly",
+      "Beef short plate"
+    ],
+    "active": true
+  },
+  {
+    "id": "peacock",
+    "name": "Peacock North Indian Restaurant",
+    "cuisine": "Indian",
+    "area": "Clementi",
+    "description": "North Indian cooking at NEWest: curries, biryani, paneer dishes and naan, with Indian desserts to finish.",
+    "price": "$",
+    "artwork": "indian",
+    "address": "1 WEST COAST DRIVE #01-95, NEWEST SINGAPORE 128020Singapore, Singapore 128020Singapore, Singapore",
+    "latitude": 1.3163322,
+    "longitude": 103.7578155,
+    "imagePath": "/images/restaurants/peacock.jpg",
+    "imageSource": "https://cdn.myfunnow.com/imgs/branch/cover/Cover Image (new)_9ca7e5.jpg",
+    "sourceUrl": "https://eatigo.com/en/branches/3375064665252",
+    "sourceCheckedAt": "2026-09-25",
+    "tags": [
+      "Curries",
+      "Paneer options",
+      "Casual"
+    ],
+    "signatureDishes": [
+      "Biryani",
+      "Paneer",
+      "Naan"
+    ],
+    "active": true
+  },
+  {
+    "id": "lazy-lizard",
+    "name": "Lazy Lizard",
+    "cuisine": "Western",
+    "area": "Clementi",
+    "description": "A casual NEWest restaurant serving Western favourites including burgers and chicken wings, suited to meals with friends and family.",
+    "price": "$$",
+    "artwork": "western",
+    "address": "1 West Coast Drive #01-85/86 Singapore 128020, Singapore",
+    "latitude": 1.31385,
+    "longitude": 103.75935,
+    "imagePath": "/images/restaurants/lazy-lizard.jpg",
+    "imageSource": "https://cdn.myfunnow.com/imgs/branch/eatigo_cover/5003068.jpg",
+    "sourceUrl": "https://eatigo.com/en/branches/3374314503596",
+    "sourceCheckedAt": "2026-09-25",
+    "tags": [
+      "Burgers",
+      "Sharing plates",
+      "Casual"
+    ],
+    "signatureDishes": [
+      "Burgers",
+      "Chicken wings"
+    ],
+    "active": true
+  },
+  {
+    "id": "yan-lai-ju",
+    "name": "Yan Lai Ju",
+    "cuisine": "Chinese",
+    "area": "Jurong East",
+    "description": "Chinese cooking at Vision Exchange featuring grilled fish, spicy chicken and crayfish. A flavourful choice for a shared meal.",
+    "price": "$$",
+    "artwork": "chinese",
+    "address": "2 Venture Dr, ＃01-18, Vision Exchange, Singapore",
+    "latitude": 1.330109,
+    "longitude": 103.744756,
+    "imagePath": "/images/restaurants/yan-lai-ju.jpg",
+    "imageSource": "https://cdn.myfunnow.com/imgs/branch/eatigo_cover/5012938.jpg",
+    "sourceUrl": "https://eatigo.com/en/branches/3372469572815",
+    "sourceCheckedAt": "2026-09-25",
+    "tags": [
+      "Spicy",
+      "Grilled fish",
+      "Sharing plates"
+    ],
+    "signatureDishes": [
+      "Grilled fish",
+      "La Zi Ji",
+      "Mini crayfish"
+    ],
+    "active": true
+  },
+  {
+    "id": "two-scoops",
+    "name": "2SCOOPS",
+    "cuisine": "Dessert",
+    "area": "Clementi",
+    "description": "A NEWest spot for gelato and waffles, with sake also on the menu. An option for a sweet catch-up rather than a full dinner.",
+    "price": "$",
+    "artwork": "dessert",
+    "address": "1 W Coast Dr, #01-94 NEWest, Singapore 128020, Singapore",
+    "latitude": 1.3164853,
+    "longitude": 103.7573965,
+    "imagePath": "/images/restaurants/two-scoops.jpg",
+    "imageSource": "https://cdn.myfunnow.com/imgs/branch/cover/WhatsApp Image 2025-02-11 at 09.56.35 (1)_4afbfc.jpg",
+    "sourceUrl": "https://eatigo.com/en/branches/3382105750916",
+    "sourceCheckedAt": "2026-09-25",
+    "tags": [
+      "Gelato",
+      "Waffles",
+      "Dessert"
+    ],
+    "signatureDishes": [
+      "Gelato",
+      "Waffles"
+    ],
+    "active": true
+  },
+  {
+    "id": "il-cielo",
+    "name": "il Cielo",
+    "cuisine": "Italian",
+    "area": "Orchard",
+    "description": "Rooftop Italian dining at voco Orchard, featuring house-made pasta, pizza and tiramisu with city views.",
+    "price": "$$$",
+    "artwork": "italian",
+    "address": "voco Orchard Singapore, 581 Orchard Road, Level 24, Singapore 238883, Singapore",
+    "latitude": 1.3059057,
+    "longitude": 103.8293282,
+    "imagePath": "/images/restaurants/il-cielo.jpg",
+    "imageSource": "https://cdn.myfunnow.com/imgs/branch/cover/1. il Cielo Hero Image (1)_c0a52e.jpg",
+    "sourceUrl": "https://eatigo.com/en/branches/3373869026778",
+    "sourceCheckedAt": "2026-09-25",
+    "tags": [
+      "Rooftop",
+      "Pasta",
+      "Date night"
+    ],
+    "signatureDishes": [
+      "House-made pasta",
+      "Pizza",
+      "Tiramisu"
+    ],
+    "active": true
+  },
+  {
+    "id": "lime",
+    "name": "Lime Restaurant",
+    "cuisine": "Buffet",
+    "area": "Chinatown",
+    "description": "International and Asian buffet dining at PARKROYAL COLLECTION Pickering, with seafood, open kitchens and plant-based choices in a garden-inspired hotel.",
+    "price": "$$$$$",
+    "artwork": "buffet",
+    "address": "3 Upper Pickering Street, Singapore 058289, Singapore",
+    "latitude": 1.285835,
+    "longitude": 103.846177,
+    "imagePath": "/images/restaurants/lime.jpg",
+    "imageSource": "https://cdn.myfunnow.com/imgs/branch/cover/06.04 PARKROYAL COLLECTION Pickering_Dining_Lime Restaurant_Buffet Dinner_Seafood (2) (1)_b3af0d.jpg",
+    "sourceUrl": "https://eatigo.com/en/branches/3370026024610",
+    "sourceCheckedAt": "2026-09-25",
+    "tags": [
+      "Buffet",
+      "Seafood",
+      "Celebrations"
+    ],
+    "signatureDishes": [
+      "Seafood buffet",
+      "Asian dishes",
+      "Plant-based options"
+    ],
+    "active": true
+  }
+]

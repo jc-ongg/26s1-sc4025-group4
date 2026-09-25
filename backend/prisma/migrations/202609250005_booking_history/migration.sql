@@ -1,0 +1,1 @@
+ALTER TABLE "Booking" ADD COLUMN "deletedFor" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
