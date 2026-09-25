@@ -1,0 +1,8 @@
+node_modules/
+**/dist/
+backend/models/
+tmp/
+.npm-cache/
+package-lock.json
+frontend/public/
+backend/data/
