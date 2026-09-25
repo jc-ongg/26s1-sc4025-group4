@@ -1,0 +1,184 @@
+import { useEffect, useState, type ReactNode } from "react";
+import { api } from "./api";
+import type { Group, Restaurant } from "./types";
+export const date = (v: string) =>
+  new Intl.DateTimeFormat("en-SG", {
+    timeZone: "Asia/Singapore",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(v));
+export const time = (v: string) =>
+  new Intl.DateTimeFormat("en-SG", {
+    timeZone: "Asia/Singapore",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(v));
+export type Actions = {
+  revision: number;
+  busy: boolean;
+  act: <T = unknown>(
+    path: string,
+    body: unknown,
+    message: string,
+    destination?: string | ((data: T) => string),
+  ) => Promise<void>;
+};
+// Polling keeps separate diners in sync; the in-flight guard prevents overlapping requests.
+export function useResource<T>(path: string, revision: number) {
+  const [data, setData] = useState<T | null>(null),
+    [error, setError] = useState("");
+  useEffect(() => {
+    let active = true,
+      fetching = false;
+    setData(null);
+    setError("");
+    async function refresh() {
+      if (fetching) return;
+      fetching = true;
+      try {
+        const result = await api<T>(path);
+        if (active) {
+          setData(result);
+          setError("");
+        }
+      } catch (e) {
+        if (active) setError((e as Error).message);
+      } finally {
+        fetching = false;
+      }
+    }
+    void refresh();
+    const interval = window.setInterval(refresh, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [path, revision]);
+  return { data, error };
+}
+export function State({
+  data,
+  error,
+  children,
+}: {
+  data: unknown;
+  error: string;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      {error && (
+        <p className="error" role="alert">
+          {error} We’ll retry automatically.
+        </p>
+      )}
+      {data
+        ? children
+        : !error && (
+            <p className="loading" role="status">
+              Setting the table…
+            </p>
+          )}
+    </>
+  );
+}
+export function Art({
+  restaurant,
+  large = false,
+}: {
+  restaurant: Pick<Restaurant, "artwork" | "cuisine"> & Partial<Restaurant>;
+  large?: boolean;
+}) {
+  if (restaurant.imagePath)
+    return (
+      <div className={`food-art photo ${large ? "large" : ""}`}>
+        <img
+          src={restaurant.imagePath}
+          alt={restaurant.name ?? restaurant.cuisine}
+          loading="lazy"
+          draggable={false}
+        />
+      </div>
+    );
+  return (
+    <div
+      className={`food-art ${restaurant.artwork} ${large ? "large" : ""}`}
+      aria-hidden="true"
+    >
+      <div className="food-label">{restaurant.cuisine} kitchen</div>
+      <div className="dish">
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <b />
+      </div>
+      <span className="utensil" />
+      <span className="napkin" />
+    </div>
+  );
+}
+export function Status({ value }: { value: string }) {
+  return (
+    <span className={`status ${value.toLowerCase()}`}>
+      {(
+        {
+          OPEN: "Open table",
+          FULL: "Full · awaiting host",
+          CONFIRMED: "Confirmed",
+          CANCELLED: "Cancelled",
+          EXPIRED: "Expired",
+        } as Record<string, string>
+      )[value] ?? value}
+    </span>
+  );
+}
+export function GroupCard({ group: g }: { group: Group }) {
+  return (
+    <a className="card group-card" href={`#/groups/${g.id}`}>
+      <Art restaurant={g.slot.restaurant} />
+      <div className="card-body">
+        <div className="row">
+          <span className="discount">{g.slot.discount}% off</span>
+          <Status value={g.status} />
+        </div>
+        <h3>{g.title}</h3>
+        <p className="small">
+          {g.slot.restaurant.name} · {g.slot.restaurant.area}
+        </p>
+        <p className="schedule">
+          {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
+        </p>
+        <div className="seats">
+          <div style={{ width: `${(g.members.length / g.capacity) * 100}%` }} />
+        </div>
+        <div className="row small">
+          <span>
+            {g.members.length} / {g.capacity} joined
+          </span>
+          <span>
+            {g.status === "OPEN"
+              ? `${g.capacity - g.members.length} seats left`
+              : "View table"}{" "}
+            →
+          </span>
+        </div>
+        <div className="host-line">
+          <span className="avatar small-avatar">{g.host.name[0]}</span> Hosted by{" "}
+          {g.host.name}
+        </div>
+      </div>
+    </a>
+  );
+}
+export function Empty({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="empty">
+      <span aria-hidden="true">◌</span>
+      <h3>{title}</h3>
+      <p>{text}</p>
+    </div>
+  );
+}

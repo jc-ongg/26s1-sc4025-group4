@@ -1,0 +1,353 @@
+/* Maps, recommendations and booking layouts. */
+.food-art.photo {
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+.food-art.photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hero-art .photo {
+  border-radius: 100px 100px 20px 20px;
+  transform: rotate(-4deg);
+  height: 300px;
+}
+.source-link {
+  display: inline-block;
+  margin-top: 12px;
+  color: #527055;
+}
+.browse-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin: 15px 0 25px;
+}
+.browse-toolbar .mode-tabs {
+  margin: 0;
+}
+.check-filter {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+.check-filter input {
+  width: 18px;
+  height: 18px;
+  accent-color: #38583e;
+}
+.map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(270px, 1fr);
+  gap: 24px;
+}
+.offline-map {
+  height: 560px;
+  border-radius: 16px;
+  background: #f1eee4;
+  isolation: isolate;
+  border: 1px solid #dbdecf;
+}
+.map-detail {
+  padding: 22px;
+  max-height: 600px;
+  overflow: auto;
+}
+.map-detail .food-art {
+  height: 170px;
+  border-radius: 9px;
+  margin-bottom: 20px;
+}
+.restaurant-pin {
+  color: white;
+  text-align: center;
+  font: 700 11px/28px Arial;
+  white-space: nowrap;
+}
+.restaurant-pin.chosen {
+  background: #e43e43;
+  z-index: 1000 !important;
+}
+.map-place {
+  font: 600 10px Arial;
+  color: #787e70;
+  text-shadow: 0 1px 2px white;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.map-group {
+  display: grid;
+  gap: 6px;
+  text-decoration: none;
+  border-top: 1px solid #e0e4db;
+  padding: 16px 0;
+  font-size: 12px;
+}
+.map-group strong {
+  font-size: 14px;
+}
+.discovery-tabs {
+  max-width: 340px;
+  margin-bottom: 25px;
+}
+.discovery-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.15fr);
+  gap: 55px;
+  align-items: start;
+  max-width: 1060px;
+  margin: auto;
+}
+.mood-panel {
+  padding: 28px;
+}
+.mood-panel form {
+  margin-bottom: 0;
+}
+.mood-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.mood-examples .chip {
+  font-size: 11px;
+  padding: 8px 12px;
+  min-height: 34px;
+}
+.swipe-column {
+  min-width: 0;
+}
+.swipe-card {
+  margin-top: 12px;
+  touch-action: pan-y;
+  user-select: none;
+}
+.swipe-card .food-art {
+  height: 260px;
+}
+.swipe-card .card-body {
+  padding: 25px;
+}
+.swipe-card h2 {
+  font:
+    500 30px/1.15 Georgia,
+    serif;
+  margin-top: 10px;
+}
+.swipe-card .text-button {
+  padding-left: 0;
+}
+.swipe-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin: 20px 0 6px;
+}
+.swipe-actions button {
+  min-width: 145px;
+  border-radius: 30px;
+}
+.swipe-hint {
+  text-align: center;
+  font-size: 11px;
+}
+.discovery-welcome {
+  padding: 65px 35px;
+  border-radius: 100px 100px 18px 18px;
+  text-align: center;
+  margin-top: 15px;
+}
+.discovery-welcome > span {
+  font-size: 70px;
+  display: block;
+  margin-bottom: 25px;
+}
+.discovery-welcome h2 {
+  font:
+    500 38px/1.2 Georgia,
+    serif;
+}
+.availability-note {
+  font-size: 12px;
+  border-top: 1px solid #edf0e7;
+  padding-top: 12px;
+  color: #527055;
+}
+@media (max-width: 800px) {
+  .map-layout,
+  .discovery-layout {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+  .offline-map {
+    height: 430px;
+  }
+  .map-detail {
+    max-height: none;
+  }
+  .map-detail .food-art {
+    height: 210px;
+  }
+  .discovery-welcome {
+    padding: 35px;
+  }
+  .discovery-layout {
+    max-width: 550px;
+  }
+  .swipe-card .food-art {
+    height: 230px;
+  }
+  .browse-toolbar {
+    gap: 14px;
+  }
+  .app-header nav a {
+    white-space: nowrap;
+  }
+  .swipe-actions button {
+    min-width: 120px;
+  }
+  .hero-art .photo {
+    height: 250px;
+  }
+}
+.map-tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.restaurant-pin {
+  font-size: 17px;
+  line-height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.restaurant-pin:hover,
+.restaurant-pin:focus-visible {
+  background: #e43e43;
+}
+.map-detail {
+  scroll-margin-top: 20px;
+}
+.map-detail select {
+  margin-bottom: 20px;
+}
+.map-tools .text-button {
+  white-space: nowrap;
+}
+.brand img {
+  display: block;
+  width: 116px;
+  height: auto;
+  max-height: 44px;
+  object-fit: contain;
+}
+.footer-brand img {
+  width: 90px;
+}
+.my-plans-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 36px;
+  align-items: start;
+}
+.party-list {
+  display: grid;
+  gap: 22px;
+}
+.my-plans-layout .booking-item {
+  grid-template-columns: 1fr;
+}
+.my-plans-layout .booking-item .food-art {
+  height: 190px;
+  min-height: 0;
+}
+.my-plans-layout .group-card .food-art {
+  height: 190px;
+}
+.my-plans-layout .section-heading {
+  margin-bottom: 0;
+}
+.restaurant-pin {
+  background: #fff;
+  border: 3px solid white;
+  box-shadow: 0 3px 12px #15282055;
+  overflow: visible;
+}
+.restaurant-pin > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.restaurant-pin img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+.restaurant-pin .pin-name {
+  display: none;
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 165px;
+  width: max-content;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: white;
+  color: #29362d;
+  font: 600 11px/1.2 Arial;
+  box-shadow: 0 2px 7px #15282030;
+  white-space: normal;
+}
+.map-labels .pin-name,
+.restaurant-pin:hover .pin-name,
+.restaurant-pin:focus-visible .pin-name,
+.restaurant-pin.chosen .pin-name {
+  display: block;
+}
+.restaurant-pin.chosen {
+  border-color: #e43e43;
+}
+.restaurant-pin:hover,
+.restaurant-pin:focus-visible {
+  z-index: 1200 !important;
+}
+.map-labels .leaflet-tooltip {
+  display: none;
+}
+@media (max-width: 800px) {
+  .my-plans-layout {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .brand img {
+    width: 100px;
+  }
+}
+.my-plans-layout .section-heading {
+  margin: 0;
+  min-height: 40px;
+}
+.my-plans-layout .section-heading h2 {
+  margin: 0;
+}
+.offline-map .restaurant-pin img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+}
+.my-plans-layout .card-body > .danger-text {
+  display: block;
+  margin: 10px 0;
+}

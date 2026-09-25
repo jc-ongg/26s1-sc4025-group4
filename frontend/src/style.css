@@ -1,0 +1,4 @@
+/* Keep the cascade order explicit: foundations, features, then product theme. */
+@import "./styles/base.css";
+@import "./styles/features.css";
+@import "./styles/theme.css";

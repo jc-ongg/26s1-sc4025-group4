@@ -1,0 +1,402 @@
+import { useState, type FormEvent } from "react";
+import { RestaurantMap } from "./RestaurantMap";
+import type { Restaurant, Group } from "./types";
+import { Art, Empty, State, date, time, useResource, type Actions } from "./dining-ui";
+
+export function Restaurants({ revision }: Actions) {
+  const { data, error } = useResource<{ restaurants: Restaurant[] }>(
+    "/restaurants",
+    revision,
+  );
+  const [search, setSearch] = useState(""),
+    [cuisine, setCuisine] = useState("All");
+  const groupResource = useResource<{ groups: Group[] }>("/groups", revision);
+  const groups =
+    groupResource.data?.groups.filter(
+      (g) => g.status === "OPEN" && g.members.length < g.capacity,
+    ) ?? [];
+  const [view, setView] = useState<"grid" | "map">("grid"),
+    [groupsOnly, setGroupsOnly] = useState(false);
+  const filtered = data?.restaurants.filter(
+    (r) =>
+      (!groupsOnly || groups.some((g) => g.slot.restaurant.id === r.id)) &&
+      (cuisine === "All" || r.cuisine === cuisine) &&
+      `${r.name} ${r.area} ${r.cuisine}`.toLowerCase().includes(search.toLowerCase()),
+  );
+  return (
+    <>
+      <section className="hero">
+        <div>
+          <p className="eyebrow">SINGAPORE · SOMETHING DELICIOUS AWAITS</p>
+          <h1>
+            Good food.
+            <br />
+            <em>Even better company.</em>
+          </h1>
+          <p>
+            Discover your next favourite spot. Bring your people,
+            <br className="desktop-break" /> or find a table with new ones.
+          </p>
+          <a className="button dark" href="#/discover">
+            Find my kind of table ↗
+          </a>
+        </div>
+        <div className="hero-art">
+          <Art
+            restaurant={{
+              artwork: "japanese",
+              cuisine: "Japanese",
+              imagePath: "/images/restaurants/joya.jpg",
+              name: "Joya Onsen Cafe",
+            }}
+          />
+          <div className="hero-sticker">
+            Less planning.
+            <br />
+            More dining.
+          </div>
+        </div>
+      </section>
+      <section>
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">YOUR NEXT MEAL, SORTED</p>
+            <h2>Explore restaurants</h2>
+          </div>
+          <span className="muted small">Find your next favourite</span>
+        </div>
+        <label className="search">
+          <span>⌕</span>
+          <input
+            aria-label="Search restaurants"
+            placeholder="Restaurant, cuisine or neighbourhood"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
+        <div className="chips" aria-label="Cuisine filters">
+          {["All", ...new Set(data?.restaurants.map((r) => r.cuisine) ?? [])].map(
+            (item) => (
+              <button
+                className={`chip ${cuisine === item ? "active" : ""}`}
+                key={item}
+                aria-pressed={cuisine === item}
+                onClick={() => setCuisine(item)}
+              >
+                {item}
+              </button>
+            ),
+          )}
+        </div>
+        <div className="browse-toolbar">
+          <div className="mode-tabs">
+            <button
+              aria-pressed={view === "grid"}
+              className={view === "grid" ? "selected" : ""}
+              onClick={() => setView("grid")}
+            >
+              Restaurant view
+            </button>
+            <button
+              aria-pressed={view === "map"}
+              className={view === "map" ? "selected" : ""}
+              onClick={() => setView("map")}
+            >
+              Map view
+            </button>
+          </div>
+          <label className="check-filter">
+            <input
+              type="checkbox"
+              checked={groupsOnly}
+              onChange={(e) => setGroupsOnly(e.target.checked)}
+            />{" "}
+            Eatogether parties available
+          </label>
+          <span className="small muted">{filtered?.length ?? 0} venues</span>
+        </div>
+        {groupResource.error && (
+          <p className="error">Group availability is temporarily unavailable.</p>
+        )}
+        <State data={data} error={error}>
+          {view === "map" ? (
+            <RestaurantMap restaurants={filtered ?? []} groups={groups} />
+          ) : (
+            <div className="grid">
+              {filtered?.map((r) => (
+                <a className="card" href={`#/restaurants/${r.id}`} key={r.id}>
+                  <Art restaurant={r} />
+                  <div className="card-body">
+                    <div className="row">
+                      <span className="eyebrow">{r.cuisine}</span>
+                      <span className="small muted">{r.price}</span>
+                    </div>
+                    <h3>{r.name}</h3>
+                    <p className="small">{r.area}</p>
+                    <div className="row">
+                      <span className="discount">
+                        Up to{" "}
+                        {Math.max(
+                          0,
+                          ...r.slots.filter((s) => !s.allocation).map((s) => s.discount),
+                        )}
+                        % off
+                      </span>
+                      <span className="small">Explore →</span>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+          {filtered?.length === 0 && (
+            <Empty
+              title="No restaurants found"
+              text="Try another cuisine, restaurant name or neighbourhood."
+            />
+          )}
+        </State>
+      </section>
+    </>
+  );
+}
+
+export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: string }) {
+  const { data, error } = useResource<{ restaurant: Restaurant }>(
+    `/restaurants/${encodeURIComponent(id)}`,
+    revision,
+  );
+  const [selectedDay, setSelectedDay] = useState("");
+  const [selected, setSelected] = useState(""),
+    [mode, setMode] = useState<"group" | "booking">("group");
+  const [capacity, setCapacity] = useState(4),
+    [title, setTitle] = useState(""),
+    [description, setDescription] = useState("");
+  const r = data?.restaurant,
+    slot = r?.slots.find((s) => s.id === selected && !s.allocation);
+  const days = Array.from(new Set(r?.slots.map((s) => date(s.startsAt)) ?? []));
+  const chosenDay = days.includes(selectedDay) ? selectedDay : days[0];
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!slot) return;
+    if (mode === "group")
+      await act<{ group: Group }>(
+        "/groups",
+        { slotId: slot.id, capacity, title, description },
+        "Your table is open. Invite someone to join.",
+        (data) => `/groups/${data.group.id}`,
+      );
+    else
+      await act(
+        "/bookings",
+        { slotId: slot.id, partySize: capacity },
+        "Your reservation is confirmed.",
+        "/bookings",
+      );
+  }
+  return (
+    <>
+      <a className="back" href="#/restaurants">
+        ← All restaurants
+      </a>
+      <State data={data} error={error}>
+        {r && (
+          <>
+            <div className="restaurant-banner">
+              <Art restaurant={r} large />
+              <div className="restaurant-heading">
+                <p className="eyebrow">
+                  {r.cuisine} · {r.area} · {r.price}
+                </p>
+                <h1>{r.name}</h1>
+                <p>{r.description}</p>
+                <p className="small">{r.address}</p>
+                <div className="chips">
+                  {r.tags?.map((tag) => (
+                    <span className="badge" key={tag}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                {r.sourceUrl && (
+                  <a
+                    className="small source-link"
+                    href={r.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Venue details & photo: Eatigo ↗
+                  </a>
+                )}
+              </div>
+            </div>
+            <div className="detail-layout">
+              <section>
+                <h2>At the table</h2>
+                {!r.active && (
+                  <p className="note">
+                    This restaurant is no longer accepting reservations.
+                  </p>
+                )}
+                <p>{r.signatureDishes?.join(" · ")}</p>
+                <h2>Find your perfect time</h2>
+                <p>All times are Singapore time. Each slot represents one table.</p>
+                <label className="date-label" htmlFor="dining-date">
+                  Dining date
+                </label>
+                <select
+                  id="dining-date"
+                  value={chosenDay ?? ""}
+                  disabled={!days.length}
+                  onChange={(e) => {
+                    setSelectedDay(e.target.value);
+                    setSelected("");
+                  }}
+                >
+                  {days.map((day) => (
+                    <option key={day} value={day}>
+                      {day}
+                    </option>
+                  ))}
+                </select>
+                <div className="slot-days">
+                  {days
+                    .filter((day) => day === chosenDay)
+                    .map((day) => (
+                      <section key={day}>
+                        <h3 className="day-heading">{day}</h3>
+                        <div className="slot-grid">
+                          {r.slots
+                            .filter((s) => date(s.startsAt) === day)
+                            .map((s) => (
+                              <button
+                                key={s.id}
+                                className={`slot ${selected === s.id ? "selected" : ""}`}
+                                disabled={!r.active || !!s.allocation || busy}
+                                aria-pressed={selected === s.id}
+                                onClick={() => {
+                                  setSelected(s.id);
+                                  setCapacity(s.capacity);
+                                }}
+                              >
+                                <strong>{time(s.startsAt)}</strong>
+                                <span>
+                                  {s.allocation ? "Reserved" : `${s.discount}% off`}
+                                </span>
+                              </button>
+                            ))}
+                        </div>
+                      </section>
+                    ))}
+                </div>
+                {r.slots.length === 0 && (
+                  <Empty
+                    title="No upcoming slots"
+                    text="Try another restaurant or check back later."
+                  />
+                )}
+              </section>
+              <aside className="panel booking-panel">
+                <h2>Make a plan</h2>
+                <div className="mode-tabs">
+                  <button
+                    type="button"
+                    className={mode === "group" ? "selected" : ""}
+                    aria-pressed={mode === "group"}
+                    onClick={() => setMode("group")}
+                  >
+                    Start an Eatogether party
+                  </button>
+                  <button
+                    type="button"
+                    className={mode === "booking" ? "selected" : ""}
+                    aria-pressed={mode === "booking"}
+                    onClick={() => setMode("booking")}
+                  >
+                    Book my party
+                  </button>
+                </div>
+                <p className="small">
+                  {mode === "group"
+                    ? "Open your table to other diners. You take the first seat and confirm when your group is ready."
+                    : "Already have your dining companions? Reserve a table for your party."}
+                </p>
+                <form onSubmit={submit}>
+                  {slot ? (
+                    <div className="selection-summary">
+                      <strong>
+                        {date(slot.startsAt)} · {time(slot.startsAt)}
+                      </strong>
+                      <span>
+                        {slot.discount}% off · minimum {slot.minimumPartySize} diners
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="note" role="status">
+                      {selected
+                        ? "That slot is no longer available. Choose another time."
+                        : "Select an available time to get started."}
+                    </p>
+                  )}
+                  <label htmlFor="party-size">
+                    {mode === "group"
+                      ? "Seats at your table (including you)"
+                      : "Party size"}
+                  </label>
+                  <select
+                    id="party-size"
+                    value={capacity}
+                    disabled={!slot || busy}
+                    onChange={(e) => setCapacity(Number(e.target.value))}
+                  >
+                    {Array.from(
+                      {
+                        length: slot ? slot.capacity - slot.minimumPartySize + 1 : 1,
+                      },
+                      (_, i) => (slot ? slot.minimumPartySize + i : 4),
+                    ).map((n) => (
+                      <option key={n} value={n}>
+                        {n} diners
+                      </option>
+                    ))}
+                  </select>
+                  {mode === "group" && (
+                    <>
+                      <label htmlFor="group-title">Give your table a name</label>
+                      <input
+                        id="group-title"
+                        required
+                        maxLength={80}
+                        placeholder="A relaxed Friday dinner"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                      />
+                      <label htmlFor="group-description">
+                        A note for your guests <span className="muted">(optional)</span>
+                      </label>
+                      <textarea
+                        id="group-description"
+                        maxLength={500}
+                        rows={3}
+                        placeholder="What kind of meal do you have in mind?"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                      />
+                    </>
+                  )}
+                  <button disabled={!slot || busy}>
+                    {busy
+                      ? "Saving…"
+                      : mode === "group"
+                        ? "Create Eatogether party"
+                        : "Confirm reservation"}
+                  </button>
+                </form>
+              </aside>
+            </div>
+          </>
+        )}
+      </State>
+    </>
+  );
+}
