@@ -1,7 +1,7 @@
-/* Eatigo visual refresh */
+/* Shared colour and surface treatment. */
 :root {
   color: #27292b;
-  background: #fff;
+  background: #f0f1f3;
   font-family: Arial, Helvetica, sans-serif;
 }
 h1,
@@ -61,12 +61,12 @@ h1 {
   margin-bottom: 0;
 }
 .card {
-  box-shadow: 0 2px 10px #15191e05;
-  border-color: #e9e9eb;
+  box-shadow: 0 3px 12px #20242b0a;
+  border-color: #cdd1d8;
 }
 .panel {
-  box-shadow: none;
-  border-color: #e9e9eb;
+  box-shadow: 0 3px 12px #20242b08;
+  border-color: #cdd1d8;
 }
 .food-art.photo {
   background: #f4f4f5;
@@ -78,11 +78,12 @@ h1 {
   color: #e51c3a;
 }
 .mode-tabs {
-  background: #f3f3f5;
+  background: #dfe2e7;
+  border: 1px solid #c5cad2;
 }
 .mode-tabs .selected {
-  background: #fff;
-  color: #e51c3a;
+  background: #e51c3a;
+  color: #fff;
 }
 .eatogether-tabs {
   display: flex;
@@ -117,7 +118,7 @@ h1 {
 }
 .compact-plans > section:first-child {
   padding-right: 28px;
-  border-right: 1px solid #e2e3e6;
+  border-right: 1px solid #bdc3cc;
 }
 .compact-plans > section:last-child {
   padding-left: 28px;
@@ -151,7 +152,7 @@ h1 {
   grid-template-columns: 88px minmax(0, 1fr);
   gap: 16px;
   padding: 16px;
-  border: 1px solid #e7e7e9;
+  border: 1px solid #cdd1d8;
   border-radius: 12px;
   height: 190px;
   background: #fff;
@@ -400,4 +401,131 @@ h1 {
   .compact-plans .plan-content .status {
     font-size: 9px;
   }
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #979da8 #e2e5ea;
+}
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: #e2e5ea;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #979da8;
+  border: 2px solid #e2e5ea;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #666e7b;
+}
+.picks-track {
+  scrollbar-color: #979da8 transparent;
+}
+.app-header {
+  background: #fff;
+  border-bottom: 1px solid #cdd1d8;
+  box-shadow: 0 2px 8px #20242b06;
+}
+.page-intro {
+  border-color: #c5cad2;
+}
+.page-intro h1 {
+  font-size: 32px;
+  margin: 0;
+  letter-spacing: -0.8px;
+}
+p,
+.muted {
+  color: #59616d;
+}
+input,
+select,
+textarea,
+.search,
+.chip {
+  border-color: #b9c0ca;
+  color: #303641;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #727b88;
+}
+:focus-visible {
+  outline-color: #e51c3a;
+}
+.mode-tabs button {
+  color: #414b5b;
+}
+.mode-tabs button:hover:not(.selected) {
+  background: #cdd2db;
+}
+.secondary {
+  background: #e2e5ea;
+  border-color: #b9c0ca;
+  color: #303641;
+}
+.secondary:hover {
+  background: #cdd2db;
+}
+.chip:hover {
+  background: #414b5b;
+  border-color: #414b5b;
+}
+.text-button,
+.back {
+  color: #46505f;
+}
+.text-button:hover {
+  background: #e2e5ea;
+}
+.empty {
+  background: #e8ebef;
+  border-color: #b9c0ca;
+}
+.discovery-content {
+  overflow-anchor: none;
+}
+.shortlist-status {
+  min-height: 28px;
+  font-size: 13px;
+  color: #59616d;
+}
+.discovery-layout {
+  max-width: none;
+  gap: 28px;
+}
+.discovery-welcome {
+  background: #e8ebef;
+  border-radius: 14px;
+  margin-top: 0;
+  padding: 60px 25px;
+}
+.discovery-welcome h2 {
+  font-size: 24px;
+  letter-spacing: -0.5px;
+}
+.mood-panel .mode-tabs {
+  margin: 6px 0 12px;
+}
+.selection-summary {
+  background: #fce9ed;
+  border: 1px solid #efbcc6;
+}
+.selection-summary span {
+  color: #853246;
+}
+
+.login-photo {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 16px;
 }

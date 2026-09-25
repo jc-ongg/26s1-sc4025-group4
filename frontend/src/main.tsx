@@ -56,37 +56,23 @@ function App() {
       <header className="login-header">
         <a className="brand" href="#">
           <img src="/images/brand/eatigo.png" alt="Eatigo" />
-          <span>good food, together</span>
         </a>
-        <span className="badge">Good food, together</span>
       </header>
       <main className="login-main">
         <section className="intro">
-          <p className="eyebrow">GOOD FOOD. NEW COMPANY.</p>
-          <h1>
-            A seat at the table.
-            <br />A reason to connect.
-          </h1>
-          <p>Your next dining experience starts here. Sign in to your account.</p>
-          <div className="table-art" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-            <span />
-            <div>
-              Better
-              <br />
-              together.
-            </div>
-          </div>
+          <h1>Restaurant reservations</h1>
+          <img
+            className="login-photo"
+            src="/images/restaurants/joya.jpg"
+            alt="Japanese dishes at Joya Onsen Cafe"
+          />
         </section>
         <section className="panel" aria-label="Account">
           {loading ? (
             <p role="status">Checking your session…</p>
           ) : (
             <>
-              <h2>Welcome back</h2>
-              <p>Log in to your dining account.</p>
+              <h2>Log in</h2>
               <form onSubmit={login}>
                 <label htmlFor="email">Email address</label>
                 <input

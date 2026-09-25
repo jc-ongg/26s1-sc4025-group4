@@ -22,18 +22,7 @@ export function Groups({ revision, mine = false }: Actions & { mine?: boolean })
   return (
     <>
       <section className="page-intro">
-        <p className="eyebrow">
-          {mine ? "YOUR PEOPLE, YOUR PLANS" : "EATOGETHER · COME SOLO. DINE TOGETHER."}
-        </p>
-        <h1>{mine ? "My Eatogether parties" : "There’s a seat for you."}</h1>
-        <p>
-          {mine
-            ? "Keep track of the tables you host and the ones you’ve joined."
-            : "Join a small group, share a good meal, and enjoy the same Eatigo savings."}
-        </p>
-        <a className="button" href="#/restaurants">
-          Start a party →
-        </a>
+        <h1>{mine ? "My parties" : "Eatogether"}</h1>
       </section>
       <div className="section-heading">
         <h2>{mine ? "Your groups" : "Find your party"}</h2>
@@ -92,7 +81,6 @@ export function GroupDetail({
           <>
             <div className="group-top">
               <div>
-                <p className="eyebrow">A GOOD MEAL STARTS WITH GOOD COMPANY</p>
                 <h1>{g.title}</h1>
                 <div className="row start">
                   <Status value={g.status} />

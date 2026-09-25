@@ -7,7 +7,6 @@ export function Footer() {
             <a href="#/restaurants" aria-label="Eatigo home">
               <img src="/images/brand/eatigo.png" alt="Eatigo" />
             </a>
-            <p>Good food. Even better company.</p>
           </div>
           <div className="footer-course">
             <strong>SC4025</strong>

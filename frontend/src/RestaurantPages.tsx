@@ -28,7 +28,6 @@ export function Restaurants({ revision }: Actions) {
       <section>
         <div className="section-heading">
           <div>
-            <p className="eyebrow">YOUR NEXT MEAL, SORTED</p>
             <h2>Explore restaurants</h2>
           </div>
           <span className="muted small">{filtered?.length ?? 0} restaurants</span>

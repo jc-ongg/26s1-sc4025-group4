@@ -183,17 +183,6 @@
 .mood-panel form {
   margin-bottom: 0;
 }
-.mood-examples {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.mood-examples .chip {
-  font-size: 11px;
-  padding: 8px 12px;
-  min-height: 34px;
-}
 .swipe-column {
   min-width: 0;
 }

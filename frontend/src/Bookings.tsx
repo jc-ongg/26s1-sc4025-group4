@@ -88,9 +88,7 @@ export function Bookings({ revision, act, busy }: Actions) {
     <>
       <section className="page-intro plans-intro">
         <div>
-          <p className="eyebrow">YOUR PEOPLE. YOUR PLANS.</p>
           <h1>My bookings</h1>
-          <p>Every party and reservation, in one place.</p>
         </div>
         <div className="mode-tabs" aria-label="Booking filters">
           {[
@@ -119,11 +117,7 @@ export function Bookings({ revision, act, busy }: Actions) {
             <h2>
               My parties <span className="count-badge">{groups.length}</span>
             </h2>
-            <a className="text-button" href="#/groups">
-              Find a party ↗
-            </a>
           </div>
-          <p className="small muted">The people you’re dining with.</p>
           <State data={parties.data} error={parties.error}>
             <ul className="plan-list">
               {groups
@@ -169,11 +163,7 @@ export function Bookings({ revision, act, busy }: Actions) {
             <h2>
               My reservations <span className="count-badge">{bookings.length}</span>
             </h2>
-            <a className="text-button" href="#/restaurants">
-              Book a meal ↗
-            </a>
           </div>
-          <p className="small muted">Your restaurant confirmations and history.</p>
           <State data={data} error={error}>
             <ul className="plan-list">
               {bookings
