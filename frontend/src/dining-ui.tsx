@@ -103,20 +103,18 @@ export function Art({
     );
   return (
     <div
-      className={`food-art ${restaurant.artwork} ${large ? "large" : ""}`}
-      aria-hidden="true"
+      className={`food-art venue-placeholder ${large ? "large" : ""}`}
+      role="img"
+      aria-label={restaurant.name ?? restaurant.cuisine}
     >
-      <div className="food-label">{restaurant.cuisine} kitchen</div>
-      <div className="dish">
-        <i />
-        <i />
-        <i />
-        <i />
-        <i />
-        <b />
-      </div>
-      <span className="utensil" />
-      <span className="napkin" />
+      <span>
+        {(restaurant.name ?? restaurant.cuisine)
+          .split(/\s+/)
+          .filter((word) => /[a-z0-9]/i.test(word))
+          .slice(0, 2)
+          .map((word) => word[0])
+          .join("")}
+      </span>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 /* Shared colour and surface treatment. */
 :root {
   color: #27292b;
-  background: #f0f1f3;
+  background: #faf9f7;
   font-family: Arial, Helvetica, sans-serif;
 }
 h1,
@@ -61,12 +61,12 @@ h1 {
   margin-bottom: 0;
 }
 .card {
-  box-shadow: 0 3px 12px #20242b0a;
-  border-color: #cdd1d8;
+  box-shadow: none;
+  border-color: #dedbd6;
 }
 .panel {
-  box-shadow: 0 3px 12px #20242b08;
-  border-color: #cdd1d8;
+  box-shadow: none;
+  border-color: #dedbd6;
 }
 .food-art.photo {
   background: #f4f4f5;
@@ -78,12 +78,13 @@ h1 {
   color: #e51c3a;
 }
 .mode-tabs {
-  background: #dfe2e7;
-  border: 1px solid #c5cad2;
+  background: #f1f0ee;
+  border: 1px solid #dedbd6;
 }
 .mode-tabs .selected {
-  background: #e51c3a;
-  color: #fff;
+  background: #fff;
+  color: #b9233a;
+  box-shadow: 0 1px 3px #24201b12;
 }
 .eatogether-tabs {
   display: flex;
@@ -152,8 +153,8 @@ h1 {
   grid-template-columns: 88px minmax(0, 1fr);
   gap: 16px;
   padding: 16px;
-  border: 1px solid #cdd1d8;
-  border-radius: 12px;
+  border: 1px solid #dedbd6;
+  border-radius: 6px;
   height: 190px;
   background: #fff;
   align-items: center;
@@ -415,7 +416,7 @@ html {
   height: 9px;
 }
 ::-webkit-scrollbar-track {
-  background: #e2e5ea;
+  background: #f0eeea;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
@@ -451,7 +452,7 @@ select,
 textarea,
 .search,
 .chip {
-  border-color: #b9c0ca;
+  border-color: #d4d0cb;
   color: #303641;
 }
 input::placeholder,
@@ -465,15 +466,15 @@ textarea::placeholder {
   color: #414b5b;
 }
 .mode-tabs button:hover:not(.selected) {
-  background: #cdd2db;
+  background: #e9e6e1;
 }
 .secondary {
-  background: #e2e5ea;
-  border-color: #b9c0ca;
+  background: #f0eeea;
+  border-color: #d4d0cb;
   color: #303641;
 }
 .secondary:hover {
-  background: #cdd2db;
+  background: #e9e6e1;
 }
 .chip:hover {
   background: #414b5b;
@@ -484,11 +485,11 @@ textarea::placeholder {
   color: #46505f;
 }
 .text-button:hover {
-  background: #e2e5ea;
+  background: #f0eeea;
 }
 .empty {
-  background: #e8ebef;
-  border-color: #b9c0ca;
+  background: #f3f1ed;
+  border-color: #d4d0cb;
 }
 .discovery-content {
   overflow-anchor: none;
@@ -503,8 +504,8 @@ textarea::placeholder {
   gap: 28px;
 }
 .discovery-welcome {
-  background: #e8ebef;
-  border-radius: 14px;
+  background: #f3f1ed;
+  border-radius: 6px;
   margin-top: 0;
   padding: 60px 25px;
 }
@@ -516,11 +517,11 @@ textarea::placeholder {
   margin: 6px 0 12px;
 }
 .selection-summary {
-  background: #fce9ed;
-  border: 1px solid #efbcc6;
+  background: #f4f2ee;
+  border: 1px solid #dedbd6;
 }
 .selection-summary span {
-  color: #853246;
+  color: #57524b;
 }
 
 .login-photo {
@@ -528,4 +529,156 @@ textarea::placeholder {
   max-height: 320px;
   object-fit: cover;
   border-radius: 16px;
+}
+
+/* Restrained surfaces keep photography and primary actions in focus. */
+button,
+.button,
+input,
+select,
+textarea,
+.search,
+.mode-tabs {
+  border-radius: 5px;
+}
+.card,
+.panel,
+.restaurant-banner,
+.group-restaurant,
+.pick-card,
+.offline-map {
+  border-radius: 8px;
+}
+.chip {
+  border-radius: 5px;
+  padding: 7px 14px;
+  background: transparent;
+}
+.chip.active {
+  background: #292827;
+  border-color: #292827;
+}
+.card:hover {
+  border-color: #aaa49c;
+  box-shadow: 0 4px 16px #24201b08;
+}
+h1,
+h2,
+h3 {
+  color: #252422;
+}
+h2 {
+  font-size: 23px;
+  letter-spacing: -0.5px;
+}
+.mode-tabs button {
+  font-size: 13px;
+  font-weight: 600;
+}
+.browse-toolbar .mode-tabs {
+  padding: 5px;
+}
+.page-intro {
+  border-color: #dedbd6;
+  padding-bottom: 24px;
+}
+.plan-row {
+  border: 0;
+  border-bottom: 1px solid #dedbd6;
+  border-radius: 0;
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+.plan-list {
+  gap: 0;
+  margin-top: 8px;
+}
+.count-badge {
+  background: transparent;
+  color: #817a71;
+}
+.status,
+.badge {
+  border-radius: 4px;
+}
+.venue-placeholder {
+  display: grid;
+  place-items: center;
+  background: #eeece8;
+  color: #817a71;
+}
+.venue-placeholder > span {
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+.restaurant-banner {
+  background: #f0eeea;
+}
+.carousel-controls button {
+  border-radius: 5px;
+  background: transparent;
+}
+.discovery-welcome {
+  border-style: solid;
+}
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+.app-header {
+  border: 0;
+  box-shadow: none;
+}
+.booking-panel,
+.action-panel {
+  top: 110px;
+}
+
+/* Native snapping preserves touch, keyboard and scrolling inside tall sections. */
+html {
+  scroll-snap-type: y mandatory;
+  scroll-padding-top: 105px;
+}
+.app-main,
+.app-main > section,
+.page-intro,
+.restaurant-banner,
+.detail-layout,
+.discovery-content,
+.compact-plans,
+.grid > .card,
+.site-footer {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+@media (max-width: 800px) {
+  html {
+    scroll-padding-top: 145px;
+  }
+  .compact-plans > section,
+  .detail-layout > section,
+  .detail-layout > aside,
+  .discovery-layout > aside,
+  .swipe-column {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+  .booking-panel,
+  .action-panel {
+    position: static;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-snap-type: y proximity;
+  }
+}
+
+.slot.selected {
+  background: #f7efed;
+  border-color: #b9233a;
+  color: #292827;
 }
