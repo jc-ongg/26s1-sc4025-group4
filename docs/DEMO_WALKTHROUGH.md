@@ -20,10 +20,10 @@ For an ordinary reservation, use the default **Book** tab on the restaurant page
 ## Map and recommendations
 
 1. In Restaurants, switch to **Map view**. Select a restaurant photo pin or use the restaurant list to see its available Eatogether parties.
-2. Enable **Eatogether parties available** to narrow the venues. Use **Show all restaurants** to restore an overview of the filtered results.
-3. Open **Eatogether → For you** and choose a dining mood. Korean barbecue should favour Seorae when its sample party is still eligible; a dessert/study-break mood should favour 2SCOOPS.
+2. Use the cuisine or search filters to narrow venues. **Show all restaurants** restores an overview of the filtered map results.
+3. Open **Eatogether → For you** and enter a dining mood. Select **Eatogether** to search parties or **Restaurant** to search venues. Korean barbecue should favour Seorae when its sample party is still eligible; a dessert/study-break mood should favour 2SCOOPS.
 4. Swipe right to save or left to skip. Buttons and keyboard arrows offer the same actions. Undo restores the previous decision; saving does not join a party.
-5. Open **My shortlist** and review a saved party before joining. Test the NTU radius filter; distances are straight-line, not travel distances.
+5. Open **My shortlist** and review a saved party before joining. Type NTU in the optional location field and test the radius filter; distances are straight-line, not travel distances.
 
 ## Scope
 

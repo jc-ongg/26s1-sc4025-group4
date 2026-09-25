@@ -59,6 +59,34 @@ test("local semantic ranking, availability, radius, shortlist isolation and undo
     const nearby = await search("lunch", { area: "ntu", radius: 3 });
     assert.ok(nearby.results.length > 0);
     assert.ok(nearby.results.every((r: { distanceKm: number }) => r.distanceKm <= 3));
+    const typedLocation = await search("lunch", { area: "  NTU  ", radius: 3 });
+    assert.deepEqual(
+      typedLocation.results.map((r: { key: string }) => r.key),
+      nearby.results.map((r: { key: string }) => r.key),
+    );
+    const namedVenue = await search("Italian pasta", {
+      mode: "restaurants",
+      area: "il Cielo",
+      radius: 1,
+    });
+    assert.ok(
+      namedVenue.results.some(
+        (r: { restaurant: { id: string }; distanceKm: number }) =>
+          r.restaurant.id === "il-cielo" && r.distanceKm === 0,
+      ),
+    );
+    const unknownLocation = await fetch("http://localhost:4000/api/discovery/search", {
+      method: "POST",
+      headers: { cookie, "Content-Type": "application/json" },
+      body: JSON.stringify({ mood: "lunch", area: "unknown neighbourhood" }),
+    });
+    assert.equal(unknownLocation.status, 400);
+    const noLocation = await search("lunch", { area: "" });
+    assert.ok(
+      noLocation.results.every(
+        (r: { distanceKm: number | null }) => r.distanceKm === null,
+      ),
+    );
     const restaurants = await search("Italian pasta and pizza", {
       mode: "restaurants",
     });

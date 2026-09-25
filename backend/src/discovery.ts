@@ -46,6 +46,16 @@ const centres: Record<string, [number, number]> = {
   jurong: [1.333, 103.742],
   clementi: [1.315, 103.765],
   city: [1.293, 103.852],
+  "city hall": [1.293, 103.852],
+  "jurong east": [1.333, 103.742],
+  "jurong west": [1.34, 103.709],
+  "joo koon": [1.327, 103.678],
+  orchard: [1.304, 103.832],
+  chinatown: [1.284, 103.844],
+  "bukit batok": [1.349, 103.749],
+  "bukit timah": [1.329, 103.797],
+  "holland village": [1.311, 103.796],
+  "nanyang technological university": [1.3483, 103.6831],
 };
 function distance(lat: number, lon: number, centre: [number, number]) {
   const rad = Math.PI / 180,
@@ -63,7 +73,8 @@ discovery.post("/discovery/search", async (req, res) => {
     !mood.trim() ||
     mood.length > 400 ||
     !["groups", "restaurants"].includes(mode) ||
-    (area !== "any" && !centres[area]) ||
+    typeof area !== "string" ||
+    area.length > 120 ||
     typeof radius !== "number" ||
     !Number.isFinite(radius) ||
     radius < 1 ||
@@ -73,6 +84,32 @@ discovery.post("/discovery/search", async (req, res) => {
       400,
       "Describe your meal in 1–400 characters and choose valid filters.",
     );
+  const location = area.trim().toLowerCase().replace(/\s+/g, " ");
+  let centre: [number, number] | undefined;
+  if (location && location !== "any") {
+    centre = Object.hasOwn(centres, location) ? centres[location] : undefined;
+    if (!centre) {
+      // Restaurant records provide local location lookup without an external geocoder.
+      const venue = await db.restaurant.findFirst({
+        where: {
+          active: true,
+          OR: [
+            { name: { equals: location, mode: "insensitive" } },
+            { area: { equals: location, mode: "insensitive" } },
+          ],
+          latitude: { not: null },
+          longitude: { not: null },
+        },
+        orderBy: { id: "asc" },
+      });
+      if (venue) centre = [venue.latitude!, venue.longitude!];
+    }
+    if (!centre)
+      throw new HttpError(
+        400,
+        "Location not found. Enter a Singapore neighbourhood or a listed restaurant name.",
+      );
+  }
   let vector: string;
   try {
     await indexContent();
@@ -137,13 +174,11 @@ discovery.post("/discovery/search", async (req, res) => {
     .map((c) => ({
       ...c,
       distanceKm:
-        area !== "any" &&
-        c.restaurant.latitude !== null &&
-        c.restaurant.longitude !== null
-          ? distance(c.restaurant.latitude, c.restaurant.longitude, centres[area])
+        centre && c.restaurant.latitude !== null && c.restaurant.longitude !== null
+          ? distance(c.restaurant.latitude, c.restaurant.longitude, centre)
           : null,
     }))
-    .filter((c) => area === "any" || (c.distanceKm !== null && c.distanceKm <= radius));
+    .filter((c) => !centre || (c.distanceKm !== null && c.distanceKm <= radius));
   if (!eligible.length) {
     res.json({ results: [], model: modelVersion });
     return;
