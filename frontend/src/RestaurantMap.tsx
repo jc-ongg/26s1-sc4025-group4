@@ -173,7 +173,7 @@ export function RestaurantMap({
     <div className="map-layout">
       <div>
         <div className="map-tools">
-          <span className="small">Select a restaurant to explore Eatogether parties</span>
+          <span className="small">Find your next meal</span>
           <button
             className="text-button"
             onClick={() => {
@@ -242,39 +242,25 @@ export function RestaurantMap({
             <h3>{r.name}</h3>
             <p className="small">{r.address}</p>
             <a className="button dark" href={`#/restaurants/${r.id}`}>
-              View restaurant →
+              Book a table →
             </a>
-            <h3>Eatogether parties</h3>
-            <p className="small muted">
-              Join a diner-hosted party with seats available. The host confirms when the
-              group is ready.
-            </p>
-            {open.length ? (
-              open.map((g) => (
-                <a className="map-group" href={`#/groups/${g.id}`} key={g.id}>
-                  <strong>{g.title}</strong>
-                  <span>
-                    {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
-                  </span>
-                  <span>
-                    {g.capacity - g.members.length} seats left · {g.slot.discount}% off →
-                  </span>
-                </a>
-              ))
-            ) : (
-              <p className="small">
-                No open parties here yet. Choose a time at this restaurant and start your
-                own.
-              </p>
-            )}
+            {open.map((g) => (
+              <a className="map-group" href={`#/groups/${g.id}`} key={g.id}>
+                <strong>{g.title}</strong>
+                <span>
+                  {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
+                </span>
+                <span>
+                  {g.capacity - g.members.length} seats left · {g.slot.discount}% off →
+                </span>
+              </a>
+            ))}
           </>
         ) : (
           <>
             <p className="eyebrow">FIND A TABLE NEAR YOU</p>
-            <h3>A little closer to good company.</h3>
-            <p>
-              Select a restaurant pin to see its details and available Eatogether parties.
-            </p>
+            <h3>Good food, nearby.</h3>
+            <p>Select a restaurant pin to explore and book a table.</p>
             <p className="small">
               Each pin marks a restaurant. Hover or focus to see its name; select it to
               explore. You can also use the restaurant list above.

@@ -9,13 +9,13 @@ Use two browser profiles, a normal/private window pair, or two devices. Tabs in 
 ## Shared booking
 
 1. Sign in as Jacob, choose a restaurant and an available future time.
-2. Select **Start an Eatogether party**, choose four seats and enter a title. Jacob occupies the first seat; confirmation requires the slot's minimum party size.
+2. Select **Eatogether**, choose four seats and enter a title. Jacob occupies the first seat; confirmation requires the slot's minimum party size.
 3. Sign in as Alice in the second session. Find the party under **Eatogether** and join.
 4. Jacob's page updates within five seconds. Confirm once the minimum is reached, even if some seats remain empty.
 5. Open **My bookings** in both sessions. Both diners see the same booking reference. Joining and leaving are closed after confirmation.
 6. Before the reservation starts, Jacob can cancel it. The slot is released. Each diner can independently delete the cancelled booking from their own history without affecting the other person's record.
 
-For an ordinary reservation, choose **Book my party** on the restaurant page. Ordinary reservations and Eatogether parties compete for the same slot.
+For an ordinary reservation, use the default **Book** tab on the restaurant page. Ordinary reservations and Eatogether parties compete for the same slot.
 
 ## Map and recommendations
 

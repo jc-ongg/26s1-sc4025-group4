@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { TopPicks } from "./TopPicks";
 import { RestaurantMap } from "./RestaurantMap";
 import type { Restaurant, Group } from "./types";
 import { Art, Empty, State, date, time, useResource, type Actions } from "./dining-ui";
@@ -15,55 +16,22 @@ export function Restaurants({ revision }: Actions) {
     groupResource.data?.groups.filter(
       (g) => g.status === "OPEN" && g.members.length < g.capacity,
     ) ?? [];
-  const [view, setView] = useState<"grid" | "map">("grid"),
-    [groupsOnly, setGroupsOnly] = useState(false);
+  const [view, setView] = useState<"grid" | "map">("grid");
   const filtered = data?.restaurants.filter(
     (r) =>
-      (!groupsOnly || groups.some((g) => g.slot.restaurant.id === r.id)) &&
       (cuisine === "All" || r.cuisine === cuisine) &&
       `${r.name} ${r.area} ${r.cuisine}`.toLowerCase().includes(search.toLowerCase()),
   );
   return (
     <>
-      <section className="hero">
-        <div>
-          <p className="eyebrow">SINGAPORE · SOMETHING DELICIOUS AWAITS</p>
-          <h1>
-            Good food.
-            <br />
-            <em>Even better company.</em>
-          </h1>
-          <p>
-            Discover your next favourite spot. Bring your people,
-            <br className="desktop-break" /> or find a table with new ones.
-          </p>
-          <a className="button dark" href="#/discover">
-            Find my kind of table ↗
-          </a>
-        </div>
-        <div className="hero-art">
-          <Art
-            restaurant={{
-              artwork: "japanese",
-              cuisine: "Japanese",
-              imagePath: "/images/restaurants/joya.jpg",
-              name: "Joya Onsen Cafe",
-            }}
-          />
-          <div className="hero-sticker">
-            Less planning.
-            <br />
-            More dining.
-          </div>
-        </div>
-      </section>
+      {data && <TopPicks restaurants={data.restaurants} />}
       <section>
         <div className="section-heading">
           <div>
             <p className="eyebrow">YOUR NEXT MEAL, SORTED</p>
             <h2>Explore restaurants</h2>
           </div>
-          <span className="muted small">Find your next favourite</span>
+          <span className="muted small">{filtered?.length ?? 0} restaurants</span>
         </div>
         <label className="search">
           <span>⌕</span>
@@ -105,17 +73,8 @@ export function Restaurants({ revision }: Actions) {
               Map view
             </button>
           </div>
-          <label className="check-filter">
-            <input
-              type="checkbox"
-              checked={groupsOnly}
-              onChange={(e) => setGroupsOnly(e.target.checked)}
-            />{" "}
-            Eatogether parties available
-          </label>
-          <span className="small muted">{filtered?.length ?? 0} venues</span>
         </div>
-        {groupResource.error && (
+        {view === "map" && groupResource.error && (
           <p className="error">Group availability is temporarily unavailable.</p>
         )}
         <State data={data} error={error}>
@@ -168,7 +127,7 @@ export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: st
   );
   const [selectedDay, setSelectedDay] = useState("");
   const [selected, setSelected] = useState(""),
-    [mode, setMode] = useState<"group" | "booking">("group");
+    [mode, setMode] = useState<"group" | "booking">("booking");
   const [capacity, setCapacity] = useState(4),
     [title, setTitle] = useState(""),
     [description, setDescription] = useState("");
@@ -218,16 +177,6 @@ export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: st
                     </span>
                   ))}
                 </div>
-                {r.sourceUrl && (
-                  <a
-                    className="small source-link"
-                    href={r.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Venue details & photo: Eatigo ↗
-                  </a>
-                )}
               </div>
             </div>
             <div className="detail-layout">
@@ -301,25 +250,25 @@ export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: st
                 <div className="mode-tabs">
                   <button
                     type="button"
-                    className={mode === "group" ? "selected" : ""}
-                    aria-pressed={mode === "group"}
-                    onClick={() => setMode("group")}
-                  >
-                    Start an Eatogether party
-                  </button>
-                  <button
-                    type="button"
                     className={mode === "booking" ? "selected" : ""}
                     aria-pressed={mode === "booking"}
                     onClick={() => setMode("booking")}
                   >
-                    Book my party
+                    Book
+                  </button>
+                  <button
+                    type="button"
+                    className={mode === "group" ? "selected" : ""}
+                    aria-pressed={mode === "group"}
+                    onClick={() => setMode("group")}
+                  >
+                    Eatogether
                   </button>
                 </div>
                 <p className="small">
                   {mode === "group"
                     ? "Open your table to other diners. You take the first seat and confirm when your group is ready."
-                    : "Already have your dining companions? Reserve a table for your party."}
+                    : "Choose a time and reserve a table."}
                 </p>
                 <form onSubmit={submit}>
                   {slot ? (

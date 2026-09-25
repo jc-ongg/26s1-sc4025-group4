@@ -21,25 +21,99 @@
   color: #527055;
 }
 .browse-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  flex-wrap: wrap;
   margin: 15px 0 25px;
 }
 .browse-toolbar .mode-tabs {
+  width: 100%;
   margin: 0;
 }
-.check-filter {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  font-size: 13px;
+.browse-toolbar .mode-tabs button {
+  min-height: 46px;
+  font-size: 14px;
 }
-.check-filter input {
-  width: 18px;
-  height: 18px;
-  accent-color: #38583e;
+.top-picks {
+  margin-bottom: 36px;
+}
+.top-picks .section-heading {
+  margin-bottom: 14px;
+  flex-direction: row;
+  align-items: center;
+}
+.top-picks h2 {
+  margin: 0;
+}
+.carousel-controls {
+  display: flex;
+  gap: 8px;
+}
+.carousel-controls button {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 50%;
+}
+.picks-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 48px) / 4);
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  padding: 3px 0 10px;
+}
+.pick-card {
+  position: relative;
+  min-width: 0;
+  height: 210px;
+  overflow: hidden;
+  border-radius: 14px;
+  scroll-snap-align: start;
+  color: white;
+  text-decoration: none;
+}
+.pick-card .food-art {
+  height: 100%;
+}
+.pick-caption {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16px;
+  background: linear-gradient(transparent 15%, #000c);
+}
+.pick-caption h3 {
+  font-size: 18px;
+  margin: 10px 0 4px;
+  color: white;
+}
+.pick-caption p {
+  margin: 0;
+  font-size: 12px;
+  color: #fff;
+}
+.pick-discount {
+  align-self: flex-start;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: #e51c3a;
+  font-size: 12px;
+  font-weight: 700;
+}
+@media (max-width: 1000px) {
+  .picks-track {
+    grid-auto-columns: calc((100% - 32px) / 3);
+  }
+}
+@media (max-width: 600px) {
+  .picks-track {
+    grid-auto-columns: 82%;
+  }
+  .pick-card {
+    height: 190px;
+  }
 }
 .map-layout {
   display: grid;
