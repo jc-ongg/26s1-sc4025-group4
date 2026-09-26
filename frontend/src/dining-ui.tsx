@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "./api";
 import type { Group, Restaurant } from "./types";
 export const date = (v: string) =>
@@ -28,10 +28,15 @@ export type Actions = {
 export function useResource<T>(path: string, revision: number) {
   const [data, setData] = useState<T | null>(null),
     [error, setError] = useState("");
+  const resourcePath = useRef(path);
   useEffect(() => {
     let active = true,
       fetching = false;
-    setData(null);
+    // Keep current content visible when an action refreshes the same resource.
+    if (resourcePath.current !== path) {
+      setData(null);
+      resourcePath.current = path;
+    }
     setError("");
     async function refresh() {
       if (fetching) return;
@@ -77,7 +82,7 @@ export function State({
         ? children
         : !error && (
             <p className="loading" role="status">
-              Setting the table…
+              Loading…
             </p>
           )}
     </>
@@ -174,9 +179,8 @@ export function GroupCard({ group: g }: { group: Group }) {
 export function Empty({ title, text }: { title: string; text: string }) {
   return (
     <div className="empty">
-      <span aria-hidden="true">◌</span>
       <h3>{title}</h3>
-      <p>{text}</p>
+      {text && <p>{text}</p>}
     </div>
   );
 }

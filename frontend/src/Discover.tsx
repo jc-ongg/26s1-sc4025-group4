@@ -189,7 +189,7 @@ export function Discover() {
                           className="button dark"
                           href={`#/${s.group ? "groups/" + s.group.id : "restaurants/" + s.restaurant.id}`}
                         >
-                          {s.group ? "View group" : "View restaurant"} →
+                          {s.group ? "View party" : "View restaurant"} →
                         </a>
                         <button
                           className="text-button"
