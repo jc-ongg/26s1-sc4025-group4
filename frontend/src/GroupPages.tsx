@@ -25,7 +25,7 @@ export function Groups({ revision, mine = false }: Actions & { mine?: boolean })
         <h1>{mine ? "My parties" : "Eatogether"}</h1>
       </section>
       <div className="section-heading">
-        <h2>{mine ? "Your groups" : "Find your party"}</h2>
+        <h2>{mine ? "Your parties" : "Available parties"}</h2>
         <label className="checkbox">
           <input
             type="checkbox"
@@ -36,14 +36,14 @@ export function Groups({ revision, mine = false }: Actions & { mine?: boolean })
         </label>
       </div>
       <State data={data} error={error}>
-        <div className="grid">
+        <div className="grid party-results">
           {groups?.map((g) => (
             <GroupCard group={g} key={g.id} />
           ))}
         </div>
         {groups?.length === 0 && (
           <Empty
-            title="No tables here yet"
+            title="No parties found"
             text="Explore restaurants and start a table of your own."
           />
         )}

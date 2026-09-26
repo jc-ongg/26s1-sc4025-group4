@@ -11,7 +11,7 @@ import {
   type Actions,
 } from "./dining-ui";
 
-const PAGE_SIZE = 3;
+const PAGE_SIZE = 2;
 
 function ListPages({
   page,
@@ -28,24 +28,26 @@ function ListPages({
       <span>
         {total} {total === 1 ? "plan" : "plans"} · Page {page + 1} of {pages}
       </span>
-      <div>
-        <button
-          className="text-button"
-          aria-label="Previous page"
-          disabled={page === 0}
-          onClick={() => onChange(page - 1)}
-        >
-          ←
-        </button>
-        <button
-          className="text-button"
-          aria-label="Next page"
-          disabled={page + 1 >= pages}
-          onClick={() => onChange(page + 1)}
-        >
-          →
-        </button>
-      </div>
+      {pages > 1 && (
+        <div>
+          <button
+            className="text-button"
+            aria-label="Previous page"
+            disabled={page === 0}
+            onClick={() => onChange(page - 1)}
+          >
+            Previous
+          </button>
+          <button
+            className="text-button"
+            aria-label="Next page"
+            disabled={page + 1 >= pages}
+            onClick={() => onChange(page + 1)}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

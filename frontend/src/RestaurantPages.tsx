@@ -25,7 +25,7 @@ export function Restaurants({ revision }: Actions) {
   return (
     <>
       {data && <TopPicks restaurants={data.restaurants} />}
-      <section>
+      <section className="restaurant-browse">
         <div className="section-heading">
           <div>
             <h2>Explore restaurants</h2>
@@ -100,7 +100,7 @@ export function Restaurants({ revision }: Actions) {
                         )}
                         % off
                       </span>
-                      <span className="small">Explore →</span>
+                      <span className="small">View restaurant →</span>
                     </div>
                   </div>
                 </a>
@@ -187,7 +187,7 @@ export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: st
                   </p>
                 )}
                 <p>{r.signatureDishes?.join(" · ")}</p>
-                <h2>Find your perfect time</h2>
+                <h2>Available times</h2>
                 <p>All times are Singapore time. Each slot represents one table.</p>
                 <label className="date-label" htmlFor="dining-date">
                   Dining date
