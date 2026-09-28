@@ -42,4 +42,6 @@ On 25 September 2026, both Docker builds, the credential unit tests, HTTP authen
 
 On 28 September 2026, both Docker builds, TypeScript checks, the two credential tests, seven frontend tests, HTTP authentication checks, all six dining integration tests and the discovery integration test passed. Discovery coverage now also verifies restaurant search as the API default. Browser checks covered clearing results when switching search mode, save/shortlist/undo, past-party action visibility, and navigation at desktop and phone widths.
 
+A subsequent Chrome compatibility fix on the same day removed dependencies on `AbortSignal.any`, `AbortSignal.timeout` and `throwIfAborted`. The frontend suite now has nine passing tests; all API cases run with those helpers disabled, covering successful page reads, cancellation before a request starts, late-response cancellation, timeouts and listener cleanup.
+
 Physical second-device connectivity depends on the network and has not been independently verified. These checks establish engineering behaviour on the demonstration dataset, not usability findings or broad recommendation quality. Participant testing and a held-out semantic-versus-keyword benchmark remain separate evaluation work.

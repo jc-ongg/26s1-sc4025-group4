@@ -13,10 +13,20 @@ export async function api<T>(
   body?: unknown,
   options: RequestOptions = {},
 ): Promise<T> {
-  const timeout = AbortSignal.timeout(options.timeoutMs ?? 30_000);
-  const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+  // Use the base AbortController API for browsers without newer AbortSignal helpers.
+  const controller = new AbortController();
+  const { signal } = controller;
+  const abort = () => controller.abort();
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    abort();
+  }, options.timeoutMs ?? 30_000);
+  if (options.signal?.aborted) abort();
+  else options.signal?.addEventListener("abort", abort, { once: true });
   let response: Response, data: unknown;
   try {
+    if (signal.aborted) throw new DOMException("Request cancelled.", "AbortError");
     response = await fetch(`/api${path}`, {
       signal,
       ...(body === undefined
@@ -40,16 +50,19 @@ export async function api<T>(
           );
       }
     }
-    signal.throwIfAborted();
+    if (signal.aborted) throw new DOMException("Request cancelled.", "AbortError");
   } catch (error) {
     // Cancelled page reads must not report errors or invalidate a newer login.
     if (options.signal?.aborted) throw error;
-    if (timeout.aborted)
+    if (timedOut)
       throw new Error(
         "Request timed out. Refresh to check the latest state before retrying.",
       );
     if (error instanceof ApiError) throw error;
     throw new Error("Cannot reach the server. Check your connection and try again.");
+  } finally {
+    clearTimeout(timeout);
+    options.signal?.removeEventListener("abort", abort);
   }
   if (response.status === 204) return undefined as T;
   if (!response.ok) {

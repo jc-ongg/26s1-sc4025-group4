@@ -1,8 +1,51 @@
-import { afterEach, mock, test } from "node:test";
+import { afterEach, beforeEach, mock, test } from "node:test";
 import assert from "node:assert/strict";
 import { api, ApiError } from "./api";
 
-afterEach(() => mock.restoreAll());
+// Run the suite with the same missing helpers as older browser installations.
+const abortHelpers = [
+  [AbortSignal, "any"],
+  [AbortSignal, "timeout"],
+  [AbortSignal.prototype, "throwIfAborted"],
+] as const;
+const descriptors = abortHelpers.map(([target, name]) =>
+  Object.getOwnPropertyDescriptor(target, name),
+);
+beforeEach(() => {
+  for (const [target, name] of abortHelpers)
+    Object.defineProperty(target, name, { configurable: true, value: undefined });
+});
+afterEach(() => {
+  mock.restoreAll();
+  abortHelpers.forEach(([target, name], index) => {
+    const descriptor = descriptors[index];
+    if (descriptor) Object.defineProperty(target, name, descriptor);
+    else Reflect.deleteProperty(target, name);
+  });
+});
+
+test("page reads succeed without AbortSignal convenience methods", async () => {
+  const controller = new AbortController();
+  const removeListener = mock.method(controller.signal, "removeEventListener");
+  mock.method(globalThis, "fetch", async (_url: string, options: RequestInit) => {
+    assert.equal(options.signal?.aborted, false);
+    return Response.json({ restaurants: [{ id: "test-restaurant" }] });
+  });
+  assert.deepEqual(await api("/restaurants", undefined, { signal: controller.signal }), {
+    restaurants: [{ id: "test-restaurant" }],
+  });
+  assert.equal(removeListener.mock.callCount(), 1);
+});
+
+test("an already-cancelled page never sends a request", async () => {
+  const controller = new AbortController();
+  controller.abort();
+  const request = mock.method(globalThis, "fetch");
+  await assert.rejects(api("/restaurants", undefined, { signal: controller.signal }), {
+    name: "AbortError",
+  });
+  assert.equal(request.mock.callCount(), 0);
+});
 
 test("proxy HTML failures retain their HTTP status and a readable error", async () => {
   mock.method(
