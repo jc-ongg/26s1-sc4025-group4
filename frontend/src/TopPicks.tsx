@@ -1,10 +1,13 @@
 import { useRef } from "react";
 import { Art } from "./dining-ui";
 import type { Restaurant } from "./types";
+import { availableSlots } from "./availability";
 
 export function TopPicks({ restaurants }: { restaurants: Restaurant[] }) {
   const track = useRef<HTMLDivElement>(null);
-  const picks = restaurants.filter((r) => r.slots.some((s) => !s.allocation));
+  const picks = restaurants
+    .map((restaurant) => ({ restaurant, slots: availableSlots(restaurant) }))
+    .filter(({ slots }) => slots.length);
   if (!picks.length) return null;
 
   function scroll(direction: number) {
@@ -40,7 +43,7 @@ export function TopPicks({ restaurants }: { restaurants: Restaurant[] }) {
         </div>
       </div>
       <div className="picks-track" ref={track}>
-        {picks.map((restaurant) => (
+        {picks.map(({ restaurant, slots }) => (
           <a
             className="pick-card"
             href={`#/restaurants/${restaurant.id}`}
@@ -49,11 +52,7 @@ export function TopPicks({ restaurants }: { restaurants: Restaurant[] }) {
             <Art restaurant={restaurant} />
             <div className="pick-caption">
               <span className="pick-discount">
-                Up to{" "}
-                {Math.max(
-                  ...restaurant.slots.filter((s) => !s.allocation).map((s) => s.discount),
-                )}
-                % off
+                Up to {Math.max(...slots.map((s) => s.discount))}% off
               </span>
               <h3>{restaurant.name}</h3>
               <p>

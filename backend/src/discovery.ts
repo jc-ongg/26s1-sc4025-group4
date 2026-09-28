@@ -67,7 +67,7 @@ function distance(lat: number, lon: number, centre: [number, number]) {
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 discovery.post("/discovery/search", async (req, res) => {
-  const { mood, mode = "groups", area = "any", radius = 15 } = req.body ?? {};
+  const { mood, mode = "restaurants", area = "any", radius = 15 } = req.body ?? {};
   if (
     typeof mood !== "string" ||
     !mood.trim() ||

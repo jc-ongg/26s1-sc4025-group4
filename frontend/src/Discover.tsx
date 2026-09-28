@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { api } from "./api";
 import type { Group, Restaurant } from "./types";
 import { Art, Empty, Status, date, time } from "./dining-ui";
+import { currentGroupStatus } from "./availability";
 type Result = {
   key: string;
   restaurant: Restaurant;
@@ -33,6 +34,13 @@ export function Discover() {
     [notice, setNotice] = useState(""),
     [undo, setUndo] = useState<Undo | null>(null);
   const pointer = useRef<{ x: number; y: number } | null>(null);
+  function updatePreferences(change: () => void) {
+    change();
+    setResults(null);
+    setUndo(null);
+    setNotice("");
+    setError("");
+  }
   async function search(e?: FormEvent) {
     e?.preventDefault();
     setBusy(true);
@@ -41,12 +49,11 @@ export function Discover() {
     setNotice("");
     setResults(null);
     try {
-      const data = await api<{ results: Result[] }>("/discovery/search", {
-        mood,
-        mode,
-        area: area.trim(),
-        radius,
-      });
+      const data = await api<{ results: Result[] }>(
+        "/discovery/search",
+        { mood, mode, area: area.trim(), radius },
+        { timeoutMs: 120_000 },
+      );
       setResults(data.results);
     } catch (e) {
       setError((e as Error).message);
@@ -166,16 +173,7 @@ export function Discover() {
                   <article className="card" key={s.key}>
                     <Art restaurant={s.restaurant} />
                     <div className="card-body">
-                      {s.group && (
-                        <Status
-                          value={
-                            s.group.slot.startsAt <= new Date().toISOString() &&
-                            ["OPEN", "FULL"].includes(s.group.status)
-                              ? "EXPIRED"
-                              : s.group.status
-                          }
-                        />
-                      )}
+                      {s.group && <Status value={currentGroupStatus(s.group)} />}
                       <h3>{s.group?.title ?? s.restaurant.name}</h3>
                       <p>{s.group ? s.restaurant.name : s.restaurant.area}</p>
                       {s.group && (
@@ -227,8 +225,9 @@ export function Discover() {
                   rows={4}
                   maxLength={400}
                   required
+                  disabled={busy}
                   value={mood}
-                  onChange={(e) => setMood(e.target.value)}
+                  onChange={(e) => updatePreferences(() => setMood(e.target.value))}
                   placeholder="Something spicy, shared dishes and a lively group"
                 />
                 <div className="mode-tabs" role="group" aria-label="Help me find">
@@ -239,9 +238,12 @@ export function Discover() {
                     <button
                       key={value}
                       type="button"
+                      disabled={busy}
                       className={mode === value ? "selected" : ""}
                       aria-pressed={mode === value}
-                      onClick={() => setMode(value)}
+                      onClick={() => {
+                        if (mode !== value) updatePreferences(() => setMode(value));
+                      }}
                     >
                       {label}
                     </button>
@@ -253,8 +255,9 @@ export function Discover() {
                 <input
                   id="discovery-area"
                   value={area}
+                  disabled={busy}
                   maxLength={120}
-                  onChange={(e) => setArea(e.target.value)}
+                  onChange={(e) => updatePreferences(() => setArea(e.target.value))}
                   placeholder="Neighbourhood or restaurant name"
                 />
                 {area.trim() && (
@@ -266,7 +269,10 @@ export function Discover() {
                       min="1"
                       max="30"
                       value={radius}
-                      onChange={(e) => setRadius(Number(e.target.value))}
+                      disabled={busy}
+                      onChange={(e) =>
+                        updatePreferences(() => setRadius(Number(e.target.value)))
+                      }
                     />
                   </>
                 )}
@@ -301,6 +307,12 @@ export function Discover() {
                       }
                     }}
                     onPointerDown={(e) => {
+                      if (
+                        !e.isPrimary ||
+                        e.button !== 0 ||
+                        (e.target as Element).closest("a, button")
+                      )
+                        return;
                       pointer.current = { x: e.clientX, y: e.clientY };
                     }}
                     onPointerCancel={() => {
@@ -385,7 +397,11 @@ export function Discover() {
               ) : (
                 <div className="empty discovery-welcome">
                   <h2>Your matches</h2>
-                  <p>Enter your dining preferences to search.</p>
+                  <p>
+                    {mood.trim()
+                      ? "Select Find matches to search."
+                      : "Enter your dining preferences to search."}
+                  </p>
                 </div>
               )}
               {notice && (

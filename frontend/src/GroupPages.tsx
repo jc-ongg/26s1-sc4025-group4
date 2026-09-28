@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Group, User } from "./types";
+import { currentGroupStatus, hasStarted } from "./availability";
 import {
   Art,
   Empty,
@@ -67,7 +68,10 @@ export function GroupDetail({
   const g = data?.group,
     host = g?.hostId === user.id,
     member = g?.members.some((m) => m.userId === user.id);
-  const pending = g?.status === "OPEN" || g?.status === "FULL";
+  const status = g && currentGroupStatus(g);
+  const pending = status === "OPEN" || status === "FULL";
+  const canCancel =
+    g && host && !hasStarted(g.slot.startsAt) && (pending || status === "CONFIRMED");
   const canConfirm = !!g && pending && g.members.length >= g.slot.minimumPartySize;
   const perform = (action: string, message: string) =>
     act(`/groups/${id}/${action}`, {}, message);
@@ -83,7 +87,7 @@ export function GroupDetail({
               <div>
                 <h1>{g.title}</h1>
                 <div className="row start">
-                  <Status value={g.status} />
+                  <Status value={status!} />
                   <span className="small muted">Hosted by {g.host.name}</span>
                 </div>
               </div>
@@ -96,7 +100,6 @@ export function GroupDetail({
                 <div className="group-restaurant">
                   <Art restaurant={g.slot.restaurant} />
                   <div>
-                    <p className="eyebrow">THE MEETING PLACE</p>
                     <h2>{g.slot.restaurant.name}</h2>
                     <p>
                       {g.slot.restaurant.cuisine} · {g.slot.restaurant.area}
@@ -120,10 +123,12 @@ export function GroupDetail({
                     <span>Minimum {g.slot.minimumPartySize} diners to confirm</span>
                   </div>
                 </div>
-                <h2>A note from your host</h2>
-                <p className="group-note">
-                  {g.description || "Come along for a relaxed meal and some new company."}
-                </p>
+                {g.description && (
+                  <>
+                    <h2>Host's note</h2>
+                    <p className="group-note">{g.description}</p>
+                  </>
+                )}
                 <div className="section-heading">
                   <h2>Who’s joining</h2>
                   <span className="muted small">{g.members.length} diners</span>
@@ -152,18 +157,18 @@ export function GroupDetail({
               </section>
               <aside className="panel action-panel">
                 <h2>
-                  {g.status === "CONFIRMED"
-                    ? "You have a plan."
-                    : g.status === "CANCELLED" || g.status === "EXPIRED"
-                      ? "This table is closed."
+                  {status === "CONFIRMED"
+                    ? "Reservation confirmed"
+                    : status === "CANCELLED" || status === "EXPIRED"
+                      ? "Party closed"
                       : host
-                        ? "Your table, your call."
+                        ? "Manage party"
                         : member
-                          ? "You’re at the table."
-                          : "Pull up a chair."}
+                          ? "You’ve joined this party"
+                          : "Join party"}
                 </h2>
                 <p>
-                  {g.status === "CONFIRMED"
+                  {status === "CONFIRMED"
                     ? "The host has confirmed this reservation. Joining and leaving are now closed."
                     : pending
                       ? `The host can confirm once ${g.slot.minimumPartySize} diners have joined. Until then, members can leave freely.`
@@ -224,8 +229,7 @@ export function GroupDetail({
                     View my bookings →
                   </a>
                 )}
-                {host &&
-                  (pending || g.status === "CONFIRMED") &&
+                {canCancel &&
                   (cancelPrompt ? (
                     <div className="cancel-prompt">
                       <p>
@@ -236,11 +240,11 @@ export function GroupDetail({
                         className="danger"
                         disabled={busy}
                         onClick={async () => {
-                          await perform(
+                          const cancelled = await perform(
                             "cancel",
                             "Group cancelled. The table is available again.",
                           );
-                          setCancelPrompt(false);
+                          if (cancelled) setCancelPrompt(false);
                         }}
                       >
                         Yes, cancel table
@@ -262,9 +266,6 @@ export function GroupDetail({
                       Cancel group
                     </button>
                   ))}
-                <div className="fine-note">
-                  Your party details stay up to date as diners join.
-                </div>
               </aside>
             </div>
           </>

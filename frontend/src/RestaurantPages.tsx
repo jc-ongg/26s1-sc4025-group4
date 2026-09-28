@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { TopPicks } from "./TopPicks";
 import { RestaurantMap } from "./RestaurantMap";
 import type { Restaurant, Group } from "./types";
+import { availableSlots, hasStarted } from "./availability";
 import { Art, Empty, State, date, time, useResource, type Actions } from "./dining-ui";
 
 export function Restaurants({ revision }: Actions) {
@@ -20,7 +21,9 @@ export function Restaurants({ revision }: Actions) {
   const filtered = data?.restaurants.filter(
     (r) =>
       (cuisine === "All" || r.cuisine === cuisine) &&
-      `${r.name} ${r.area} ${r.cuisine}`.toLowerCase().includes(search.toLowerCase()),
+      `${r.name} ${r.area} ${r.cuisine}`
+        .toLowerCase()
+        .includes(search.trim().toLowerCase()),
   );
   return (
     <>
@@ -81,30 +84,30 @@ export function Restaurants({ revision }: Actions) {
             <RestaurantMap restaurants={filtered ?? []} groups={groups} />
           ) : (
             <div className="grid">
-              {filtered?.map((r) => (
-                <a className="card" href={`#/restaurants/${r.id}`} key={r.id}>
-                  <Art restaurant={r} />
-                  <div className="card-body">
-                    <div className="row">
-                      <span className="eyebrow">{r.cuisine}</span>
-                      <span className="small muted">{r.price}</span>
+              {filtered?.map((r) => {
+                const slots = availableSlots(r);
+                return (
+                  <a className="card" href={`#/restaurants/${r.id}`} key={r.id}>
+                    <Art restaurant={r} />
+                    <div className="card-body">
+                      <div className="row">
+                        <span className="eyebrow">{r.cuisine}</span>
+                        <span className="small muted">{r.price}</span>
+                      </div>
+                      <h3>{r.name}</h3>
+                      <p className="small">{r.area}</p>
+                      <div className="row">
+                        <span className="discount">
+                          {slots.length
+                            ? `Up to ${Math.max(...slots.map((s) => s.discount))}% off`
+                            : "No available times"}
+                        </span>
+                        <span className="small">View restaurant →</span>
+                      </div>
                     </div>
-                    <h3>{r.name}</h3>
-                    <p className="small">{r.area}</p>
-                    <div className="row">
-                      <span className="discount">
-                        Up to{" "}
-                        {Math.max(
-                          0,
-                          ...r.slots.filter((s) => !s.allocation).map((s) => s.discount),
-                        )}
-                        % off
-                      </span>
-                      <span className="small">View restaurant →</span>
-                    </div>
-                  </div>
-                </a>
-              ))}
+                  </a>
+                );
+              })}
             </div>
           )}
           {filtered?.length === 0 && (
@@ -131,12 +134,12 @@ export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: st
     [title, setTitle] = useState(""),
     [description, setDescription] = useState("");
   const r = data?.restaurant,
-    slot = r?.slots.find((s) => s.id === selected && !s.allocation);
+    slot = r && availableSlots(r).find((s) => s.id === selected);
   const days = Array.from(new Set(r?.slots.map((s) => date(s.startsAt)) ?? []));
   const chosenDay = days.includes(selectedDay) ? selectedDay : days[0];
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!slot) return;
+    if (!slot || busy || (mode === "group" && !title.trim())) return;
     if (mode === "group")
       await act<{ group: Group }>(
         "/groups",
@@ -188,7 +191,7 @@ export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: st
                 )}
                 <p>{r.signatureDishes?.join(" · ")}</p>
                 <h2>Available times</h2>
-                <p>All times are Singapore time. Each slot represents one table.</p>
+                <p className="small">Singapore time</p>
                 <label className="date-label" htmlFor="dining-date">
                   Dining date
                 </label>
@@ -220,7 +223,12 @@ export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: st
                               <button
                                 key={s.id}
                                 className={`slot ${selected === s.id ? "selected" : ""}`}
-                                disabled={!r.active || !!s.allocation || busy}
+                                disabled={
+                                  !r.active ||
+                                  !!s.allocation ||
+                                  hasStarted(s.startsAt) ||
+                                  busy
+                                }
                                 aria-pressed={selected === s.id}
                                 onClick={() => {
                                   setSelected(s.id);
@@ -229,7 +237,11 @@ export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: st
                               >
                                 <strong>{time(s.startsAt)}</strong>
                                 <span>
-                                  {s.allocation ? "Reserved" : `${s.discount}% off`}
+                                  {hasStarted(s.startsAt)
+                                    ? "Unavailable"
+                                    : s.allocation
+                                      ? "Reserved"
+                                      : `${s.discount}% off`}
                                 </span>
                               </button>
                             ))}
@@ -249,6 +261,7 @@ export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: st
                 <div className="mode-tabs">
                   <button
                     type="button"
+                    disabled={busy}
                     className={mode === "booking" ? "selected" : ""}
                     aria-pressed={mode === "booking"}
                     onClick={() => setMode("booking")}
@@ -257,6 +270,7 @@ export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: st
                   </button>
                   <button
                     type="button"
+                    disabled={busy}
                     className={mode === "group" ? "selected" : ""}
                     aria-pressed={mode === "group"}
                     onClick={() => setMode("group")}
@@ -332,7 +346,7 @@ export function RestaurantDetail({ id, revision, busy, act }: Actions & { id: st
                       />
                     </>
                   )}
-                  <button disabled={!slot || busy}>
+                  <button disabled={!slot || busy || (mode === "group" && !title.trim())}>
                     {busy
                       ? "Saving…"
                       : mode === "group"

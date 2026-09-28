@@ -91,6 +91,11 @@ test("local semantic ranking, availability, radius, shortlist isolation and undo
       mode: "restaurants",
     });
     assert.equal(restaurants.results[0].restaurant.id, "il-cielo");
+    const defaultMode = await api("/discovery/search", {
+      mood: "Italian pasta and pizza",
+    });
+    assert.equal(defaultMode.results[0].restaurant.id, "il-cielo");
+    assert.ok(defaultMode.results.every((result: { group?: unknown }) => !result.group));
     const key = restaurants.results[0].key;
     assert.equal(
       (await api("/discovery/decision", { key, decision: "SAVE" })).previous,

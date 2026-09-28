@@ -156,7 +156,9 @@ export function RestaurantMap({
         m.setView([r.latitude!, r.longitude!], Math.max(m.getZoom(), 15));
         if (window.matchMedia("(max-width: 800px)").matches)
           details.current?.scrollIntoView({
-            behavior: "smooth",
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+              ? "instant"
+              : "smooth",
             block: "start",
           });
       });
@@ -173,7 +175,7 @@ export function RestaurantMap({
     <div className="map-layout">
       <div>
         <div className="map-tools">
-          <span className="small">Find your next meal</span>
+          <span className="small">Restaurants</span>
           <button
             className="text-button"
             onClick={() => {
@@ -258,9 +260,7 @@ export function RestaurantMap({
           </>
         ) : (
           <>
-            <p className="eyebrow">FIND A TABLE NEAR YOU</p>
-            <h3>Good food, nearby.</h3>
-            <p>Select a restaurant pin to explore and book a table.</p>
+            <h3>Select a restaurant</h3>
             <p className="small">
               Each pin marks a restaurant. Hover or focus to see its name; select it to
               explore. You can also use the restaurant list above.

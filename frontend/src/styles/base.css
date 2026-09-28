@@ -929,9 +929,7 @@ footer {
   margin-top: 8px;
 }
 .action-panel h2 {
-  font:
-    26px Georgia,
-    serif;
+  font-size: 26px;
 }
 .action-panel p {
   font-size: 13px;

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Group, Booking } from "./types";
+import { currentGroupStatus } from "./availability";
 import {
   Art,
   Empty,
@@ -17,10 +18,12 @@ function ListPages({
   page,
   total,
   onChange,
+  label,
 }: {
   page: number;
   total: number;
   onChange: (page: number) => void;
+  label: string;
 }) {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   return (
@@ -32,7 +35,7 @@ function ListPages({
         <div>
           <button
             className="text-button"
-            aria-label="Previous page"
+            aria-label={`Previous ${label.toLowerCase()} page`}
             disabled={page === 0}
             onClick={() => onChange(page - 1)}
           >
@@ -40,7 +43,7 @@ function ListPages({
           </button>
           <button
             className="text-button"
-            aria-label="Next page"
+            aria-label={`Next ${label.toLowerCase()} page`}
             disabled={page + 1 >= pages}
             onClick={() => onChange(page + 1)}
           >
@@ -206,6 +209,7 @@ export function Bookings({ revision, act, busy }: Actions) {
               />
             )}
             <ListPages
+              label="Reservations"
               page={reservationPage}
               total={bookings.length}
               onChange={setBookingPage}
@@ -228,7 +232,7 @@ export function Bookings({ revision, act, busy }: Actions) {
                     <div className="plan-content">
                       <div className="row">
                         <span className="small muted">Eatogether</span>
-                        <Status value={g.status} />
+                        <Status value={currentGroupStatus(g, now)} />
                       </div>
                       <a className="plan-title" href={`#/groups/${g.id}`} title={g.title}>
                         {g.title}
@@ -255,7 +259,12 @@ export function Bookings({ revision, act, busy }: Actions) {
                 text="Find an Eatogether party or try another filter."
               />
             )}
-            <ListPages page={groupPage} total={groups.length} onChange={setPartyPage} />
+            <ListPages
+              label="Eatogether"
+              page={groupPage}
+              total={groups.length}
+              onChange={setPartyPage}
+            />
           </State>
         </section>
       </div>
