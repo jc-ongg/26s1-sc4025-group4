@@ -643,11 +643,12 @@ h2 {
   top: 110px;
 }
 
-/* Only major, non-overlapping sections snap; cards and live lists scroll normally. */
+/* Include the page start so loading a later section never snaps past its heading. */
 html {
   scroll-snap-type: y proximity;
   scroll-padding-top: 105px;
 }
+.app-main,
 .top-picks,
 .restaurant-browse,
 .party-results,

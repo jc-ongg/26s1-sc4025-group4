@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { api } from "./api";
 import type { User } from "./types";
 import { Empty, type Actions } from "./dining-ui";
@@ -24,11 +24,14 @@ export function DiningApp({
     const change = () => {
       setRoute(window.location.hash.slice(1) || "/restaurants");
       setError("");
-      window.scrollTo(0, 0);
     };
     window.addEventListener("hashchange", change);
     return () => window.removeEventListener("hashchange", change);
   }, []);
+  useLayoutEffect(() => {
+    // Reset after the new page mounts so its layout owns the scroll position.
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [route]);
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => setMessage(""), 6000);
@@ -52,9 +55,11 @@ export function DiningApp({
         if (destination)
           window.location.hash =
             typeof destination === "function" ? destination(result) : destination;
+        return true;
       } catch (e) {
         setError((e as Error).message);
         setRevision((n) => n + 1);
+        return false;
       } finally {
         setBusy(false);
       }
@@ -69,7 +74,6 @@ export function DiningApp({
         <header className="app-header">
           <a className="brand" href="#/restaurants">
             <img src="/images/brand/eatigo.png" alt="Eatigo" />
-            <span>good food, together</span>
           </a>
           <nav aria-label="Main navigation">
             {[

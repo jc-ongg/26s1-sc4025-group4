@@ -22,7 +22,7 @@ export type Actions = {
     body: unknown,
     message: string,
     destination?: string | ((data: T) => string),
-  ) => Promise<void>;
+  ) => Promise<boolean>;
 };
 // Polling keeps separate diners in sync; the in-flight guard prevents overlapping requests.
 export function useResource<T>(path: string, revision: number) {
@@ -32,6 +32,7 @@ export function useResource<T>(path: string, revision: number) {
   useEffect(() => {
     let active = true,
       fetching = false;
+    const controller = new AbortController();
     // Keep current content visible when an action refreshes the same resource.
     if (resourcePath.current !== path) {
       setData(null);
@@ -39,10 +40,14 @@ export function useResource<T>(path: string, revision: number) {
     }
     setError("");
     async function refresh() {
-      if (fetching) return;
+      if (fetching || document.hidden) return;
+      if (!navigator.onLine) {
+        setError("You’re offline. Reconnect to refresh this page.");
+        return;
+      }
       fetching = true;
       try {
-        const result = await api<T>(path);
+        const result = await api<T>(path, undefined, { signal: controller.signal });
         if (active) {
           setData(result);
           setError("");
@@ -55,9 +60,17 @@ export function useResource<T>(path: string, revision: number) {
     }
     void refresh();
     const interval = window.setInterval(refresh, 5000);
+    // Resume immediately after returning to the tab or reconnecting to the host.
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("online", refresh);
+    window.addEventListener("offline", refresh);
     return () => {
       active = false;
+      controller.abort();
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("online", refresh);
+      window.removeEventListener("offline", refresh);
     };
   }, [path, revision]);
   return { data, error };
