@@ -42,7 +42,7 @@ docker compose down
 
 `docker compose down` preserves database data. Startup applies migrations and inserts missing demo accounts without overwriting existing data.
 
-Integration checks require the running stack. If Windows restricts the local test runner, run unit tests with `docker compose exec -T backend npm test`.
+`npm test` runs both credential tests and frontend request/availability tests. `npm run test:web` runs only the frontend suite. Integration checks require the running stack. If Windows restricts the local test runner, credential tests can also run with `docker compose exec -T backend npm test`; this does not run the host-side frontend suite.
 
 For frontend development, `npm run dev --workspace frontend` starts port 3000 and proxies /api to localhost:4000. Run the backend against a reachable PostgreSQL database with DATABASE_URL configured. The default Compose database intentionally has no host port.
 

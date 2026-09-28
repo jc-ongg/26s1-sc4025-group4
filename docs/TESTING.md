@@ -23,18 +23,23 @@ The root integration script exercises authentication through port 3000. Backend 
 | Suite                     | Coverage                                                                                                                                                                                                 |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Authentication unit tests | Credential normalization, missing and malformed inputs                                                                                                                                                   |
+| Frontend unit tests       | Proxy errors, malformed responses, request cancellation, timeouts without duplicate writes, and available-slot/party start-time boundaries                                                               |
 | HTTP authentication       | Readiness, safe user fields, independent sessions, logout revocation                                                                                                                                     |
 | Dining integration        | Input validation, host authorization, confirmation below capacity, membership freeze, concurrent last-seat joins, competing ordinary/group reservations, expiry, personal deletion of cancelled bookings |
 | Discovery integration     | Real-model semantic rankings, radius filtering, available seats, per-account decisions, save/skip/undo                                                                                                   |
 
 ## Browser verification
 
-Check restaurant browsing and photo-map selection at desktop and phone widths. Exercise Eatogether → For you, swipe/save/undo, and the shortlist. My bookings should show two compact, independently paginated lists, with Upcoming/History filters and personal deletion for cancelled bookings.
+Check restaurant browsing and photo-map selection at desktop and phone widths. Exercise Eatogether → For you, swipe/save/undo, and the shortlist. Changing search mode or preferences must clear the previous results. My bookings should show two compact, independently paginated lists, with Upcoming/History filters and personal deletion for cancelled bookings. Page headings should remain visible after navigating between tabs and loading detail pages.
+
+For connection recovery, disconnect and reconnect the browser's network while a list is open. Existing content should stay visible with a readable error; polling resumes after reconnecting or returning to a visible tab. If a write times out, refresh to check whether it completed before retrying. Writes are never automatically retried.
 
 Use separate browser profiles or devices for the two-account flow in [DEMO_WALKTHROUGH.md](DEMO_WALKTHROUGH.md). Verify that a second diner joining updates the host's screen within the polling interval, and that host confirmation creates one shared booking.
 
 ## Recorded coverage
 
 On 25 September 2026, both Docker builds, the credential unit tests, HTTP authentication checks, all six dining integration tests and the discovery integration test passed. Desktop and phone-sized browser checks covered navigation, map controls, recommendation decisions, pagination, filters and overflow. A separate model invocation with Docker networking disabled returned a 384-dimensional embedding.
+
+On 28 September 2026, both Docker builds, TypeScript checks, the two credential tests, seven frontend tests, HTTP authentication checks, all six dining integration tests and the discovery integration test passed. Discovery coverage now also verifies restaurant search as the API default. Browser checks covered clearing results when switching search mode, save/shortlist/undo, past-party action visibility, and navigation at desktop and phone widths.
 
 Physical second-device connectivity depends on the network and has not been independently verified. These checks establish engineering behaviour on the demonstration dataset, not usability findings or broad recommendation quality. Participant testing and a held-out semantic-versus-keyword benchmark remain separate evaluation work.
