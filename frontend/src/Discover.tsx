@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { api } from "./api";
 import type { Group, Restaurant } from "./types";
 import { Art, Empty, Status, date, time } from "./dining-ui";
-import { currentGroupStatus } from "./availability";
+import { currentGroupStatus, dinerCount } from "./availability";
 type Result = {
   key: string;
   restaurant: Restaurant;
@@ -179,7 +179,7 @@ export function Discover() {
                       {s.group && (
                         <p className="small">
                           {date(s.group.slot.startsAt)} · {time(s.group.slot.startsAt)} ·{" "}
-                          {s.group.members.length}/{s.group.capacity} joined
+                          {dinerCount(s.group)}/{s.group.capacity} joined
                         </p>
                       )}
                       <div className="row">
@@ -187,7 +187,7 @@ export function Discover() {
                           className="button dark"
                           href={`#/${s.group ? "groups/" + s.group.id : "restaurants/" + s.restaurant.id}`}
                         >
-                          {s.group ? "View party" : "View restaurant"} →
+                          {s.group ? "View Event" : "View restaurant"} →
                         </a>
                         <button
                           className="text-button"
@@ -233,7 +233,7 @@ export function Discover() {
                 <div className="mode-tabs" role="group" aria-label="Help me find">
                   {[
                     ["restaurants", "Restaurant"],
-                    ["groups", "Eatogether"],
+                    ["groups", "EatTogether"],
                   ].map(([value, label]) => (
                     <button
                       key={value}
@@ -356,8 +356,8 @@ export function Discover() {
                             {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
                           </strong>
                           <span>
-                            {g.capacity - g.members.length} seats left · {g.slot.discount}
-                            % off
+                            {g.capacity - dinerCount(g)} seats left · {g.slot.discount}%
+                            off
                           </span>
                         </div>
                       )}
@@ -365,7 +365,7 @@ export function Discover() {
                         className="text-button"
                         href={`#/${g ? "groups/" + g.id : "restaurants/" + r.id}`}
                       >
-                        {g ? "View party" : "View restaurant"} →
+                        {g ? "View Event" : "View restaurant"} →
                       </a>
                     </div>
                   </article>

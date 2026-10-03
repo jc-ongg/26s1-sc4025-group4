@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { availableSlots, currentGroupStatus, hasStarted } from "./availability";
+import {
+  availableSlots,
+  currentGroupStatus,
+  hasStarted,
+  dinerCount,
+  canJoinEvent,
+} from "./availability";
 import type { Restaurant, Slot } from "./types";
 
 const now = Date.parse("2026-09-28T04:00:00Z");
@@ -61,5 +67,31 @@ test("only unconfirmed parties become expired at their start time", () => {
       now,
     ),
     "OPEN",
+  );
+});
+
+test("Event availability counts diners across Parties and includes confirmed Events", () => {
+  const event = {
+    id: "event",
+    title: "",
+    description: "",
+    hostId: "u1",
+    host: { id: "u1", name: "Host" },
+    status: "CONFIRMED" as const,
+    capacity: 6,
+    booking: null,
+    slot: slot("future", "2026-09-29T04:00:00Z"),
+    members: [
+      { userId: "u1", partySize: 2, user: { id: "u1", name: "Host" } },
+      { userId: "u2", partySize: 2, user: { id: "u2", name: "Joiner" } },
+    ],
+  };
+  assert.equal(dinerCount(event), 4);
+  assert.equal(canJoinEvent(event, now), true);
+  assert.equal(canJoinEvent({ ...event, capacity: 4 }, now), false);
+  assert.equal(canJoinEvent({ ...event, status: "CANCELLED" }, now), false);
+  assert.equal(
+    canJoinEvent({ ...event, slot: slot("past", "2026-09-28T04:00:00Z") }, now),
+    false,
   );
 });

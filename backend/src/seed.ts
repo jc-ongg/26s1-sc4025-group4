@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { Prisma } from "@prisma/client";
 import { db } from "./db.js";
+import { syncEvent } from "./event-lifecycle.js";
 
 try {
   for (const name of ["Jacob", "Alice", "Bob", "Charlie"]) {
@@ -51,8 +52,8 @@ try {
             id: `${restaurant.id}-${daySG}-${time.replace(":", "")}`,
             restaurantId: restaurant.id,
             startsAt,
-            minimumPartySize: 2,
-            capacity: 4,
+            minimumPartySize: ["seorae", "yan-lai-ju"].includes(restaurant.id!) ? 4 : 2,
+            capacity: ["seorae", "yan-lai-ju"].includes(restaurant.id!) ? 6 : 4,
             discount,
           },
         });
@@ -145,6 +146,7 @@ try {
     });
     const host = accounts.find((user) => user.email === `${demo.host}@example.com`)!;
     await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "ReservationSlot" WHERE id = ${slot.id} FOR UPDATE`;
       await tx.groupDiningSession.create({
         data: {
           id,
@@ -152,16 +154,30 @@ try {
           title: demo.title,
           hostId: host.id,
           description: demo.description,
-          capacity: 4,
-          status: accounts.length === 4 ? "FULL" : "OPEN",
+          capacity: slot.capacity,
+          status: "OPEN",
           members: { create: accounts.map((user) => ({ userId: user.id })) },
         },
       });
       await tx.slotAllocation.create({
         data: { slotId: slot.id, groupId: id },
       });
+      await syncEvent(tx, id);
     });
   }
+  // Adopt the new lifecycle for future Events only. Past reservation history is unchanged.
+  const upcoming = await db.groupDiningSession.findMany({
+    where: {
+      status: { in: ["OPEN", "FULL", "CONFIRMED"] },
+      slot: { startsAt: { gt: new Date() } },
+    },
+    select: { id: true, slotId: true },
+  });
+  for (const event of upcoming)
+    await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "ReservationSlot" WHERE id = ${event.slotId} FOR UPDATE`;
+      await syncEvent(tx, event.id);
+    });
   console.log(
     "Demo accounts, restaurants, seven-day slots and social tables ready. Existing records preserved.",
   );

@@ -1,5 +1,13 @@
 import type { Group, Restaurant } from "./types";
 
+export const dinerCount = (group: Pick<Group, "members">) =>
+  group.members.reduce((total, party) => total + party.partySize, 0);
+
+export const canJoinEvent = (group: Group, now = Date.now()) =>
+  ["OPEN", "FULL", "CONFIRMED"].includes(group.status) &&
+  !hasStarted(group.slot.startsAt, now) &&
+  dinerCount(group) < group.capacity;
+
 export function hasStarted(startsAt: string, now = Date.now()) {
   return new Date(startsAt).getTime() <= now;
 }

@@ -20,7 +20,7 @@ async function request(path: string, user = "jacob", body?: unknown) {
     data: response.status === 204 ? null : await response.json(),
   };
 }
-async function slot() {
+async function slot(minimumPartySize = 2, capacity = 4) {
   const id = `test-${randomUUID()}`;
   slotIds.push(id);
   return db.reservationSlot.create({
@@ -28,8 +28,8 @@ async function slot() {
       id,
       restaurantId: "joya",
       startsAt: new Date(Date.now() + 30 * 86400000 + Math.random() * 86400000),
-      minimumPartySize: 2,
-      capacity: 4,
+      minimumPartySize,
+      capacity,
       discount: 40,
     },
   });
@@ -108,34 +108,46 @@ test("credentials are required and invalid group input cannot allocate a slot", 
   );
   assert.equal(await db.slotAllocation.count({ where: { slotId: s.id } }), 0);
 });
-test("host confirms below capacity after minimum; shared booking is immutable and idempotent", async () => {
+test("confirmation is automatic, reversible and preserves one shared booking", async () => {
   const g = await group();
-  assert.equal(g.members.length, 1);
   assert.equal((await request(`/groups/${g.id}/confirm`, "jacob", {})).status, 409);
   assert.equal((await request(`/groups/${g.id}/confirm`, "alice", {})).status, 403);
   assert.equal((await request(`/groups/${g.id}/cancel`, "alice", {})).status, 403);
-  assert.equal((await request(`/groups/${g.id}/leave`, "jacob", {})).status, 409);
-  await request(`/groups/${g.id}/join`, "alice", {});
+  const joined = await request(`/groups/${g.id}/join`, "alice", {});
+  assert.equal(joined.status, 200);
+  assert.equal(joined.data.group.status, "CONFIRMED");
+  const id = joined.data.group.booking.id;
   await request(`/groups/${g.id}/join`, "alice", {});
   assert.equal((await request(`/groups/${g.id}`)).data.group.members.length, 2);
-  const confirmed = await request(`/groups/${g.id}/confirm`, "jacob", {});
-  assert.equal(confirmed.status, 200);
-  assert.equal(confirmed.data.group.status, "CONFIRMED");
-  assert.equal(confirmed.data.group.booking.partySize, 2);
+  const extra = await request(`/groups/${g.id}/join`, "bob", {});
+  assert.equal(extra.status, 200);
+  assert.equal(extra.data.group.booking.partySize, 3);
+  await request(`/groups/${g.id}/leave`, "alice", {});
+  const short = await request(`/groups/${g.id}/leave`, "bob", {});
+  assert.equal(short.data.group.status, "OPEN");
+  assert.equal(short.data.group.booking.status, "PENDING");
+  assert.equal((await request(`/bookings/${id}/delete`, "jacob", {})).status, 409);
+  assert.ok(
+    !(await request("/me/bookings")).data.bookings.some(
+      (b: { id: string }) => b.id === id,
+    ),
+  );
+  const restored = await request(`/groups/${g.id}/join`, "alice", {});
+  assert.equal(restored.data.group.booking.id, id);
+  assert.equal(restored.data.group.booking.status, "CONFIRMED");
   const repeat = await request(`/groups/${g.id}/confirm`, "jacob", {});
-  assert.equal(repeat.data.group.booking.id, confirmed.data.group.booking.id);
-  assert.equal((await request(`/groups/${g.id}/join`, "bob", {})).status, 409);
-  assert.equal((await request(`/groups/${g.id}/leave`, "alice", {})).status, 409);
+  assert.equal(repeat.data.group.booking.id, id);
+  assert.equal(await db.booking.count({ where: { groupId: g.id } }), 1);
   assert.ok(
     (await request("/me/bookings", "alice")).data.bookings.some(
-      (b: { id: string }) => b.id === confirmed.data.group.booking.id,
+      (b: { id: string }) => b.id === id,
     ),
   );
   assert.equal(
     (await request("/bookings", "bob", { slotId: g.slotId, partySize: 2 })).status,
     409,
   );
-  assert.equal((await request(`/groups/${g.id}/cancel`, "jacob", {})).status, 200);
+  await request(`/groups/${g.id}/cancel`, "jacob", {});
   assert.equal((await request(`/groups/${g.id}`)).data.group.booking.status, "CANCELLED");
   assert.equal(await db.slotAllocation.count({ where: { slotId: g.slotId } }), 0);
 });
@@ -146,7 +158,7 @@ test("simultaneous last-seat joins never overfill; leaving a full table reopens 
   );
   assert.deepEqual(results.map((r) => r.status).sort(), [200, 409, 409]);
   const full = (await request(`/groups/${g.id}`)).data.group;
-  assert.equal(full.status, "FULL");
+  assert.equal(full.status, "CONFIRMED");
   assert.equal(full.members.length, 2);
   const winner = ["alice", "bob", "charlie"][results.findIndex((r) => r.status === 200)];
   assert.equal((await request(`/groups/${g.id}/leave`, winner, {})).status, 200);
@@ -180,12 +192,16 @@ test("competing normal booking and group creation share one exclusive slot alloc
 });
 test("started unconfirmed groups expire and release their inventory", async () => {
   const g = await group();
+  await request(`/groups/${g.id}/join`, "alice", {});
+  await request(`/groups/${g.id}/leave`, "alice", {});
+  assert.equal((await request(`/groups/${g.id}`)).data.group.booking.status, "PENDING");
   await db.reservationSlot.update({
     where: { id: g.slotId },
     data: { startsAt: new Date(Date.now() - 60000) },
   });
   const result = await request(`/groups/${g.id}`);
   assert.equal(result.data.group.status, "EXPIRED");
+  assert.equal(result.data.group.booking.status, "CANCELLED");
   assert.equal(await db.slotAllocation.count({ where: { slotId: g.slotId } }), 0);
   assert.equal((await request(`/groups/${g.id}/join`, "alice", {})).status, 409);
 });
@@ -229,4 +245,129 @@ test("cancelled booking deletion is personal, persistent and rejects active or u
     "CANCELLED",
   );
   assert.equal(await db.slotAllocation.count({ where: { slotId: g.slotId } }), 0);
+});
+
+test("Party sizes determine qualification, resizing and concurrent remaining capacity", async () => {
+  const s = await slot(4, 6);
+  for (const partySize of [0, 4, 1.5, "2", null]) {
+    assert.equal(
+      (
+        await request("/groups", "jacob", {
+          slotId: s.id,
+          title: "Party test",
+          partySize,
+        })
+      ).status,
+      400,
+    );
+  }
+  const created = await request("/groups", "jacob", {
+    slotId: s.id,
+    title: "Party test",
+    partySize: 2,
+  });
+  assert.equal(created.status, 201);
+  const g = created.data.group;
+  assert.equal(g.members[0].partySize, 2);
+  assert.equal(g.status, "OPEN");
+  for (const partySize of [0, 4, 7, 1.5, "2", null]) {
+    assert.equal(
+      (await request(`/groups/${g.id}/join`, "alice", { partySize })).status,
+      400,
+    );
+  }
+  assert.equal(await db.groupDiningMember.count({ where: { groupId: g.id } }), 1);
+  const joined = await request(`/groups/${g.id}/join`, "alice", { partySize: 2 });
+  assert.equal(joined.data.group.booking.partySize, 4);
+  const duplicate = await request(`/groups/${g.id}/join`, "alice", { partySize: 3 });
+  assert.equal(duplicate.status, 200);
+  assert.equal(duplicate.data.group.booking.partySize, 4);
+  const bookingId = joined.data.group.booking.id;
+  const results = await Promise.all(
+    ["bob", "charlie"].map((user) =>
+      request(`/groups/${g.id}/join`, user, { partySize: 2 }),
+    ),
+  );
+  assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
+  const full = (await request(`/groups/${g.id}`)).data.group;
+  assert.equal(
+    full.members.reduce((n: number, p: { partySize: number }) => n + p.partySize, 0),
+    6,
+  );
+  assert.equal(full.booking.partySize, 6);
+  assert.equal(
+    (await request(`/groups/${g.id}/resize`, "alice", { partySize: 3 })).status,
+    409,
+  );
+  const winner = results[0].status === 200 ? "bob" : "charlie";
+  await request(`/groups/${g.id}/leave`, winner, {});
+  const short = await request(`/groups/${g.id}/resize`, "alice", { partySize: 1 });
+  assert.equal(short.data.group.status, "OPEN");
+  assert.equal(short.data.group.booking.status, "PENDING");
+  const restored = await request(`/groups/${g.id}/resize`, "jacob", { partySize: 3 });
+  assert.equal(restored.data.group.status, "CONFIRMED");
+  assert.equal(restored.data.group.booking.id, bookingId);
+  assert.equal(
+    (await request(`/groups/${g.id}/resize`, winner, { partySize: 1 })).status,
+    403,
+  );
+  const details = (await request(`/restaurants/${s.restaurantId}`)).data;
+  assert.ok(details.groups.some((event: { id: string }) => event.id === g.id));
+});
+
+test("Host departure hands over to the earliest Joining Party; an empty Event releases the table", async () => {
+  const g = await group();
+  await request(`/groups/${g.id}/join`, "alice", {});
+  await request(`/groups/${g.id}/join`, "bob", {});
+  const departed = await request(`/groups/${g.id}/leave`, "jacob", {});
+  assert.equal(departed.status, 200);
+  const alice = await db.user.findUniqueOrThrow({
+    where: { email: "alice@example.com" },
+  });
+  assert.equal(departed.data.group.hostId, alice.id);
+  assert.equal(departed.data.group.booking.userId, alice.id);
+  assert.equal(departed.data.group.booking.partySize, 2);
+  assert.equal((await request(`/groups/${g.id}/cancel`, "jacob", {})).status, 403);
+  assert.ok(
+    !(await request("/me/bookings", "jacob")).data.bookings.some(
+      (b: { id: string }) => b.id === departed.data.group.booking.id,
+    ),
+  );
+  assert.ok(
+    !(await request("/me/groups", "jacob")).data.groups.some(
+      (event: { id: string }) => event.id === g.id,
+    ),
+  );
+  const handed = await request(`/groups/${g.id}/leave`, "alice", {});
+  assert.equal(handed.data.group.host.name, "Bob");
+  assert.equal(handed.data.group.status, "OPEN");
+  const empty = await request(`/groups/${g.id}/leave`, "bob", {});
+  assert.equal(empty.data.group.status, "CANCELLED");
+  assert.equal(empty.data.group.members.length, 0);
+  assert.equal(empty.data.group.booking.status, "CANCELLED");
+  assert.equal(await db.slotAllocation.count({ where: { slotId: g.slotId } }), 0);
+  assert.equal(
+    (await request("/bookings", "charlie", { slotId: g.slotId, partySize: 2 })).status,
+    201,
+  );
+});
+
+test("started confirmed Events preserve bookings and reject membership changes", async () => {
+  const g = await group();
+  const joined = await request(`/groups/${g.id}/join`, "alice", {});
+  await db.reservationSlot.update({
+    where: { id: g.slotId },
+    data: { startsAt: new Date(Date.now() - 60000) },
+  });
+  for (const [action, user, body] of [
+    ["join", "bob", {}],
+    ["leave", "alice", {}],
+    ["resize", "jacob", { partySize: 2 }],
+  ] as const) {
+    assert.equal((await request(`/groups/${g.id}/${action}`, user, body)).status, 409);
+  }
+  const history = (await request(`/groups/${g.id}`)).data.group;
+  assert.equal(history.status, "CONFIRMED");
+  assert.equal(history.booking.id, joined.data.group.booking.id);
+  assert.equal(history.booking.partySize, 2);
 });

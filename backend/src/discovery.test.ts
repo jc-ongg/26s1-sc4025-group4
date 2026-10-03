@@ -50,8 +50,12 @@ test("local semantic ranking, availability, radius, shortlist isolation and undo
       assert.equal(result.results[0].restaurant.id, expected);
       assert.ok(
         result.results.every(
-          (r: { group: { status: string; members: unknown[]; capacity: number } }) =>
-            r.group.status === "OPEN" && r.group.members.length < r.group.capacity,
+          (r: {
+            group: { status: string; members: { partySize: number }[]; capacity: number };
+          }) =>
+            ["OPEN", "CONFIRMED"].includes(r.group.status) &&
+            r.group.members.reduce((total, party) => total + party.partySize, 0) <
+              r.group.capacity,
         ),
       );
       console.log(`Semantic top-1: ${mood} -> ${expected}`);

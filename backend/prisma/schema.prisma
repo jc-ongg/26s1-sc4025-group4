@@ -103,16 +103,18 @@ model DiscoveryDecision {
 }
 
 model GroupDiningMember {
-  groupId  String
-  userId   String
-  joinedAt DateTime           @default(now())
-  group    GroupDiningSession @relation(fields: [groupId], references: [id])
-  user     User               @relation(fields: [userId], references: [id])
+  groupId   String
+  userId    String
+  partySize Int                @default(1)
+  joinedAt  DateTime           @default(now())
+  group     GroupDiningSession @relation(fields: [groupId], references: [id])
+  user      User               @relation(fields: [userId], references: [id])
 
   @@id([groupId, userId])
 }
 
 enum BookingStatus {
+  PENDING
   CONFIRMED
   CANCELLED
 }

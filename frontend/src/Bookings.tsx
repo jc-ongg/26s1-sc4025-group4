@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Group, Booking } from "./types";
-import { currentGroupStatus } from "./availability";
+import { currentGroupStatus, dinerCount } from "./availability";
 import {
   Art,
   Empty,
@@ -133,7 +133,7 @@ export function Bookings({ revision, act, busy }: Actions) {
                     <div className="plan-content">
                       <div className="row">
                         <span className="small muted">
-                          {b.group ? "Eatogether" : "Reservation"}
+                          {b.group ? "EatTogether" : "Reservation"}
                         </span>
                         <Status value={b.status} />
                       </div>
@@ -148,7 +148,7 @@ export function Bookings({ revision, act, busy }: Actions) {
                         {b.id.slice(0, 8).toUpperCase()}
                       </p>
                       <div className="plan-actions">
-                        {b.group && <a href={`#/groups/${b.group.id}`}>View party →</a>}
+                        {b.group && <a href={`#/groups/${b.group.id}`}>View Event →</a>}
                         {b.status === "CANCELLED" ? (
                           <button
                             className="text-button danger-text"
@@ -205,7 +205,7 @@ export function Bookings({ revision, act, busy }: Actions) {
             {!bookings.length && (
               <Empty
                 title="No reservations here yet"
-                text="Book a meal or confirm your Eatogether party."
+                text="Confirmed reservations appear here."
               />
             )}
             <ListPages
@@ -216,10 +216,10 @@ export function Bookings({ revision, act, busy }: Actions) {
             />
           </State>
         </section>
-        <section aria-label="Eatogether">
+        <section aria-label="EatTogether">
           <div className="section-heading">
             <h2>
-              Eatogether <span className="count-badge">{groups.length}</span>
+              EatTogether <span className="count-badge">{groups.length}</span>
             </h2>
           </div>
           <State data={parties.data} error={parties.error}>
@@ -231,7 +231,7 @@ export function Bookings({ revision, act, busy }: Actions) {
                     <Art restaurant={g.slot.restaurant} />
                     <div className="plan-content">
                       <div className="row">
-                        <span className="small muted">Eatogether</span>
+                        <span className="small muted">EatTogether</span>
                         <Status value={currentGroupStatus(g, now)} />
                       </div>
                       <a className="plan-title" href={`#/groups/${g.id}`} title={g.title}>
@@ -245,9 +245,9 @@ export function Bookings({ revision, act, busy }: Actions) {
                       </p>
                       <div className="row small">
                         <span>
-                          {g.members.length}/{g.capacity} diners · {g.slot.discount}% off
+                          {dinerCount(g)}/{g.capacity} diners · {g.slot.discount}% off
                         </span>
-                        <a href={`#/groups/${g.id}`}>View party →</a>
+                        <a href={`#/groups/${g.id}`}>View Event →</a>
                       </div>
                     </div>
                   </li>
@@ -255,12 +255,12 @@ export function Bookings({ revision, act, busy }: Actions) {
             </ul>
             {!groups.length && (
               <Empty
-                title="No parties here yet"
-                text="Find an Eatogether party or try another filter."
+                title="No Events here yet"
+                text="Join an EatTogether Event or try another filter."
               />
             )}
             <ListPages
-              label="Eatogether"
+              label="EatTogether"
               page={groupPage}
               total={groups.length}
               onChange={setPartyPage}

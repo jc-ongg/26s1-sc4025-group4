@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { db } from "./db.js";
+import { dinerCount, syncEvent } from "./event-lifecycle.js";
 
 export class HttpError extends Error {
   constructor(
@@ -19,7 +20,7 @@ export const groupInclude = {
   slot: { include: { restaurant: true } },
   members: {
     include: { user: { select: userFields } },
-    orderBy: { joinedAt: "asc" as const },
+    orderBy: [{ joinedAt: "asc" as const }, { userId: "asc" as const }],
   },
   booking: true,
 } satisfies Prisma.GroupDiningSessionInclude;
@@ -62,6 +63,10 @@ async function expireSlot(tx: Transaction, slotId: string) {
     },
   });
   for (const group of expired) {
+    await tx.booking.updateMany({
+      where: { groupId: group.id },
+      data: { status: "CANCELLED" },
+    });
     await tx.slotAllocation.deleteMany({ where: { groupId: group.id } });
     await tx.groupDiningSession.update({
       where: { id: group.id },
@@ -125,13 +130,21 @@ dining.get("/restaurants/:id", async (req, res) => {
     },
   });
   check(restaurant, 404, "Restaurant not found.");
-  res.json({ restaurant });
+  const groups = await db.groupDiningSession.findMany({
+    where: {
+      slot: { restaurantId: restaurant.id, startsAt: { gt: new Date() } },
+      status: { in: ["OPEN", "FULL", "CONFIRMED"] },
+    },
+    include: groupInclude,
+    orderBy: { slot: { startsAt: "asc" } },
+  });
+  res.json({ restaurant, groups });
 });
 dining.get("/groups", async (_req, res) => {
   res.json({
     groups: await db.groupDiningSession.findMany({
       where: {
-        status: { in: ["OPEN", "FULL"] },
+        status: { in: ["OPEN", "FULL", "CONFIRMED"] },
         slot: { startsAt: { gt: new Date() }, restaurant: { active: true } },
       },
       include: groupInclude,
@@ -166,6 +179,7 @@ dining.get("/me/bookings", async (_req, res) => {
   res.json({
     bookings: await db.booking.findMany({
       where: {
+        status: { in: ["CONFIRMED", "CANCELLED"] },
         NOT: { deletedFor: { has: res.locals.userId } },
         OR: [
           { userId: res.locals.userId },
@@ -184,7 +198,7 @@ dining.post("/groups", async (req, res) => {
   const slotId = text(req.body?.slotId, 100),
     title = text(req.body?.title, 80);
   const description = text(req.body?.description ?? "", 500, false),
-    capacity = size(req.body?.capacity);
+    partySize = size(req.body?.partySize === undefined ? 1 : req.body.partySize);
   const group = await db.$transaction(async (tx) => {
     const slot = await lockSlot(tx, slotId);
     check(
@@ -197,6 +211,14 @@ dining.post("/groups", async (req, res) => {
       "This restaurant is no longer available for new reservations.",
     );
     check(slot.startsAt > new Date(), 409, "This dining slot has already started.");
+    const capacity = size(
+      req.body?.capacity === undefined ? slot.capacity : req.body.capacity,
+    );
+    check(
+      partySize < slot.minimumPartySize,
+      400,
+      "A Party that meets the minimum can book directly.",
+    );
     check(
       capacity >= slot.minimumPartySize && capacity <= slot.capacity,
       400,
@@ -214,8 +236,8 @@ dining.post("/groups", async (req, res) => {
         description,
         capacity,
         hostId: res.locals.userId,
-        status: capacity === 1 ? "FULL" : "OPEN",
-        members: { create: { userId: res.locals.userId } },
+        status: "OPEN",
+        members: { create: { userId: res.locals.userId, partySize } },
       },
       include: groupInclude,
     });
@@ -229,7 +251,7 @@ dining.post("/groups/:id/:action", async (req, res) => {
     action = String(req.params.action),
     userId: string = res.locals.userId;
   check(
-    ["join", "leave", "confirm", "cancel"].includes(action),
+    ["join", "leave", "resize", "confirm", "cancel"].includes(action),
     404,
     "Action not found.",
   );
@@ -237,20 +259,18 @@ dining.post("/groups/:id/:action", async (req, res) => {
     where: { id },
     select: { slotId: true },
   });
-  check(reference, 404, "Group not found.");
+  check(reference, 404, "Event not found.");
   const result = await db.$transaction(async (tx) => {
     const slot = await lockSlot(tx, reference.slotId);
-    const group = await tx.groupDiningSession.findUniqueOrThrow({
+    const event = await tx.groupDiningSession.findUniqueOrThrow({
       where: { id },
-      include: { members: true, booking: true },
+      include: { members: { orderBy: [{ joinedAt: "asc" }, { userId: "asc" }] } },
     });
-    const member = group.members.some((m) => m.userId === userId);
-    const unconfirmed = group.status === "OPEN" || group.status === "FULL";
-    if (action === "cancel" || action === "confirm")
-      check(group.hostId === userId, 403, "Only the host can do this.");
+    const party = event.members.find((m) => m.userId === userId);
     if (action === "cancel") {
-      check(group.status !== "EXPIRED", 409, "This group has expired.");
-      if (group.status !== "CANCELLED") {
+      check(event.hostId === userId, 403, "Only the Host can cancel this Event.");
+      check(event.status !== "EXPIRED", 409, "This Event has expired.");
+      if (event.status !== "CANCELLED") {
         check(slot.startsAt > new Date(), 409, "This reservation has already started.");
         await tx.groupDiningSession.update({
           where: { id },
@@ -262,66 +282,81 @@ dining.post("/groups/:id/:action", async (req, res) => {
         });
         await tx.slotAllocation.deleteMany({ where: { groupId: id } });
       }
-    } else if (action === "confirm" && group.status === "CONFIRMED") {
-      // Repeated host confirmation returns the existing booking, never a duplicate.
     } else {
       check(
-        unconfirmed && slot.startsAt > new Date(),
+        ["OPEN", "FULL", "CONFIRMED"].includes(event.status) &&
+          slot.startsAt > new Date(),
         409,
-        "This group is no longer accepting changes.",
+        "This Event is no longer accepting changes.",
       );
+      const allocation = await tx.slotAllocation.findUnique({
+        where: { slotId: slot.id },
+      });
+      check(
+        allocation?.groupId === id,
+        409,
+        "This table is no longer held by this Event.",
+      );
+      if (action === "join" || action === "resize") {
+        const restaurant = await tx.restaurant.findUniqueOrThrow({
+          where: { id: slot.restaurantId },
+        });
+        check(restaurant.active, 409, "This restaurant is no longer accepting Parties.");
+      }
       if (action === "join") {
-        if (!member) {
-          check(group.members.length < group.capacity, 409, "This table is full.");
-          await tx.groupDiningMember.create({ data: { groupId: id, userId } });
-          if (group.members.length + 1 === group.capacity)
-            await tx.groupDiningSession.update({
-              where: { id },
-              data: { status: "FULL" },
-            });
+        if (!party) {
+          const partySize = size(
+            req.body?.partySize === undefined ? 1 : req.body.partySize,
+          );
+          check(
+            partySize < slot.minimumPartySize,
+            400,
+            "A Party that meets the minimum can book directly.",
+          );
+          check(
+            dinerCount(event.members) + partySize <= event.capacity,
+            409,
+            "There are not enough seats for your Party.",
+          );
+          await tx.groupDiningMember.create({ data: { groupId: id, userId, partySize } });
         }
-      } else if (action === "leave") {
+      } else if (action === "resize") {
+        check(party, 403, "Only a Party in this Event can change its size.");
+        const partySize = size(req.body?.partySize);
         check(
-          group.hostId !== userId,
+          dinerCount(event.members) - party.partySize + partySize <= event.capacity,
           409,
-          "As the host, cancel the group instead of leaving.",
+          "There are not enough seats for your Party.",
         );
-        if (member) {
+        await tx.groupDiningMember.update({
+          where: { groupId_userId: { groupId: id, userId } },
+          data: { partySize },
+        });
+      } else if (action === "leave") {
+        if (party) {
           await tx.groupDiningMember.delete({
             where: { groupId_userId: { groupId: id, userId } },
           });
-          await tx.groupDiningSession.update({
-            where: { id },
-            data: { status: "OPEN" },
-          });
+          if (event.hostId === userId) {
+            // joinedAt orders Parties; userId breaks equal-timestamp ties deterministically.
+            const successor = event.members.find((m) => m.userId !== userId);
+            if (successor)
+              await tx.groupDiningSession.update({
+                where: { id },
+                data: { hostId: successor.userId },
+              });
+          }
         }
-      } else if (action === "confirm") {
+      } else {
+        // Retain the old endpoint for existing clients; it cannot force qualification.
+        check(event.hostId === userId, 403, "Only the Host can do this.");
         check(
-          group.members.length >= slot.minimumPartySize,
+          dinerCount(event.members) >= slot.minimumPartySize,
           409,
           `At least ${slot.minimumPartySize} diners are needed to confirm.`,
         );
-        const allocation = await tx.slotAllocation.findUnique({
-          where: { slotId: slot.id },
-        });
-        check(
-          allocation?.groupId === id,
-          409,
-          "This table is no longer held by your group.",
-        );
-        await tx.booking.create({
-          data: {
-            slotId: slot.id,
-            userId,
-            groupId: id,
-            partySize: group.members.length,
-          },
-        });
-        await tx.groupDiningSession.update({
-          where: { id },
-          data: { status: "CONFIRMED" },
-        });
       }
+      await syncEvent(tx, id);
     }
     return tx.groupDiningSession.findUniqueOrThrow({
       where: { id },
@@ -330,6 +365,7 @@ dining.post("/groups/:id/:action", async (req, res) => {
   });
   res.json({ group: result });
 });
+
 dining.post("/bookings", async (req, res) => {
   const slotId = text(req.body?.slotId, 100),
     partySize = size(req.body?.partySize);

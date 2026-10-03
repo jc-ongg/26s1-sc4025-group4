@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
+import { dinerCount, canJoinEvent } from "./availability";
 import "leaflet/dist/leaflet.css";
 import type { Restaurant, Group } from "./types";
 import { Art, date, time } from "./dining-ui";
@@ -165,12 +166,7 @@ export function RestaurantMap({
     });
   }, [markerData, selected, attempt]);
   const r = restaurants.find((r) => r.id === selected),
-    open = groups.filter(
-      (g) =>
-        g.slot.restaurant.id === selected &&
-        g.status === "OPEN" &&
-        g.members.length < g.capacity,
-    );
+    open = groups.filter((g) => g.slot.restaurant.id === selected && canJoinEvent(g));
   return (
     <div className="map-layout">
       <div>
@@ -253,7 +249,7 @@ export function RestaurantMap({
                   {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
                 </span>
                 <span>
-                  {g.capacity - g.members.length} seats left · {g.slot.discount}% off →
+                  {g.capacity - dinerCount(g)} seats left · {g.slot.discount}% off →
                 </span>
               </a>
             ))}

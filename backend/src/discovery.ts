@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "./db.js";
 import { embed, embeddingHash, modelVersion } from "./embeddings.js";
 import { groupInclude, HttpError } from "./dining.js";
+import { dinerCount } from "./event-lifecycle.js";
 
 export const discovery = Router();
 // Concurrent searches share one indexing pass; changed content is detected by its hash.
@@ -24,7 +25,7 @@ async function indexContent() {
     }
     const groups = await db.groupDiningSession.findMany({
       where: {
-        status: "OPEN",
+        status: { in: ["OPEN", "FULL", "CONFIRMED"] },
         slot: { startsAt: { gt: new Date() }, restaurant: { active: true } },
       },
       include: { slot: { include: { restaurant: true } } },
@@ -129,7 +130,7 @@ discovery.post("/discovery/search", async (req, res) => {
     mode === "groups"
       ? await db.groupDiningSession.findMany({
           where: {
-            status: "OPEN",
+            status: { in: ["OPEN", "FULL", "CONFIRMED"] },
             members: { none: { userId: res.locals.userId } },
             slot: {
               startsAt: { gt: new Date() },
@@ -156,7 +157,7 @@ discovery.post("/discovery/search", async (req, res) => {
   const candidates =
     mode === "groups"
       ? groups
-          .filter((g) => g.members.length < g.capacity)
+          .filter((g) => dinerCount(g.members) < g.capacity)
           .map((g) => ({
             id: g.id,
             key: `group:${g.id}`,

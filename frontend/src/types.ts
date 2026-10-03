@@ -35,14 +35,14 @@ export type Group = {
   capacity: number;
   status: "OPEN" | "FULL" | "CONFIRMED" | "CANCELLED" | "EXPIRED";
   slot: Slot;
-  members: { userId: string; user: { id: string; name: string } }[];
+  members: { userId: string; partySize: number; user: { id: string; name: string } }[];
   booking: Booking | null;
 };
 export type Booking = {
   id: string;
   userId: string;
   partySize: number;
-  status: "CONFIRMED" | "CANCELLED";
+  status: "PENDING" | "CONFIRMED" | "CANCELLED";
   slot: Slot;
   group: { id: string; title: string; hostId: string } | null;
 };

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "./api";
+import { dinerCount } from "./availability";
 import type { Group, Restaurant } from "./types";
 export const date = (v: string) =>
   new Intl.DateTimeFormat("en-SG", {
@@ -141,8 +142,8 @@ export function Status({ value }: { value: string }) {
     <span className={`status ${value.toLowerCase()}`}>
       {(
         {
-          OPEN: "Open table",
-          FULL: "Full · awaiting host",
+          OPEN: "Undersubscribed",
+          FULL: "Undersubscribed",
           CONFIRMED: "Confirmed",
           CANCELLED: "Cancelled",
           EXPIRED: "Expired",
@@ -168,21 +169,21 @@ export function GroupCard({ group: g }: { group: Group }) {
           {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
         </p>
         <div className="seats">
-          <div style={{ width: `${(g.members.length / g.capacity) * 100}%` }} />
+          <div style={{ width: `${(dinerCount(g) / g.capacity) * 100}%` }} />
         </div>
         <div className="row small">
           <span>
-            {g.members.length} / {g.capacity} joined
+            {dinerCount(g)} / {g.capacity} joined
           </span>
           <span>
-            {g.status === "OPEN"
-              ? `${g.capacity - g.members.length} seats left`
+            {["OPEN", "FULL", "CONFIRMED"].includes(g.status)
+              ? `${g.capacity - dinerCount(g)} seats left`
               : "View table"}{" "}
             →
           </span>
         </div>
         <div className="host-line">
-          <span className="avatar small-avatar">{g.host.name[0]}</span> Hosted by{" "}
+          <span className="avatar small-avatar">{g.host.name[0]}</span> Host:{" "}
           {g.host.name}
         </div>
       </div>

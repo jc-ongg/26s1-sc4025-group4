@@ -78,7 +78,7 @@ export function DiningApp({
           <nav aria-label="Main navigation">
             {[
               ["/restaurants", "Restaurants"],
-              ["/groups", "Eatogether"],
+              ["/groups", "EatTogether"],
               ["/bookings", "My bookings"],
             ].map(([path, label]) => (
               <a
@@ -132,9 +132,9 @@ export function DiningApp({
           </div>
         )}
         {((page === "groups" && !id) || page === "discover") && (
-          <nav className="eatogether-tabs" aria-label="Eatogether views">
+          <nav className="eatogether-tabs" aria-label="EatTogether views">
             <a href="#/groups" aria-current={page === "groups" ? "page" : undefined}>
-              Explore parties
+              Explore Events
             </a>
             <a href="#/discover" aria-current={page === "discover" ? "page" : undefined}>
               For you
