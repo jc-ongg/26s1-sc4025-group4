@@ -7,28 +7,30 @@ SC4025 academic MVP extending Eatigo with diner-created shared tables. The imple
 ## Scope
 
 - Responsive Eatigo-inspired web application with sourced real restaurant examples, local photos and simulated offers/bookings.
-- Restaurant browsing, details, discount slots, ordinary bookings, group discovery, group details, creation, joining, leaving, host confirmation, cancellation, and personal bookings.
+- Restaurant browsing, details, discount slots, ordinary bookings, Event discovery and creation, Party joining, resizing, leaving, automatic confirmation, Host Handover, cancellation, and personal bookings.
 - Seeded diner accounts with an email/password login. No registration, password reset, OAuth, or customer/restaurant roles.
 - Shared PostgreSQL state across browser sessions and LAN devices. Polling is sufficient.
 - Everything runs on the Windows host through Docker Compose. No runtime cloud services.
 - Restaurant-hosted events and restaurant dashboards are deferred outside the current scope.
-- Semantic group-first discovery uses local MiniLM embeddings and PostgreSQL pgvector. Geographic distance and availability remain explicit filters. Swipe saves/skips; joining is separate. The map and venue assets are bundled locally.
+- Semantic restaurant/Event discovery uses local MiniLM embeddings and PostgreSQL pgvector. Geographic distance and availability remain explicit filters. Swipe saves/skips; joining is separate. The map and venue assets are bundled locally.
 
 ## Booking rules
 
-- The creator is the host and initially occupies one seat.
-- Each member occupies one seat. Each user can have only one membership per group.
-- A host can confirm once the restaurant slot's minimum party size is met, even if the group is not full.
-- Confirmation closes joining and creates a single shared booking visible to all members.
-- Members may leave before confirmation. The host cancels the group rather than leaving it.
-- Membership is fixed after confirmation; the host may cancel the whole booking.
-- Full groups await host confirmation; they do not automatically confirm.
+- An Event combines Parties at one restaurant slot. Each account represents one Party, with an integer diner count. A Party can contain more than one diner.
+- A Party must be below the slot's minimum party size to create or Join an Event. A Party already meeting the minimum can book directly. Existing Parties may resize within available Event capacity.
+- The creator is the Host. Total diners across Parties determine occupancy and confirmation, rather than the number of accounts.
+- Confirmation is automatic when the minimum is reached. The shared reservation stays open to Joins, Leaves and Party-size changes until dining time, subject to capacity.
+- Falling below the minimum restores Undersubscribed status. An existing reservation becomes PENDING and disappears from Reservations until the minimum is met again; its booking ID is retained.
+- The Host can Leave. The earliest remaining Joining Party becomes Host, and shared-booking ownership moves with that role. Equal join timestamps use user ID as a deterministic tie-break.
+- If the last Party Leaves, the Event is cancelled and its table hold is released. The Host also retains the existing explicit whole-Event cancellation action, separate from Leave.
+- At dining time, Undersubscribed Events expire and release their hold. Confirmed Events remain as reservation history. Joining, leaving and resizing are closed once dining starts.
+- See docs/EATTOGETHER_SCOPE.md for alignment with the product lead's concept and deferred decisions.
 
 ## Engineering assumptions to keep explicit
 
 - Model each reservation slot as one bookable table at one time, with minimum and maximum party size. Multiple tables can have distinct slot IDs.
 - Creating a group holds that slot. Cancellation releases it. Ordinary bookings compete for the same slot.
-- Open groups expire when their slot begins, releasing their hold. No payment or financial commitment is involved.
+- Undersubscribed Events expire when their slot begins, releasing their hold. No payment or financial commitment is involved.
 - Demo account credentials are public fixtures, checked on the backend. Browser sessions identify the authenticated user; clients cannot supply an arbitrary acting user ID.
 - The prototype does not connect to Eatigo inventory or claim real reservations.
 
@@ -42,4 +44,4 @@ Assignment: report PDF up to 30 pages including references/appendices, font 11 a
 
 See docs/IMPLEMENTATION_PLAN.md for architecture, data model and API details.
 
-- Product naming: the group dining feature is **Eatogether**. Map pins represent restaurants; selecting a restaurant reveals its available dining parties. No party counts on pins.
+- Product naming: the group dining feature is **EatTogether**. Map pins represent restaurants; selecting a restaurant reveals its available Events. No party counts on pins.

@@ -1,15 +1,15 @@
 # Semantic discovery
 
-The feature supports the core product hypothesis: a diner who cannot meet a minimum party size can discover a suitable open group. “For you” opens with an empty preference form and a Restaurant / Eatogether toggle. Restaurant is the default; Eatogether finds open parties to join. Saving expresses interest; joining remains a separate explicit action and still uses the existing transactional inventory rules.
+The feature supports the core product hypothesis: a diner who cannot meet a minimum party size can discover a suitable open group. “For you” opens with an empty preference form and a Restaurant / EatTogether toggle. Restaurant is the default; EatTogether finds Events with seats to join. Saving expresses interest; joining remains a separate explicit action and still uses the existing transactional inventory rules.
 
 ## Implemented flow
 
-1. Enter a dining mood, choose Restaurant or Eatogether and optionally type a neighbourhood or listed restaurant name and a radius.
-2. The server indexes changed venue and open-group descriptions with a local quantized MiniLM model. Content hashes avoid re-embedding unchanged records. New groups are indexed on the next search.
-3. Eligibility excludes past, full, confirmed and inactive-venue groups, groups already joined, and the account’s saved/skipped cards. Restaurant mode requires an unallocated future slot. A radius uses straight-line distance from a local neighbourhood centre or restaurant coordinates. Blank location searches all venues; unknown names return a validation message. No external geocoding service is used.
+1. Enter a dining mood, choose Restaurant or EatTogether and optionally type a neighbourhood or listed restaurant name and a radius.
+2. The server indexes changed venue and active Event descriptions with a local quantized MiniLM model. Content hashes avoid re-embedding unchanged records. New groups are indexed on the next search.
+3. Eligibility excludes past, full and inactive-venue Events. Confirmed Events with remaining seats stay eligible; occupancy sums Party sizes. Other exclusions cover Events already joined and the account’s saved/skipped cards. Restaurant mode requires an unallocated future slot. A radius uses straight-line distance from a local neighbourhood centre or restaurant coordinates. Blank location searches all venues; unknown names return a validation message. No external geocoding service is used.
 4. PostgreSQL `vector(384)` ranks eligible candidates using cosine distance (`<=>`). This is actual dense-vector retrieval, not keyword matching or a fixed list.
 5. Swipe right/save, left/skip, or use buttons/keyboard arrows. Undo restores the previous decision. Shortlists persist in PostgreSQL per account.
-6. Open a saved group to review current availability and join. The host confirms after the minimum party size is met.
+6. Open a saved group to review current availability and join. Confirmation is automatic when total diners reach the slot minimum; joining revalidates Party size and remaining seats.
 
 ```mermaid
 flowchart LR
@@ -30,7 +30,7 @@ Raw moods are processed in memory and are not persisted or sent to an external m
 
 `docker compose up --build -d` downloads packages and the pinned model during the initial build. Afterwards the model, photos, map, API and database run locally. Client devices still need LAN access to the running host; “offline” does not mean an installed app that works without its server. Source attribution links open external websites only when clicked.
 
-The basemap contains 30,654 geographic features (~6.9 MB uncompressed). It supports zoom/pan, restaurant pins and a restaurant selector; selected venue details show available Eatogether parties. The same cuisine and restaurant search filters apply to grid and map. There is no live routing or device-location permission. The map covers western/central Singapore, not the whole country at street-navigation detail.
+The basemap contains 30,654 geographic features (~6.9 MB uncompressed). It supports zoom/pan, restaurant pins and a restaurant selector; selected venue details show available EatTogether parties. The same cuisine and restaurant search filters apply to grid and map. There is no live routing or device-location permission. The map covers western/central Singapore, not the whole country at street-navigation detail.
 
 Existing fictional venue records are archived, not renamed or deleted, preserving earlier booking history. Eight real examples receive synthetic seven-day inventory. Seeded group IDs are stable per date and are not recreated after cancellation or confirmation. Existing user groups and bookings are preserved.
 
