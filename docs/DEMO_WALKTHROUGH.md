@@ -1,5 +1,7 @@
 # Demonstration walkthrough
 
+For a timed five-minute presentation, see [PRESENTATION_DEMO.md](PRESENTATION_DEMO.md).
+
 ## Setup
 
 Run `docker compose up --build -d` and open http://localhost:3000. Startup creates missing slots for seven days and sample parties for tomorrow. Existing parties and bookings are preserved.
