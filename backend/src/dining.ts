@@ -176,24 +176,39 @@ dining.get("/me/groups", async (_req, res) => {
   });
 });
 dining.get("/me/bookings", async (_req, res) => {
+  const userId = res.locals.userId as string;
+  const bookings = await db.booking.findMany({
+    where: {
+      status: { in: ["CONFIRMED", "CANCELLED"] },
+      NOT: { deletedFor: { has: userId } },
+      OR: [{ userId }, { group: { members: { some: { userId } } } }],
+    },
+    include: {
+      slot: { include: { restaurant: true } },
+      group: {
+        select: {
+          id: true,
+          title: true,
+          hostId: true,
+          members: { where: { userId }, select: { partySize: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
   res.json({
-    bookings: await db.booking.findMany({
-      where: {
-        status: { in: ["CONFIRMED", "CANCELLED"] },
-        NOT: { deletedFor: { has: res.locals.userId } },
-        OR: [
-          { userId: res.locals.userId },
-          { group: { members: { some: { userId: res.locals.userId } } } },
-        ],
-      },
-      include: {
-        slot: { include: { restaurant: true } },
-        group: { select: { id: true, title: true, hostId: true } },
-      },
-      orderBy: { createdAt: "desc" },
+    bookings: bookings.map(({ group, ...booking }) => {
+      // Return this account's Party size alongside the Event total for the booking card.
+      const { members, ...event } = group ?? { members: [] };
+      return {
+        ...booking,
+        group: group ? event : null,
+        yourPartySize: group ? (members[0]?.partySize ?? null) : booking.partySize,
+      };
     }),
   });
 });
+
 dining.post("/groups", async (req, res) => {
   const slotId = text(req.body?.slotId, 100),
     title = text(req.body?.title, 80);

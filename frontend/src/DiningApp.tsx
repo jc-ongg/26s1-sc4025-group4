@@ -152,9 +152,9 @@ export function DiningApp({
         ) : page === "groups" ? (
           <Groups {...actions} />
         ) : page === "my-groups" ? (
-          <Bookings {...actions} />
+          <Bookings {...actions} user={user} />
         ) : page === "bookings" ? (
-          <Bookings {...actions} />
+          <Bookings {...actions} user={user} />
         ) : (
           <Empty
             title="Page not found"

@@ -307,6 +307,17 @@ test("Party sizes determine qualification, resizing and concurrent remaining cap
   const restored = await request(`/groups/${g.id}/resize`, "jacob", { partySize: 3 });
   assert.equal(restored.data.group.status, "CONFIRMED");
   assert.equal(restored.data.group.booking.id, bookingId);
+  for (const [user, expectedSize] of [
+    ["jacob", 3],
+    ["alice", 1],
+  ] as const) {
+    const personal = (await request("/me/bookings", user)).data.bookings.find(
+      (booking: { id: string }) => booking.id === bookingId,
+    );
+    assert.equal(personal.yourPartySize, expectedSize);
+    assert.equal(personal.partySize, 4);
+    assert.ok(!("members" in personal.group));
+  }
   assert.equal(
     (await request(`/groups/${g.id}/resize`, winner, { partySize: 1 })).status,
     403,
@@ -346,10 +357,20 @@ test("Host departure hands over to the earliest Joining Party; an empty Event re
   assert.equal(empty.data.group.members.length, 0);
   assert.equal(empty.data.group.booking.status, "CANCELLED");
   assert.equal(await db.slotAllocation.count({ where: { slotId: g.slotId } }), 0);
-  assert.equal(
-    (await request("/bookings", "charlie", { slotId: g.slotId, partySize: 2 })).status,
-    201,
+  const ordinary = await request("/bookings", "charlie", {
+    slotId: g.slotId,
+    partySize: 2,
+  });
+  assert.equal(ordinary.status, 201);
+  const personal = (await request("/me/bookings", "charlie")).data.bookings.find(
+    (booking: { id: string }) => booking.id === ordinary.data.booking.id,
   );
+  assert.equal(personal.yourPartySize, 2);
+  assert.equal(personal.group, null);
+  const cancelled = (await request("/me/bookings", "bob")).data.bookings.find(
+    (booking: { id: string }) => booking.id === empty.data.group.booking.id,
+  );
+  assert.equal(cancelled.yourPartySize, null);
 });
 
 test("started confirmed Events preserve bookings and reject membership changes", async () => {

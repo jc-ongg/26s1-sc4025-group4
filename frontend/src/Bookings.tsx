@@ -1,6 +1,7 @@
 import { useState } from "react";
-import type { Group, Booking } from "./types";
+import type { Group, PersonalBooking, User } from "./types";
 import { currentGroupStatus, dinerCount } from "./availability";
+import { reservationProgress } from "./event-feedback";
 import {
   Art,
   Empty,
@@ -13,6 +14,24 @@ import {
 } from "./dining-ui";
 
 const PAGE_SIZE = 2;
+
+function PartyCounts({
+  yourSize,
+  total,
+  capacity,
+}: {
+  yourSize: number | null;
+  total: number;
+  capacity?: number;
+}) {
+  return (
+    <p className="plan-diners">
+      {yourSize !== null && <>Your Party: {yourSize} · </>}
+      Event total: {total}
+      {capacity ? `/${capacity}` : ""} diners
+    </p>
+  );
+}
 
 function ListPages({
   page,
@@ -54,8 +73,11 @@ function ListPages({
     </div>
   );
 }
-export function Bookings({ revision, act, busy }: Actions) {
-  const { data, error } = useResource<{ bookings: Booking[] }>("/me/bookings", revision);
+export function Bookings({ revision, act, busy, user }: Actions & { user: User }) {
+  const { data, error } = useResource<{ bookings: PersonalBooking[] }>(
+    "/me/bookings",
+    revision,
+  );
   const parties = useResource<{ groups: Group[] }>("/me/groups", revision);
   const [partyPage, setPartyPage] = useState(0),
     [bookingPage, setBookingPage] = useState(0),
@@ -143,9 +165,15 @@ export function Bookings({ revision, act, busy }: Actions) {
                       <p className="small">
                         {date(b.slot.startsAt)} · {time(b.slot.startsAt)}
                       </p>
+                      {b.group ? (
+                        <PartyCounts yourSize={b.yourPartySize} total={b.partySize} />
+                      ) : (
+                        <p className="plan-diners">
+                          {b.partySize} {b.partySize === 1 ? "diner" : "diners"}
+                        </p>
+                      )}
                       <p className="small muted">
-                        {b.partySize} diners · {b.slot.discount}% off · #
-                        {b.id.slice(0, 8).toUpperCase()}
+                        {b.slot.discount}% off · #{b.id.slice(0, 8).toUpperCase()}
                       </p>
                       <div className="plan-actions">
                         {b.group && <a href={`#/groups/${b.group.id}`}>View Event →</a>}
@@ -243,10 +271,19 @@ export function Bookings({ revision, act, busy }: Actions) {
                       <p className="small">
                         {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
                       </p>
+                      <PartyCounts
+                        yourSize={
+                          g.members.find((party) => party.userId === user.id)
+                            ?.partySize ?? null
+                        }
+                        total={dinerCount(g)}
+                        capacity={g.capacity}
+                      />
+                      {["OPEN", "FULL"].includes(currentGroupStatus(g, now)) && (
+                        <p className="plan-pending">{reservationProgress(g, now)}</p>
+                      )}
                       <div className="row small">
-                        <span>
-                          {dinerCount(g)}/{g.capacity} diners · {g.slot.discount}% off
-                        </span>
+                        <span>{g.slot.discount}% off</span>
                         <a href={`#/groups/${g.id}`}>View Event →</a>
                       </div>
                     </div>

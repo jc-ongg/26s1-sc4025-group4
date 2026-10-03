@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type { Group, User } from "./types";
+import { EventUpdates } from "./EventUpdates";
+import { reservationProgress } from "./event-feedback";
 import { currentGroupStatus, hasStarted, dinerCount, canJoinEvent } from "./availability";
 import {
   Art,
@@ -85,6 +87,7 @@ export function GroupDetail({
     act(`/groups/${id}/${action}`, body, message);
   return (
     <>
+      <EventUpdates group={g} userId={user.id} />
       <a className="back" href="#/groups">
         ← EatTogether Events
       </a>
@@ -169,15 +172,18 @@ export function GroupDetail({
                   {mutable ? (party ? "Your Party" : "Join Event") : "Event details"}
                 </h2>
                 <p>
-                  {!mutable
-                    ? "This Event is closed to changes."
-                    : status === "CONFIRMED"
-                      ? `The minimum is met. Parties can still Join or Leave before the dining time. If the diner count drops below ${g.slot.minimumPartySize}, the Event becomes Undersubscribed.`
-                      : `${g.slot.minimumPartySize - count} more diner(s) needed. Confirmation is automatic when the minimum is met.`}
+                  {mutable
+                    ? `${reservationProgress(g)} ${status === "CONFIRMED" ? "Parties can Join or Leave until dining time." : "Confirmation is automatic when the minimum is met."}`
+                    : "This Event is closed to changes."}
                 </p>
                 <p className="small">
                   {count} / {g.capacity} diners · {remaining} seats remaining
                 </p>
+                {g.booking && party && (
+                  <p className="small booking-reference">
+                    Reservation #{g.booking.id.slice(0, 8).toUpperCase()}
+                  </p>
+                )}
                 {mutable &&
                   (party ? (
                     <>

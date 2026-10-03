@@ -387,7 +387,7 @@ h1 {
   }
 }
 .compact-plans .plan-row {
-  height: 160px;
+  height: 180px;
 }
 .plans-intro .mode-tabs button {
   white-space: nowrap;
@@ -400,7 +400,7 @@ h1 {
 }
 @media (max-width: 800px) {
   .compact-plans .plan-row {
-    height: 166px;
+    height: 180px;
   }
   .compact-plans .plan-content .row {
     flex-wrap: wrap;
@@ -708,12 +708,12 @@ html {
 
 /* Reserve two rows so pagination remains aligned even on a shorter last page. */
 .compact-plans .plan-list {
-  min-height: 320px;
+  min-height: 360px;
   align-content: start;
 }
 @media (max-width: 800px) {
   .compact-plans .plan-list {
-    min-height: 332px;
+    min-height: 360px;
   }
 }
 
@@ -723,7 +723,7 @@ html {
 }
 .compact-plans .empty,
 .compact-plans .loading {
-  min-height: 320px;
+  min-height: 360px;
   margin: 8px 0 0;
   display: flex;
   flex-direction: column;
@@ -753,7 +753,7 @@ select {
 @media (max-width: 800px) {
   .compact-plans .empty,
   .compact-plans .loading {
-    min-height: 332px;
+    min-height: 360px;
   }
   a,
   button,
@@ -776,6 +776,54 @@ select {
   }
   .compact-plans .plan-row {
     height: auto;
-    min-height: 166px;
+    min-height: 180px;
+  }
+}
+
+/* Party counts and pending reservations stay readable within two fixed list rows. */
+.plan-content .plan-diners {
+  color: #303641;
+  font-size: 12px;
+  font-weight: 600;
+}
+.plan-content .plan-pending {
+  color: #76501e;
+  font-size: 11px;
+}
+.booking-reference {
+  color: #46505c;
+  font-variant-numeric: tabular-nums;
+}
+/* Live updates overlay the page so polling does not shift the dining controls. */
+.event-update {
+  position: fixed;
+  right: 24px;
+  top: 96px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 440px;
+  padding: 12px 14px 12px 18px;
+  border: 1px solid #c7c2ba;
+  border-left: 3px solid #e51c3a;
+  border-radius: 6px;
+  background: #fff;
+  color: #303641;
+  box-shadow: 0 4px 18px #25242218;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.event-update .text-button {
+  flex: 0 0 36px;
+  min-height: 36px;
+  font-size: 22px;
+  padding: 0;
+}
+@media (max-width: 600px) {
+  .event-update {
+    right: 16px;
+    top: 144px;
+    max-width: calc(100% - 32px);
   }
 }

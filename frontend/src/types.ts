@@ -46,3 +46,5 @@ export type Booking = {
   slot: Slot;
   group: { id: string; title: string; hostId: string } | null;
 };
+
+export type PersonalBooking = Booking & { yourPartySize: number | null };
