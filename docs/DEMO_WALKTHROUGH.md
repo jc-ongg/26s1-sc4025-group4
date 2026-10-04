@@ -22,11 +22,12 @@ For an ordinary reservation, use the default **Book** tab and a Party size meeti
 
 ## Map and recommendations
 
-1. In Restaurants, switch to **Map view**. Select a restaurant photo pin or use the restaurant list to see its available EatTogether Events.
-2. Use the cuisine or search filters to narrow venues. **Show all restaurants** restores an overview of the filtered map results.
-3. Open **For you** on the restaurant homepage and enter a dining mood. Select **EatTogether** to search parties or **Restaurant** to search venues. Korean barbecue should favour Seorae when its sample party is still eligible; a dessert/study-break mood should favour 2SCOOPS.
-4. Swipe right to save or left to skip. Buttons and keyboard arrows offer the same actions. Undo restores the previous decision; saving does not join a party.
-5. Open **My shortlist** and review a saved party before joining. Type NTU in the optional location field and test the radius filter; distances are straight-line, not travel distances.
+1. Use the **Restaurants | EatTogether** toggle on the homepage to switch between venues and upcoming Events. Search and cuisine filters apply to both. Restaurant cards show the number of upcoming EatTogether Events, including full tables; an Event is a shared table, while each participating group of diners is a Party.
+2. In Restaurants, switch to **Map view**. Select a restaurant photo pin or use the restaurant list to see its upcoming EatTogether Events.
+3. Use the cuisine or search filters to narrow venues. **Show all restaurants** restores an overview of the filtered map results.
+4. Open **For you** on the left of the browse controls. It opens a popup with restaurant recommendations only. Enter a dining mood; the homepage cuisine carries into the popup and can be changed there. Choosing Western constrains results to Western restaurants before semantic ranking, even if the mood mentions Chinese food. Location is optional. Close with ×, Escape or a click outside the popup.
+5. Swipe right to save or left to skip. Buttons and keyboard arrows offer the same actions. Undo restores the previous decision; saving does not join a party.
+6. Open **My shortlist** and select a saved restaurant, then use its Book | EatTogether flow. Type NTU in the optional location field and test the radius filter; distances are straight-line, not travel distances.
 
 ## Scope
 
