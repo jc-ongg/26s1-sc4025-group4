@@ -37,3 +37,9 @@ Migration gives existing Party memberships a size of one. Startup reconciles fut
 - Reliability strikes and suspension: define what counts as a strike, late-change windows, no-show evidence, exceptions and appeals.
 
 Do not represent these deferred rules as implemented in the technical report. The existing Section 5 Word document and diagrams predate this lifecycle update and need revision when the final report scope is settled.
+
+## Restaurant booking flow
+
+The restaurant detail page follows date, time, Party size and **Book | EatTogether**. Book is the default for an unreserved time. Existing Events for the selected date appear alongside the time selection; choosing an Event previews it in the booking panel. Eligible Parties can Join there, existing members can manage their Event, and full Events remain visible. Joining checks the whole Party against remaining seats. New Event creation opens only after an explicit **Start an EatTogether Event** choice and is unavailable when an Event already holds the table or the Party qualifies to book directly.
+
+My bookings separates private reservations on the left from EatTogether Events on the right. Shared reservation references and personal cancelled-booking deletion are shown in the Event list, so a confirmed Event is not duplicated. Profile totals and past history continue to include both booking kinds. Upcoming, Past, Cancelled, Waiting for diners and Expired retain written labels alongside colour cues. Past means the scheduled start has passed, rather than verified attendance. Leaving requires confirmation explaining requalification and possible Host Handover. No deferred eligibility, Cutoff or penalty policy is added.
