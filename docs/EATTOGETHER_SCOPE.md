@@ -16,7 +16,9 @@ This update implements the scope approved on 3 October 2026 against the product 
 | Empty Event               | Cancel and release the held table when the final Party Leaves.                                                                                                     |
 | Slot discovery            | Restaurant slots show EatTogether availability and open an existing Event for that time instead of offering duplicate creation. Ordinary Book remains the default. |
 
-The existing EatTogether discovery tab and local semantic recommendations are retained. Only eligibility and occupancy were adapted; the ranking model and saved-card behaviour were not redesigned.
+As of 4 October 2026, Events and local semantic recommendations open within the restaurant homepage. The separate EatTogether navigation tab is removed. Restaurant cards highlight available EatTogether seats, and slots still open an existing Event. The ranking model and saved-card behaviour are unchanged.
+
+The account menu contains Profile, Bookings and Logout. Profile shows personal details, past confirmed reservations and a private Reliability Score record starting at zero strikes. Automatic strike tracking is not enabled: Cutoff, attendance evidence and penalty rules remain deferred. A past reservation means its scheduled start time has passed; it does not prove attendance.
 
 ## Existing MVP behaviour retained
 
