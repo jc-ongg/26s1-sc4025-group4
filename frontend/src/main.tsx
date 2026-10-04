@@ -10,6 +10,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -72,42 +73,104 @@ function App() {
             <p role="status">Checking your session…</p>
           ) : (
             <>
-              <h2>Log in</h2>
-              <form onSubmit={login}>
-                <label htmlFor="email">Email address</label>
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="username"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="jacob@example.com"
-                />
-                <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <button disabled={busy}>{busy ? "Logging in…" : "Log in"}</button>
-              </form>
+              <div className="mode-tabs auth-tabs" aria-label="Account access">
+                <button
+                  type="button"
+                  aria-pressed={mode === "login"}
+                  className={mode === "login" ? "selected" : ""}
+                  onClick={() => {
+                    setMode("login");
+                    setError("");
+                  }}
+                >
+                  Log in
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={mode === "register"}
+                  className={mode === "register" ? "selected" : ""}
+                  onClick={() => {
+                    setMode("register");
+                    setError("");
+                  }}
+                >
+                  Register
+                </button>
+              </div>
+              <h2>{mode === "login" ? "Log in" : "Create an account"}</h2>
+              {mode === "login" ? (
+                <form onSubmit={login}>
+                  <label htmlFor="email">Email address</label>
+                  <input
+                    id="email"
+                    type="email"
+                    autoComplete="username"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email address"
+                  />
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button type="button" className="forgot-password" disabled>
+                    Forgot password?
+                  </button>
+                  <button disabled={busy}>{busy ? "Logging in…" : "Log in"}</button>
+                </form>
+              ) : (
+                <form onSubmit={(event) => event.preventDefault()}>
+                  <label htmlFor="register-name">Full name</label>
+                  <input id="register-name" autoComplete="name" placeholder="Full name" />
+                  <label htmlFor="register-email">Email address</label>
+                  <input
+                    id="register-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="Email address"
+                  />
+                  <label htmlFor="register-password">Password</label>
+                  <input
+                    id="register-password"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Password"
+                  />
+                  <label htmlFor="register-confirm">Confirm password</label>
+                  <input
+                    id="register-confirm"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Confirm password"
+                  />
+                  <button type="submit" disabled>
+                    Create account
+                  </button>
+                </form>
+              )}
               <details>
                 <summary>Available accounts</summary>
                 <p>
-                  jacob@example.com
+                  jacob@gmail.com
                   <br />
-                  alice@example.com
+                  chongwei@gmail.com
                   <br />
-                  bob@example.com
+                  yojin@gmail.com
                   <br />
-                  charlie@example.com
+                  wallace@gmail.com
+                  <br />
+                  harsh@gmail.com
+                  <br />
+                  hansen@gmail.com
                 </p>
                 <p>
-                  Password for all accounts: <strong>demo123</strong>
+                  Password for all accounts: <strong>password123</strong>
                 </p>
               </details>
             </>

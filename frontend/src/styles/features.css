@@ -58,7 +58,6 @@
   grid-auto-columns: calc((100% - 48px) / 4);
   gap: 16px;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
   scrollbar-width: thin;
   padding: 3px 0 10px;
 }
@@ -68,7 +67,6 @@
   height: 210px;
   overflow: hidden;
   border-radius: 14px;
-  scroll-snap-align: start;
   color: white;
   text-decoration: none;
 }

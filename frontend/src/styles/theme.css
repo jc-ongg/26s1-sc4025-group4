@@ -4,6 +4,25 @@
   background: #faf9f7;
   font-family: Arial, Helvetica, sans-serif;
 }
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+#root > main {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+#root > header,
+#root > .topbar,
+#root > footer {
+  flex-shrink: 0;
+}
+.login-header {
+  width: 100%;
+}
 h1,
 .hero h1,
 .restaurant-heading h1,
@@ -643,32 +662,10 @@ h2 {
   top: 110px;
 }
 
-/* Include the page start so loading a later section never snaps past its heading. */
-html {
-  scroll-snap-type: y proximity;
-  scroll-padding-top: 105px;
-}
-.app-main,
-.top-picks,
-.restaurant-browse,
-.party-results,
-.restaurant-banner,
-.detail-layout {
-  scroll-snap-align: start;
-  scroll-snap-stop: normal;
-}
 @media (max-width: 800px) {
-  html {
-    scroll-padding-top: 145px;
-  }
   .booking-panel,
   .action-panel {
     position: static;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-snap-type: none;
   }
 }
 
@@ -826,4 +823,197 @@ select {
     top: 144px;
     max-width: calc(100% - 32px);
   }
+}
+
+/* Account navigation is a disclosure, keeping discovery as the only main page. */
+.account-menu {
+  position: relative;
+  margin-left: auto;
+}
+.account-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #303641;
+  background: transparent;
+  padding: 6px 8px;
+  font-weight: 500;
+}
+.account-trigger:hover {
+  background: #f0eeea;
+}
+.app-header .account-links {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 12px);
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 6px;
+  border: 1px solid #d2cec7;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 6px 24px #25242218;
+  overflow: visible;
+  z-index: 1100;
+}
+.app-header .account-links a,
+.account-links button {
+  display: block;
+  padding: 12px 14px;
+  text-align: left;
+  color: #303641;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.app-header .account-links a:hover,
+.account-links button:hover {
+  background: #f0eeea;
+}
+.account-links button {
+  border-top: 1px solid #e2dfd9;
+  color: #b9233a;
+}
+.auth-tabs {
+  margin-bottom: 28px;
+}
+.auth-tabs button {
+  flex: 1;
+}
+.forgot-password:disabled {
+  justify-self: end;
+  padding: 0;
+  min-height: 28px;
+  margin: 0 0 12px;
+  background: transparent;
+  color: #59616a;
+  opacity: 1;
+  font-weight: 400;
+  cursor: default;
+}
+.profile-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.profile-identity {
+  text-align: center;
+}
+.profile-avatar {
+  width: 76px;
+  height: 76px;
+  font-size: 30px;
+  margin: 0 auto 18px;
+}
+.profile-identity > p {
+  overflow-wrap: anywhere;
+}
+.profile-identity dl {
+  text-align: left;
+  margin: 28px 0;
+}
+.profile-identity dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #ddd9d2;
+}
+.profile-identity dt {
+  font-size: 13px;
+  color: #59616a;
+}
+.profile-identity dd {
+  margin: 0;
+  font-weight: 600;
+}
+.profile-reliability {
+  border-top: 1px solid #d2cec7;
+  padding-top: 20px;
+  text-align: left;
+}
+.profile-reliability h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 16px;
+}
+.profile-reliability .badge {
+  font-size: 10px;
+  padding: 4px 8px;
+}
+.profile-history .plan-row {
+  min-height: 170px;
+}
+.status.past {
+  background: #eeece8;
+  color: #46505c;
+}
+.restaurant-tools {
+  display: flex;
+  gap: 10px;
+}
+.restaurant-tools button {
+  min-height: 42px;
+  padding: 10px 16px;
+}
+.restaurant-tools button[aria-expanded="true"] {
+  border-color: #b9233a;
+  color: #b9233a;
+  background: #f7efed;
+}
+.restaurant-discovery {
+  padding: 24px;
+  border: 1px solid #d2cec7;
+  border-radius: 8px;
+  background: #f2f0ec;
+  margin: 20px 0 28px;
+}
+.restaurant-discovery > .row {
+  margin-bottom: 20px;
+}
+.restaurant-discovery > .row h2 {
+  margin: 0;
+}
+.restaurant-discovery .discovery-tabs {
+  margin-top: 0;
+}
+.restaurant-event-label {
+  color: #a9263b;
+  font-weight: 600;
+}
+@media (max-width: 700px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+  .restaurant-browse > .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .restaurant-discovery {
+    padding: 16px;
+  }
+  .account-trigger {
+    font-size: 13px;
+  }
+}
+
+.reliability-count {
+  font-size: 30px;
+  font-weight: 700;
+  margin: 16px 0 0;
+}
+.reliability-count span {
+  font-size: 12px;
+  font-weight: 400;
+  color: #59616a;
 }

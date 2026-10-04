@@ -4,9 +4,10 @@ import type { User } from "./types";
 import { Empty, type Actions } from "./dining-ui";
 import { Restaurants, RestaurantDetail } from "./RestaurantPages";
 import { Footer } from "./Footer";
-import { Discover } from "./Discover";
+import { AccountMenu } from "./AccountMenu";
+import { Profile } from "./Profile";
 import { Bookings } from "./Bookings";
-import { Groups, GroupDetail } from "./GroupPages";
+import { GroupDetail } from "./GroupPages";
 
 export function DiningApp({
   user,
@@ -75,49 +76,19 @@ export function DiningApp({
           <a className="brand" href="#/restaurants">
             <img src="/images/brand/eatigo.png" alt="Eatigo" />
           </a>
-          <nav aria-label="Main navigation">
-            {[
-              ["/restaurants", "Restaurants"],
-              ["/groups", "EatTogether"],
-              ["/bookings", "My bookings"],
-            ].map(([path, label]) => (
-              <a
-                key={path}
-                className={
-                  route.startsWith(path) || (path === "/groups" && page === "discover")
-                    ? "active"
-                    : ""
-                }
-                aria-current={
-                  route.startsWith(path) || (path === "/groups" && page === "discover")
-                    ? "page"
-                    : undefined
-                }
-                href={`#${path}`}
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-          <div className="account">
-            <span className="avatar small-avatar">{user.name[0]}</span>
-            <span>{user.name}</span>
-            <button
-              className="text-button"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  await onLogout();
-                } catch (e) {
-                  setError((e as Error).message);
-                  setBusy(false);
-                }
-              }}
-            >
-              Log out
-            </button>
-          </div>
+          <AccountMenu
+            user={user}
+            busy={busy}
+            onLogout={async () => {
+              setBusy(true);
+              try {
+                await onLogout();
+              } catch (e) {
+                setError((e as Error).message);
+                setBusy(false);
+              }
+            }}
+          />
         </header>
       </div>
       <main className="app-main">
@@ -131,34 +102,26 @@ export function DiningApp({
             {error}
           </div>
         )}
-        {((page === "groups" && !id) || page === "discover") && (
-          <nav className="eatogether-tabs" aria-label="EatTogether views">
-            <a href="#/groups" aria-current={page === "groups" ? "page" : undefined}>
-              Explore Events
-            </a>
-            <a href="#/discover" aria-current={page === "discover" ? "page" : undefined}>
-              For you
-            </a>
-          </nav>
-        )}
         {page === "discover" ? (
-          <Discover />
+          <Restaurants key={page} {...actions} initialPanel="discover" />
         ) : page === "restaurants" && id ? (
           <RestaurantDetail key={id} id={id} {...actions} />
         ) : page === "restaurants" ? (
-          <Restaurants {...actions} />
+          <Restaurants key={page} {...actions} />
         ) : page === "groups" && id ? (
           <GroupDetail key={id} id={id} user={user} {...actions} />
         ) : page === "groups" ? (
-          <Groups {...actions} />
+          <Restaurants key={page} {...actions} initialPanel="events" />
         ) : page === "my-groups" ? (
           <Bookings {...actions} user={user} />
+        ) : page === "profile" ? (
+          <Profile user={user} revision={revision} />
         ) : page === "bookings" ? (
           <Bookings {...actions} user={user} />
         ) : (
           <Empty
             title="Page not found"
-            text="Use the navigation above to find your next meal."
+            text="Select the Eatigo logo to return to restaurants."
           />
         )}
       </main>

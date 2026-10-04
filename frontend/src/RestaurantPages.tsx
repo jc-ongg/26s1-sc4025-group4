@@ -1,11 +1,18 @@
 import { useState, type FormEvent } from "react";
 import { TopPicks } from "./TopPicks";
 import { RestaurantMap } from "./RestaurantMap";
+import { Discover } from "./Discover";
+import { Groups } from "./GroupPages";
 import type { Restaurant, Group } from "./types";
 import { availableSlots, hasStarted, dinerCount, canJoinEvent } from "./availability";
 import { Art, Empty, State, date, time, useResource, type Actions } from "./dining-ui";
 
-export function Restaurants({ revision }: Actions) {
+export function Restaurants({
+  initialPanel = null,
+  ...actions
+}: Actions & { initialPanel?: "events" | "discover" | null }) {
+  const { revision } = actions;
+  const [panel, setPanel] = useState<"events" | "discover" | null>(initialPanel);
   const { data, error } = useResource<{ restaurants: Restaurant[] }>(
     "/restaurants",
     revision,
@@ -30,8 +37,45 @@ export function Restaurants({ revision }: Actions) {
           <div>
             <h2>Explore restaurants</h2>
           </div>
-          <span className="muted small">{filtered?.length ?? 0} restaurants</span>
+          <div className="restaurant-tools">
+            <button
+              className="secondary"
+              aria-expanded={panel === "discover"}
+              aria-controls="restaurant-discovery"
+              onClick={() => setPanel(panel === "discover" ? null : "discover")}
+            >
+              For you
+            </button>
+            <button
+              className="secondary"
+              aria-expanded={panel === "events"}
+              aria-controls="restaurant-discovery"
+              onClick={() => setPanel(panel === "events" ? null : "events")}
+            >
+              EatTogether
+            </button>
+          </div>
         </div>
+        {panel && (
+          <section
+            className="restaurant-discovery"
+            id="restaurant-discovery"
+            aria-label={panel === "events" ? "EatTogether Events" : "For you"}
+          >
+            <div className="row">
+              <h2>{panel === "events" ? "EatTogether Events" : "For you"}</h2>
+              <button className="text-button" onClick={() => setPanel(null)}>
+                Close
+              </button>
+            </div>
+            {panel === "discover" ? (
+              <Discover embedded />
+            ) : (
+              <Groups {...actions} embedded />
+            )}
+          </section>
+        )}
+        <p className="small muted">{filtered?.length ?? 0} restaurants</p>
         <label className="search">
           <span>⌕</span>
           <input
@@ -93,6 +137,11 @@ export function Restaurants({ revision }: Actions) {
                       </div>
                       <h3>{r.name}</h3>
                       <p className="small">{r.area}</p>
+                      {groups.some((g) => g.slot.restaurant.id === r.id) && (
+                        <p className="small restaurant-event-label">
+                          EatTogether seats available
+                        </p>
+                      )}
                       <div className="row">
                         <span className="discount">
                           {slots.length

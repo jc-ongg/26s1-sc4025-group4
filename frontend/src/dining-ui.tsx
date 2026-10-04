@@ -145,6 +145,7 @@ export function Status({ value }: { value: string }) {
           OPEN: "Undersubscribed",
           FULL: "Undersubscribed",
           CONFIRMED: "Confirmed",
+          PAST: "Past",
           CANCELLED: "Cancelled",
           EXPIRED: "Expired",
         } as Record<string, string>

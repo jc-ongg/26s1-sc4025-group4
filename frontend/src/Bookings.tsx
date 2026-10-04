@@ -1,6 +1,13 @@
 import { useState } from "react";
 import type { Group, PersonalBooking, User } from "./types";
 import { currentGroupStatus, dinerCount } from "./availability";
+import {
+  matchesBooking,
+  matchesEvent,
+  byDiningTime,
+  isPastBooking,
+  type BookingFilter,
+} from "./booking-history";
 import { reservationProgress } from "./event-feedback";
 import {
   Art,
@@ -81,27 +88,16 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
   const parties = useResource<{ groups: Group[] }>("/me/groups", revision);
   const [partyPage, setPartyPage] = useState(0),
     [bookingPage, setBookingPage] = useState(0),
-    [filter, setFilter] = useState("all"),
+    [filter, setFilter] = useState<BookingFilter>("all"),
     [cancelId, setCancelId] = useState<string | null>(null);
   // Use one instant for both lists so a starting reservation cannot appear in inconsistent filters.
   const now = Date.now();
-  const groups = (parties.data?.groups ?? []).filter(
-    (g) =>
-      filter === "all" ||
-      (filter === "upcoming"
-        ? ["OPEN", "FULL", "CONFIRMED"].includes(g.status) &&
-          new Date(g.slot.startsAt).getTime() > now
-        : g.status === "CANCELLED" ||
-          g.status === "EXPIRED" ||
-          new Date(g.slot.startsAt).getTime() <= now),
-  );
-  const bookings = (data?.bookings ?? []).filter(
-    (b) =>
-      filter === "all" ||
-      (filter === "upcoming"
-        ? b.status === "CONFIRMED" && new Date(b.slot.startsAt).getTime() > now
-        : b.status === "CANCELLED" || new Date(b.slot.startsAt).getTime() <= now),
-  );
+  const groups = (parties.data?.groups ?? [])
+    .filter((g) => matchesEvent(g, filter, now))
+    .sort(byDiningTime(filter));
+  const bookings = (data?.bookings ?? [])
+    .filter((b) => matchesBooking(b, filter, now))
+    .sort(byDiningTime(filter));
   // Deletion or live updates can shrink either list while a later page is selected.
   const groupPage = Math.min(
       partyPage,
@@ -128,7 +124,7 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
               aria-pressed={filter === value}
               className={filter === value ? "selected" : ""}
               onClick={() => {
-                setFilter(value);
+                setFilter(value as BookingFilter);
                 setPartyPage(0);
                 setBookingPage(0);
               }}
@@ -157,7 +153,7 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
                         <span className="small muted">
                           {b.group ? "EatTogether" : "Reservation"}
                         </span>
-                        <Status value={b.status} />
+                        <Status value={isPastBooking(b, now) ? "PAST" : b.status} />
                       </div>
                       <h3 className="plan-title" title={b.slot.restaurant.name}>
                         {b.slot.restaurant.name}
@@ -232,8 +228,18 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
             </ul>
             {!bookings.length && (
               <Empty
-                title="No reservations here yet"
-                text="Confirmed reservations appear here."
+                title={
+                  filter === "upcoming"
+                    ? "No upcoming reservations"
+                    : filter === "history"
+                      ? "No reservation history"
+                      : "No reservations here yet"
+                }
+                text={
+                  filter === "upcoming"
+                    ? "Confirmed future reservations appear here."
+                    : "Confirmed and cancelled reservations appear here."
+                }
               />
             )}
             <ListPages
@@ -292,8 +298,18 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
             </ul>
             {!groups.length && (
               <Empty
-                title="No Events here yet"
-                text="Join an EatTogether Event or try another filter."
+                title={
+                  filter === "upcoming"
+                    ? "No upcoming Events"
+                    : filter === "history"
+                      ? "No Event history"
+                      : "No Events here yet"
+                }
+                text={
+                  filter === "upcoming"
+                    ? "Future Events you belong to appear here, including those waiting for diners."
+                    : "Your EatTogether Events appear here."
+                }
               />
             )}
             <ListPages

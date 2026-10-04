@@ -11,7 +11,7 @@ type Result = {
   similarity?: number;
 };
 type Undo = { item: Result; previous: string | null };
-export function Discover() {
+export function Discover({ embedded = false }: { embedded?: boolean }) {
   const [mood, setMood] = useState(""),
     [mode, setMode] = useState("restaurants"),
     [area, setArea] = useState(""),
@@ -131,9 +131,11 @@ export function Discover() {
     r = item?.restaurant;
   return (
     <>
-      <div className="page-intro">
-        <h1>For you</h1>
-      </div>
+      {!embedded && (
+        <div className="page-intro">
+          <h1>For you</h1>
+        </div>
+      )}
       <div className="mode-tabs discovery-tabs">
         <button
           disabled={busy}

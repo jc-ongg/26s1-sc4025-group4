@@ -15,40 +15,67 @@ import {
   type Actions,
 } from "./dining-ui";
 
-export function Groups({ revision, mine = false }: Actions & { mine?: boolean }) {
+export function Groups({
+  revision,
+  mine = false,
+  embedded = false,
+}: Actions & { mine?: boolean; embedded?: boolean }) {
   const { data, error } = useResource<{ groups: Group[] }>(
     mine ? "/me/groups" : "/groups",
     revision,
   );
-  const [availableOnly, setAvailableOnly] = useState(false);
-  const groups = data?.groups.filter((g) => !availableOnly || canJoinEvent(g));
+  const [page, setPage] = useState(0);
+  const groups = data?.groups.filter((g) => mine || canJoinEvent(g));
+  const pageSize = 6;
+  const pages = Math.max(1, Math.ceil((groups?.length ?? 0) / pageSize));
+  const currentPage = Math.min(page, pages - 1);
   return (
     <>
-      <section className="page-intro">
-        <h1>{mine ? "My Events" : "EatTogether"}</h1>
-      </section>
+      {!embedded && (
+        <section className="page-intro">
+          <h1>{mine ? "My Events" : "EatTogether"}</h1>
+        </section>
+      )}
       <div className="section-heading">
-        <h2>{mine ? "Your Events" : "Available Events"}</h2>
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={availableOnly}
-            onChange={(e) => setAvailableOnly(e.target.checked)}
-          />
-          Seats available only
-        </label>
+        <h3>{mine ? "Your Events" : "Available Events"}</h3>
+        <span className="small muted">{groups?.length ?? 0} Events</span>
       </div>
       <State data={data} error={error}>
         <div className="grid party-results">
-          {groups?.map((g) => (
-            <GroupCard group={g} key={g.id} />
-          ))}
+          {groups
+            ?.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
+            .map((g) => (
+              <GroupCard group={g} key={g.id} />
+            ))}
         </div>
         {groups?.length === 0 && (
           <Empty
             title="No Events found"
             text="Explore restaurants and start a table of your own."
           />
+        )}
+        {pages > 1 && (
+          <div className="list-pagination">
+            <span>
+              Page {currentPage + 1} of {pages}
+            </span>
+            <div>
+              <button
+                className="text-button"
+                disabled={currentPage === 0}
+                onClick={() => setPage(currentPage - 1)}
+              >
+                Previous
+              </button>
+              <button
+                className="text-button"
+                disabled={currentPage + 1 === pages}
+                onClick={() => setPage(currentPage + 1)}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         )}
       </State>
     </>
@@ -88,8 +115,8 @@ export function GroupDetail({
   return (
     <>
       <EventUpdates group={g} userId={user.id} />
-      <a className="back" href="#/groups">
-        ← EatTogether Events
+      <a className="back" href="#/restaurants">
+        ← All restaurants
       </a>
       <State data={data} error={error}>
         {g && (
