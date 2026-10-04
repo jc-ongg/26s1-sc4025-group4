@@ -1,9 +1,15 @@
 import { useRef } from "react";
-import { Art } from "./dining-ui";
+import { Art, RestaurantEventCount } from "./dining-ui";
 import type { Restaurant } from "./types";
 import { availableSlots } from "./availability";
 
-export function TopPicks({ restaurants }: { restaurants: Restaurant[] }) {
+export function TopPicks({
+  restaurants,
+  eventCounts,
+}: {
+  restaurants: Restaurant[];
+  eventCounts: Map<string, number> | undefined;
+}) {
   const track = useRef<HTMLDivElement>(null);
   const picks = restaurants
     .map((restaurant) => ({ restaurant, slots: availableSlots(restaurant) }))
@@ -58,6 +64,9 @@ export function TopPicks({ restaurants }: { restaurants: Restaurant[] }) {
               <p>
                 {restaurant.cuisine} · {restaurant.area}
               </p>
+              <RestaurantEventCount
+                count={eventCounts && (eventCounts.get(restaurant.id) ?? 0)}
+              />
             </div>
           </a>
         ))}

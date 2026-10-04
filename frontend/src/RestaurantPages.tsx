@@ -1,170 +1,215 @@
 import { useState } from "react";
 import { TopPicks } from "./TopPicks";
 import { RestaurantMap } from "./RestaurantMap";
-import { Discover } from "./Discover";
+import { DiscoveryDialog } from "./DiscoveryDialog";
 import { Groups } from "./GroupPages";
 import type { Restaurant, Group, User } from "./types";
 import { RestaurantBooking } from "./RestaurantBooking";
-import { availableSlots, canJoinEvent } from "./availability";
-import { Art, Empty, State, useResource, type Actions } from "./dining-ui";
+import { availableSlots, isUpcomingEvent, upcomingEventCounts } from "./availability";
+import {
+  Art,
+  Empty,
+  RestaurantEventCount,
+  State,
+  useResource,
+  type Actions,
+} from "./dining-ui";
 
 export function Restaurants({
-  initialPanel = null,
+  initialCollection = "restaurants",
+  initialDiscoveryOpen = false,
   ...actions
-}: Actions & { initialPanel?: "events" | "discover" | null }) {
-  const { revision } = actions;
-  const [panel, setPanel] = useState<"events" | "discover" | null>(initialPanel);
+}: Actions & {
+  initialCollection?: "restaurants" | "events";
+  initialDiscoveryOpen?: boolean;
+}) {
   const { data, error } = useResource<{ restaurants: Restaurant[] }>(
     "/restaurants",
-    revision,
+    actions.revision,
   );
+  const groupResource = useResource<{ groups: Group[] }>("/groups", actions.revision);
+  const [collection, setCollection] = useState<"restaurants" | "events">(
+    initialCollection,
+  );
+  const [discoveryOpen, setDiscoveryOpen] = useState(initialDiscoveryOpen);
   const [search, setSearch] = useState(""),
-    [cuisine, setCuisine] = useState("All");
-  const groupResource = useResource<{ groups: Group[] }>("/groups", revision);
-  const groups = groupResource.data?.groups.filter((g) => canJoinEvent(g)) ?? [];
-  const [view, setView] = useState<"grid" | "map">("grid");
-  const filtered = data?.restaurants.filter(
-    (r) =>
-      (cuisine === "All" || r.cuisine === cuisine) &&
-      `${r.name} ${r.area} ${r.cuisine}`
-        .toLowerCase()
-        .includes(search.trim().toLowerCase()),
-  );
+    [cuisine, setCuisine] = useState("All"),
+    [view, setView] = useState<"grid" | "map">("grid");
+  const cuisines = [...new Set(data?.restaurants.map((r) => r.cuisine) ?? [])].sort();
+  const now = Date.now();
+  const groups = groupResource.data?.groups.filter((g) => isUpcomingEvent(g, now));
+  const eventCounts = groups && upcomingEventCounts(groups, now);
+  const matches = (r: Restaurant, title = "") =>
+    (cuisine === "All" || r.cuisine === cuisine) &&
+    `${r.name} ${r.area} ${r.cuisine} ${title}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase());
+  const restaurants = data?.restaurants.filter((r) => matches(r));
+  const events = groups?.filter((g) => matches(g.slot.restaurant, g.title));
+  const count = collection === "restaurants" ? restaurants?.length : events?.length;
+  const countLabel =
+    collection === "restaurants"
+      ? count === 1
+        ? "restaurant"
+        : "restaurants"
+      : count === 1
+        ? "Event"
+        : "Events";
+
   return (
     <>
-      {data && <TopPicks restaurants={data.restaurants} />}
+      {data && <TopPicks restaurants={data.restaurants} eventCounts={eventCounts} />}
       <section className="restaurant-browse">
         <div className="section-heading">
-          <div>
-            <h2>Explore restaurants</h2>
-          </div>
-          <div className="restaurant-tools">
+          <h2>
+            {collection === "restaurants" ? "Explore restaurants" : "EatTogether Events"}
+          </h2>
+          <span className="small muted">
+            {count === undefined ? "Loading…" : `${count} ${countLabel}`}
+          </span>
+        </div>
+        <div className="discovery-toolbar">
+          <button
+            className="secondary for-you-trigger"
+            aria-haspopup="dialog"
+            aria-expanded={discoveryOpen}
+            aria-controls="for-you-dialog"
+            onClick={() => setDiscoveryOpen(true)}
+          >
+            For you
+          </button>
+          <div className="mode-tabs collection-toggle" role="group" aria-label="Browse">
             <button
-              className="secondary"
-              aria-expanded={panel === "discover"}
-              aria-controls="restaurant-discovery"
-              onClick={() => setPanel(panel === "discover" ? null : "discover")}
+              aria-pressed={collection === "restaurants"}
+              className={collection === "restaurants" ? "selected" : ""}
+              onClick={() => setCollection("restaurants")}
             >
-              For you
+              Restaurants
             </button>
             <button
-              className="secondary"
-              aria-expanded={panel === "events"}
-              aria-controls="restaurant-discovery"
-              onClick={() => setPanel(panel === "events" ? null : "events")}
+              aria-pressed={collection === "events"}
+              className={collection === "events" ? "selected" : ""}
+              onClick={() => setCollection("events")}
             >
               EatTogether
             </button>
           </div>
         </div>
-        {panel && (
-          <section
-            className="restaurant-discovery"
-            id="restaurant-discovery"
-            aria-label={panel === "events" ? "EatTogether Events" : "For you"}
-          >
-            <div className="row">
-              <h2>{panel === "events" ? "EatTogether Events" : "For you"}</h2>
-              <button className="text-button" onClick={() => setPanel(null)}>
-                Close
-              </button>
-            </div>
-            {panel === "discover" ? (
-              <Discover embedded />
-            ) : (
-              <Groups {...actions} embedded />
-            )}
-          </section>
-        )}
-        <p className="small muted">{filtered?.length ?? 0} restaurants</p>
         <label className="search">
-          <span>⌕</span>
+          <span aria-hidden="true">⌕</span>
           <input
-            aria-label="Search restaurants"
-            placeholder="Restaurant, cuisine or neighbourhood"
+            aria-label={
+              collection === "restaurants"
+                ? "Search restaurants"
+                : "Search EatTogether Events"
+            }
+            placeholder={
+              collection === "restaurants"
+                ? "Restaurant, cuisine or neighbourhood"
+                : "Event, restaurant or neighbourhood"
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </label>
         <div className="chips" aria-label="Cuisine filters">
-          {["All", ...new Set(data?.restaurants.map((r) => r.cuisine) ?? [])].map(
-            (item) => (
-              <button
-                className={`chip ${cuisine === item ? "active" : ""}`}
-                key={item}
-                aria-pressed={cuisine === item}
-                onClick={() => setCuisine(item)}
-              >
-                {item}
-              </button>
-            ),
-          )}
-        </div>
-        <div className="browse-toolbar">
-          <div className="mode-tabs">
+          {["All", ...cuisines].map((item) => (
             <button
-              aria-pressed={view === "grid"}
-              className={view === "grid" ? "selected" : ""}
-              onClick={() => setView("grid")}
+              className={`chip ${cuisine === item ? "active" : ""}`}
+              key={item}
+              aria-pressed={cuisine === item}
+              onClick={() => setCuisine(item)}
             >
-              Restaurant view
+              {item}
             </button>
-            <button
-              aria-pressed={view === "map"}
-              className={view === "map" ? "selected" : ""}
-              onClick={() => setView("map")}
-            >
-              Map view
-            </button>
-          </div>
+          ))}
         </div>
-        {view === "map" && groupResource.error && (
-          <p className="error">Group availability is temporarily unavailable.</p>
-        )}
-        <State data={data} error={error}>
-          {view === "map" ? (
-            <RestaurantMap restaurants={filtered ?? []} groups={groups} />
-          ) : (
-            <div className="grid">
-              {filtered?.map((r) => {
-                const slots = availableSlots(r);
-                return (
-                  <a className="card" href={`#/restaurants/${r.id}`} key={r.id}>
-                    <Art restaurant={r} />
-                    <div className="card-body">
-                      <div className="row">
-                        <span className="eyebrow">{r.cuisine}</span>
-                        <span className="small muted">{r.price}</span>
-                      </div>
-                      <h3>{r.name}</h3>
-                      <p className="small">{r.area}</p>
-                      {groups.some((g) => g.slot.restaurant.id === r.id) && (
-                        <p className="small restaurant-event-label">
-                          EatTogether seats available
-                        </p>
-                      )}
-                      <div className="row">
-                        <span className="discount">
-                          {slots.length
-                            ? `Up to ${Math.max(...slots.map((s) => s.discount))}% off`
-                            : "No available times"}
-                        </span>
-                        <span className="small">View restaurant →</span>
-                      </div>
-                    </div>
-                  </a>
-                );
-              })}
+        {collection === "events" ? (
+          <Groups
+            key={`${search}:${cuisine}`}
+            groups={events ?? null}
+            error={groupResource.error}
+          />
+        ) : (
+          <>
+            <div className="browse-toolbar">
+              <div className="mode-tabs" role="group" aria-label="Restaurant view">
+                <button
+                  aria-pressed={view === "grid"}
+                  className={view === "grid" ? "selected" : ""}
+                  onClick={() => setView("grid")}
+                >
+                  Restaurant view
+                </button>
+                <button
+                  aria-pressed={view === "map"}
+                  className={view === "map" ? "selected" : ""}
+                  onClick={() => setView("map")}
+                >
+                  Map view
+                </button>
+              </div>
             </div>
-          )}
-          {filtered?.length === 0 && (
-            <Empty
-              title="No restaurants found"
-              text="Try another cuisine, restaurant name or neighbourhood."
-            />
-          )}
-        </State>
+            {groupResource.error && (
+              <p className="error">
+                EatTogether availability is temporarily unavailable.
+              </p>
+            )}
+            <State data={data} error={error}>
+              {view === "map" ? (
+                <RestaurantMap
+                  restaurants={restaurants ?? []}
+                  groups={groups ?? []}
+                  eventCounts={eventCounts}
+                />
+              ) : (
+                <div className="grid">
+                  {restaurants?.map((r) => {
+                    const slots = availableSlots(r, now);
+                    return (
+                      <a className="card" href={`#/restaurants/${r.id}`} key={r.id}>
+                        <Art restaurant={r} />
+                        <div className="card-body">
+                          <div className="row">
+                            <span className="eyebrow">{r.cuisine}</span>
+                            <span className="small muted">{r.price}</span>
+                          </div>
+                          <h3>{r.name}</h3>
+                          <p className="small">{r.area}</p>
+                          <RestaurantEventCount
+                            count={eventCounts && (eventCounts.get(r.id) ?? 0)}
+                          />
+                          <div className="row">
+                            <span className="discount">
+                              {slots.length
+                                ? `Up to ${Math.max(...slots.map((s) => s.discount))}% off`
+                                : "No available times"}
+                            </span>
+                            <span className="small">View restaurant →</span>
+                          </div>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+              {restaurants?.length === 0 && (
+                <Empty
+                  title="No restaurants found"
+                  text="Try another cuisine, restaurant name or neighbourhood."
+                />
+              )}
+            </State>
+          </>
+        )}
       </section>
+      <DiscoveryDialog
+        open={discoveryOpen}
+        onClose={() => setDiscoveryOpen(false)}
+        cuisines={cuisines}
+        initialCuisine={cuisine === "All" ? "" : cuisine}
+        eventCounts={eventCounts}
+      />
     </>
   );
 }

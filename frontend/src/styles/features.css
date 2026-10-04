@@ -167,6 +167,173 @@
   max-width: 340px;
   margin-bottom: 25px;
 }
+/* Discovery remains in a modal while the main page switches between its two collections. */
+.discovery-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.collection-toggle {
+  width: 320px;
+  margin: 0;
+}
+.collection-toggle button {
+  flex: 1;
+}
+.restaurant-browse .for-you-trigger {
+  min-height: 42px;
+  padding: 10px 20px;
+  background: #fff;
+  border: 1px solid #c9c4bd;
+  color: #b9233a;
+}
+.restaurant-browse .for-you-trigger:hover {
+  background: #faf3f3;
+  border-color: #b9233a;
+}
+.pick-caption .restaurant-event-label {
+  color: #fff;
+  font-size: 11px;
+  margin-top: 6px;
+  font-weight: 400;
+}
+.discovery-dialog {
+  width: min(1000px, calc(100% - 40px));
+  height: min(760px, calc(100dvh - 40px));
+  max-height: calc(100dvh - 40px);
+  padding: 0;
+  border: 1px solid #d2cec7;
+  border-radius: 10px;
+  background: #faf9f7;
+  color: #27292b;
+  box-shadow: 0 16px 64px #16171938;
+  overflow: hidden;
+}
+.discovery-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.discovery-dialog::backdrop {
+  background: #17191d85;
+}
+.discovery-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 24px;
+  background: #fff;
+  border-bottom: 1px solid #dedbd6;
+  flex-shrink: 0;
+}
+.discovery-dialog-header h2 {
+  margin: 0;
+  font-size: 24px;
+}
+.discovery-dialog-header button {
+  padding: 0;
+  width: 38px;
+  min-height: 38px;
+  font-size: 28px;
+}
+.discovery-dialog-body {
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 22px 24px;
+  min-height: 0;
+  flex: 1;
+}
+.discovery-dialog .discovery-tabs {
+  margin: 0 0 20px;
+}
+.discovery-dialog .discovery-layout {
+  grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
+  gap: 24px;
+}
+.discovery-dialog .mood-panel {
+  padding: 20px;
+}
+.discovery-dialog .mood-panel form {
+  margin-top: 16px;
+  gap: 8px;
+}
+.discovery-dialog .swipe-card {
+  margin-top: 8px;
+}
+.discovery-dialog .swipe-card .food-art {
+  height: 190px;
+}
+.discovery-dialog .swipe-card .card-body {
+  padding: 18px;
+}
+.discovery-dialog .swipe-card h2 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.5px;
+  margin: 8px 0 10px;
+}
+.discovery-dialog .swipe-card p {
+  font-size: 13px;
+  margin: 10px 0;
+}
+.discovery-dialog .swipe-card .badge {
+  padding: 5px 8px;
+  font-size: 11px;
+}
+.discovery-dialog .swipe-card .eyebrow {
+  margin: 0 0 8px;
+  font-size: 11px;
+}
+.discovery-dialog .swipe-card .chips {
+  margin: 12px 0;
+  gap: 6px;
+}
+.discovery-dialog .swipe-actions {
+  margin-top: 14px;
+  gap: 12px;
+}
+.discovery-dialog .swipe-actions button {
+  border-radius: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.discovery-dialog .discovery-welcome {
+  padding: 40px 24px;
+}
+.discovery-dialog .grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 700px) {
+  .discovery-toolbar {
+    gap: 12px;
+  }
+  .collection-toggle {
+    width: auto;
+    flex: 1;
+  }
+  .collection-toggle button {
+    padding: 10px 8px;
+  }
+  .restaurant-browse .for-you-trigger {
+    padding: 10px 12px;
+  }
+  .discovery-dialog {
+    width: calc(100% - 24px);
+    height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .discovery-dialog-header,
+  .discovery-dialog-body {
+    padding: 16px;
+  }
+  .discovery-dialog .discovery-layout,
+  .discovery-dialog .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .discovery-layout {
   display: grid;
   grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.15fr);

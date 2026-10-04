@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import { dinerCount, canJoinEvent } from "./availability";
+import { dinerCount, isUpcomingEvent } from "./availability";
 import "leaflet/dist/leaflet.css";
 import type { Restaurant, Group } from "./types";
-import { Art, date, time } from "./dining-ui";
+import { Art, RestaurantEventCount, date, time } from "./dining-ui";
 
 export function RestaurantMap({
   restaurants,
   groups,
+  eventCounts,
 }: {
   restaurants: Restaurant[];
   groups: Group[];
+  eventCounts: Map<string, number> | undefined;
 }) {
   const container = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null);
@@ -166,7 +168,7 @@ export function RestaurantMap({
     });
   }, [markerData, selected, attempt]);
   const r = restaurants.find((r) => r.id === selected),
-    open = groups.filter((g) => g.slot.restaurant.id === selected && canJoinEvent(g));
+    open = groups.filter((g) => g.slot.restaurant.id === selected && isUpcomingEvent(g));
   return (
     <div className="map-layout">
       <div>
@@ -239,6 +241,7 @@ export function RestaurantMap({
             </p>
             <h3>{r.name}</h3>
             <p className="small">{r.address}</p>
+            <RestaurantEventCount count={eventCounts && (eventCounts.get(r.id) ?? 0)} />
             <a className="button dark" href={`#/restaurants/${r.id}`}>
               Book a table →
             </a>
@@ -249,7 +252,10 @@ export function RestaurantMap({
                   {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
                 </span>
                 <span>
-                  {g.capacity - dinerCount(g)} seats left · {g.slot.discount}% off →
+                  {g.capacity > dinerCount(g)
+                    ? `${g.capacity - dinerCount(g)} seats left`
+                    : "Full"}{" "}
+                  · {g.slot.discount}% off →
                 </span>
               </a>
             ))}

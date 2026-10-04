@@ -4,7 +4,7 @@ import { EventUpdates } from "./EventUpdates";
 import { reservationProgress } from "./event-feedback";
 import { eventDisplayStatus } from "./booking-history";
 import { eventJoinState } from "./booking-flow";
-import { currentGroupStatus, hasStarted, dinerCount, canJoinEvent } from "./availability";
+import { currentGroupStatus, hasStarted, dinerCount } from "./availability";
 import {
   Art,
   Empty,
@@ -17,32 +17,14 @@ import {
   type Actions,
 } from "./dining-ui";
 
-export function Groups({
-  revision,
-  mine = false,
-  embedded = false,
-}: Actions & { mine?: boolean; embedded?: boolean }) {
-  const { data, error } = useResource<{ groups: Group[] }>(
-    mine ? "/me/groups" : "/groups",
-    revision,
-  );
+export function Groups({ groups, error }: { groups: Group[] | null; error: string }) {
   const [page, setPage] = useState(0);
-  const groups = data?.groups.filter((g) => mine || canJoinEvent(g));
   const pageSize = 6;
   const pages = Math.max(1, Math.ceil((groups?.length ?? 0) / pageSize));
   const currentPage = Math.min(page, pages - 1);
   return (
     <>
-      {!embedded && (
-        <section className="page-intro">
-          <h1>{mine ? "My Events" : "EatTogether"}</h1>
-        </section>
-      )}
-      <div className="section-heading">
-        <h3>{mine ? "Your Events" : "Available Events"}</h3>
-        <span className="small muted">{groups?.length ?? 0} Events</span>
-      </div>
-      <State data={data} error={error}>
+      <State data={groups} error={error}>
         <div className="grid party-results">
           {groups
             ?.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
@@ -53,7 +35,7 @@ export function Groups({
         {groups?.length === 0 && (
           <Empty
             title="No Events found"
-            text="Explore restaurants and start a table of your own."
+            text="Try another cuisine, Event name or neighbourhood."
           />
         )}
         {pages > 1 && (

@@ -194,6 +194,15 @@ export function GroupCard({ group: g }: { group: Group }) {
     </a>
   );
 }
+export function RestaurantEventCount({ count }: { count: number | undefined }) {
+  return (
+    <p className={`small restaurant-event-label ${count ? "" : "muted"}`}>
+      {count === undefined
+        ? "EatTogether Events · —"
+        : `${count} upcoming EatTogether ${count === 1 ? "Event" : "Events"}`}
+    </p>
+  );
+}
 export function Empty({ title, text }: { title: string; text: string }) {
   return (
     <div className="empty">

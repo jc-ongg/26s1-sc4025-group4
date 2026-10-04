@@ -3,10 +3,23 @@ import type { Group, Restaurant } from "./types";
 export const dinerCount = (group: Pick<Group, "members">) =>
   group.members.reduce((total, party) => total + party.partySize, 0);
 
-export const canJoinEvent = (group: Group, now = Date.now()) =>
+export const isUpcomingEvent = (group: Group, now = Date.now()) =>
+  group.slot.restaurant.active &&
   ["OPEN", "FULL", "CONFIRMED"].includes(group.status) &&
-  !hasStarted(group.slot.startsAt, now) &&
-  dinerCount(group) < group.capacity;
+  !hasStarted(group.slot.startsAt, now);
+
+export const canJoinEvent = (group: Group, now = Date.now()) =>
+  isUpcomingEvent(group, now) && dinerCount(group) < group.capacity;
+
+export function upcomingEventCounts(groups: Group[], now = Date.now()) {
+  const counts = new Map<string, number>();
+  for (const group of groups) {
+    if (!isUpcomingEvent(group, now)) continue;
+    const id = group.slot.restaurant.id;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return counts;
+}
 
 export function hasStarted(startsAt: string, now = Date.now()) {
   return new Date(startsAt).getTime() <= now;

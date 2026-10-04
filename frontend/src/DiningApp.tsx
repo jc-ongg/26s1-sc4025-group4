@@ -103,7 +103,7 @@ export function DiningApp({
           </div>
         )}
         {page === "discover" ? (
-          <Restaurants key={page} {...actions} initialPanel="discover" />
+          <Restaurants key={page} {...actions} initialDiscoveryOpen />
         ) : page === "restaurants" && id ? (
           <RestaurantDetail key={id} id={id} user={user} {...actions} />
         ) : page === "restaurants" ? (
@@ -111,7 +111,7 @@ export function DiningApp({
         ) : page === "groups" && id ? (
           <GroupDetail key={id} id={id} user={user} {...actions} />
         ) : page === "groups" ? (
-          <Restaurants key={page} {...actions} initialPanel="events" />
+          <Restaurants key={page} {...actions} initialCollection="events" />
         ) : page === "my-groups" ? (
           <Bookings {...actions} user={user} />
         ) : page === "profile" ? (

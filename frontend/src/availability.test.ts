@@ -6,8 +6,10 @@ import {
   hasStarted,
   dinerCount,
   canJoinEvent,
+  isUpcomingEvent,
+  upcomingEventCounts,
 } from "./availability";
-import type { Restaurant, Slot } from "./types";
+import type { Group, Restaurant, Slot } from "./types";
 
 const now = Date.parse("2026-09-28T04:00:00Z");
 const restaurant: Restaurant = {
@@ -93,5 +95,48 @@ test("Event availability counts diners across Parties and includes confirmed Eve
   assert.equal(
     canJoinEvent({ ...event, slot: slot("past", "2026-09-28T04:00:00Z") }, now),
     false,
+  );
+});
+
+test("restaurant Event counts include full future tables but exclude closed, started and inactive venues", () => {
+  const event: Group = {
+    id: "event",
+    title: "",
+    description: "",
+    hostId: "host",
+    host: { id: "host", name: "Host" },
+    status: "CONFIRMED",
+    capacity: 2,
+    booking: null,
+    slot: slot("future", "2026-09-29T04:00:00Z"),
+    members: [{ userId: "host", partySize: 2, user: { id: "host", name: "Host" } }],
+  };
+  assert.equal(isUpcomingEvent(event, now), true);
+  assert.equal(canJoinEvent(event, now), false);
+  const inactive = {
+    ...event,
+    slot: { ...event.slot, restaurant: { ...restaurant, active: false } },
+  };
+  assert.equal(canJoinEvent(inactive, now), false);
+  const anotherVenue = {
+    ...event,
+    slot: { ...event.slot, restaurant: { ...restaurant, id: "another" } },
+  };
+  const events: Group[] = [
+    event,
+    { ...event, id: "waiting", status: "OPEN" },
+    anotherVenue,
+    inactive,
+    { ...event, status: "CANCELLED" },
+    { ...event, status: "EXPIRED" },
+    { ...event, slot: slot("starting", "2026-09-28T04:00:00Z") },
+    { ...event, slot: slot("past", "2026-09-27T04:00:00Z") },
+  ];
+  assert.deepEqual(
+    [...upcomingEventCounts(events, now)],
+    [
+      ["test", 2],
+      ["another", 1],
+    ],
   );
 });

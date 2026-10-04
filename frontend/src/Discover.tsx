@@ -1,29 +1,30 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api } from "./api";
-import type { Group, Restaurant } from "./types";
-import { Art, Empty, Status, date, time } from "./dining-ui";
-import { currentGroupStatus, dinerCount } from "./availability";
+import type { Restaurant } from "./types";
+import { Art, Empty, RestaurantEventCount } from "./dining-ui";
 type Result = {
   key: string;
   restaurant: Restaurant;
-  group?: Group | null;
   distanceKm?: number | null;
   similarity?: number;
 };
 type Undo = { item: Result; previous: string | null };
-export function Discover({ embedded = false }: { embedded?: boolean }) {
+export function Discover({
+  cuisines,
+  initialCuisine,
+  eventCounts,
+}: {
+  cuisines: string[];
+  initialCuisine: string;
+  eventCounts: Map<string, number> | undefined;
+}) {
   const [mood, setMood] = useState(""),
-    [mode, setMode] = useState("restaurants"),
+    [cuisine, setCuisine] = useState(initialCuisine),
     [area, setArea] = useState(""),
     [radius, setRadius] = useState(15);
   const [savedLoading, setSavedLoading] = useState(false);
   const [savedLoaded, setSavedLoaded] = useState(false);
-  const [contentHeight, setContentHeight] = useState(0);
-  const content = useRef<HTMLDivElement>(null);
-
   function switchTab(next: string) {
-    // Preserve the workspace height so shorter tabs do not move the page beneath the pointer.
-    setContentHeight(content.current?.getBoundingClientRect().height ?? 0);
     setTab(next);
   }
   const [results, setResults] = useState<Result[] | null>(null),
@@ -34,7 +35,19 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
     [notice, setNotice] = useState(""),
     [undo, setUndo] = useState<Undo | null>(null);
   const pointer = useRef<{ x: number; y: number } | null>(null);
+  const searchRequest = useRef<AbortController | null>(null);
+  const preferenceVersion = useRef(0);
+  useEffect(() => () => searchRequest.current?.abort(), []);
+  useEffect(() => {
+    updatePreferences(() => setCuisine(initialCuisine));
+  }, [initialCuisine]);
   function updatePreferences(change: () => void) {
+    preferenceVersion.current += 1;
+    if (searchRequest.current) {
+      searchRequest.current.abort();
+      searchRequest.current = null;
+      setBusy(false);
+    }
     change();
     setResults(null);
     setUndo(null);
@@ -43,6 +56,9 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
   }
   async function search(e?: FormEvent) {
     e?.preventDefault();
+    const controller = new AbortController();
+    searchRequest.current?.abort();
+    searchRequest.current = controller;
     setBusy(true);
     setError("");
     setUndo(null);
@@ -51,14 +67,17 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
     try {
       const data = await api<{ results: Result[] }>(
         "/discovery/search",
-        { mood, mode, area: area.trim(), radius },
-        { timeoutMs: 120_000 },
+        { mood, mode: "restaurants", cuisine, area: area.trim(), radius },
+        { timeoutMs: 120_000, signal: controller.signal },
       );
-      setResults(data.results);
+      if (!controller.signal.aborted) setResults(data.results);
     } catch (e) {
-      setError((e as Error).message);
+      if (!controller.signal.aborted) setError((e as Error).message);
     } finally {
-      setBusy(false);
+      if (searchRequest.current === controller) {
+        searchRequest.current = null;
+        setBusy(false);
+      }
     }
   }
   async function loadSaved() {
@@ -67,7 +86,9 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
     setSavedLoading(true);
     setError("");
     try {
-      setSaved((await api<{ results: Result[] }>("/discovery/saved")).results);
+      setSaved(
+        (await api<{ results: Result[] }>("/discovery/saved?mode=restaurants")).results,
+      );
       setSavedLoaded(true);
     } catch (e) {
       setError((e as Error).message);
@@ -78,6 +99,7 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
   async function decide(decision: "SAVE" | "SKIP") {
     const item = results?.[0];
     if (!item || busy) return;
+    const version = preferenceVersion.current;
     setBusy(true);
     setError("");
     try {
@@ -85,6 +107,8 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
         key: item.key,
         decision,
       });
+      // A completed write remains saved, but cannot restore cards from older preferences.
+      if (version !== preferenceVersion.current) return;
       setUndo({ item, previous: response.previous });
       setResults((old) => old?.filter((r) => r.key !== item.key) ?? []);
       setNotice(decision === "SAVE" ? "Saved to shortlist." : "Skipped.");
@@ -96,6 +120,7 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
   }
   async function undoLast() {
     if (!undo || busy) return;
+    const version = preferenceVersion.current;
     setBusy(true);
     setError("");
     try {
@@ -103,6 +128,7 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
         key: undo.item.key,
         decision: undo.previous,
       });
+      if (version !== preferenceVersion.current) return;
       setResults((old) => [undo.item, ...(old ?? [])]);
       setUndo(null);
       setNotice("Last swipe undone.");
@@ -127,15 +153,9 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
     }
   }
   const item = results?.[0],
-    g = item?.group,
     r = item?.restaurant;
   return (
     <>
-      {!embedded && (
-        <div className="page-intro">
-          <h1>For you</h1>
-        </div>
-      )}
       <div className="mode-tabs discovery-tabs">
         <button
           disabled={busy}
@@ -159,11 +179,7 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
           {error}
         </p>
       )}
-      <div
-        ref={content}
-        className="discovery-content"
-        style={{ minHeight: contentHeight }}
-      >
+      <div className="discovery-content">
         {tab === "saved" ? (
           <>
             <div className="shortlist-status" role="status">
@@ -175,25 +191,23 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
                   <article className="card" key={s.key}>
                     <Art restaurant={s.restaurant} />
                     <div className="card-body">
-                      {s.group && <Status value={currentGroupStatus(s.group)} />}
-                      <h3>{s.group?.title ?? s.restaurant.name}</h3>
-                      <p>{s.group ? s.restaurant.name : s.restaurant.area}</p>
-                      {s.group && (
-                        <p className="small">
-                          {date(s.group.slot.startsAt)} · {time(s.group.slot.startsAt)} ·{" "}
-                          {dinerCount(s.group)}/{s.group.capacity} joined
-                        </p>
-                      )}
+                      <h3>{s.restaurant.name}</h3>
+                      <p className="small">
+                        {s.restaurant.cuisine} · {s.restaurant.area}
+                      </p>
+                      <RestaurantEventCount
+                        count={eventCounts && (eventCounts.get(s.restaurant.id) ?? 0)}
+                      />
                       <div className="row">
                         <a
                           className="button dark"
-                          href={`#/${s.group ? "groups/" + s.group.id : "restaurants/" + s.restaurant.id}`}
+                          href={`#/restaurants/${s.restaurant.id}`}
                         >
-                          {s.group ? "View Event" : "View restaurant"} →
+                          View restaurant →
                         </a>
                         <button
                           className="text-button"
-                          disabled={busy}
+                          disabled={busy || savedLoading}
                           onClick={() => void remove(s.key)}
                         >
                           Remove
@@ -209,9 +223,7 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
                   savedLoading && !savedLoaded ? "Loading shortlist…" : "No saved items"
                 }
                 text={
-                  savedLoading && !savedLoaded
-                    ? ""
-                    : "Saved restaurants and parties appear here."
+                  savedLoading && !savedLoaded ? "" : "Saved restaurants appear here."
                 }
               />
             )}
@@ -230,27 +242,22 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
                   disabled={busy}
                   value={mood}
                   onChange={(e) => updatePreferences(() => setMood(e.target.value))}
-                  placeholder="Something spicy, shared dishes and a lively group"
+                  placeholder="Cuisine, dishes or dining atmosphere"
                 />
-                <div className="mode-tabs" role="group" aria-label="Help me find">
-                  {[
-                    ["restaurants", "Restaurant"],
-                    ["groups", "EatTogether"],
-                  ].map(([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      disabled={busy}
-                      className={mode === value ? "selected" : ""}
-                      aria-pressed={mode === value}
-                      onClick={() => {
-                        if (mode !== value) updatePreferences(() => setMode(value));
-                      }}
-                    >
-                      {label}
-                    </button>
+                <label htmlFor="discovery-cuisine">Cuisine</label>
+                <select
+                  id="discovery-cuisine"
+                  value={cuisine}
+                  disabled={busy}
+                  onChange={(e) => updatePreferences(() => setCuisine(e.target.value))}
+                >
+                  <option value="">All cuisines</option>
+                  {cuisines.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
                   ))}
-                </div>
+                </select>
                 <label htmlFor="discovery-area">
                   Location <span className="muted">(optional)</span>
                 </label>
@@ -291,7 +298,9 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
               ) : item && r ? (
                 <>
                   <div className="row small muted">
-                    <span>{results?.length} matches</span>
+                    <span>
+                      {results?.length} {results?.length === 1 ? "match" : "matches"}
+                    </span>
                   </div>
                   <article
                     className="card swipe-card"
@@ -338,13 +347,8 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
                           ? ` · ${item.distanceKm.toFixed(1)} km away`
                           : ""}
                       </p>
-                      <h2>{g?.title ?? r.name}</h2>
-                      {g && (
-                        <p className="small">
-                          {r.name} · Hosted by {g.host.name}
-                        </p>
-                      )}
-                      <p>{g?.description ?? r.description}</p>
+                      <h2>{r.name}</h2>
+                      <p>{r.description}</p>
                       <div className="chips">
                         {r.tags.map((tag) => (
                           <span className="badge" key={tag}>
@@ -352,22 +356,11 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
                           </span>
                         ))}
                       </div>
-                      {g && (
-                        <div className="selection-summary">
-                          <strong>
-                            {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
-                          </strong>
-                          <span>
-                            {g.capacity - dinerCount(g)} seats left · {g.slot.discount}%
-                            off
-                          </span>
-                        </div>
-                      )}
-                      <a
-                        className="text-button"
-                        href={`#/${g ? "groups/" + g.id : "restaurants/" + r.id}`}
-                      >
-                        {g ? "View Event" : "View restaurant"} →
+                      <RestaurantEventCount
+                        count={eventCounts && (eventCounts.get(r.id) ?? 0)}
+                      />
+                      <a className="text-button" href={`#/restaurants/${r.id}`}>
+                        View restaurant →
                       </a>
                     </div>
                   </article>
@@ -387,14 +380,11 @@ export function Discover({ embedded = false }: { embedded?: boolean }) {
                       ♡ Save →
                     </button>
                   </div>
-                  <p className="small muted swipe-hint">
-                    Swipe, use the buttons, or focus the card and press ← / →.
-                  </p>
                 </>
               ) : results ? (
                 <Empty
                   title="No more matches"
-                  text="Try another search or a wider location radius."
+                  text="Try another search, change the cuisine or widen the location radius."
                 />
               ) : (
                 <div className="empty discovery-welcome">
