@@ -68,7 +68,13 @@ function distance(lat: number, lon: number, centre: [number, number]) {
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 discovery.post("/discovery/search", async (req, res) => {
-  const { mood, mode = "restaurants", area = "any", radius = 15 } = req.body ?? {};
+  const {
+    mood,
+    mode = "restaurants",
+    area = "any",
+    radius = 15,
+    cuisine = "",
+  } = req.body ?? {};
   if (
     typeof mood !== "string" ||
     !mood.trim() ||
@@ -76,6 +82,8 @@ discovery.post("/discovery/search", async (req, res) => {
     !["groups", "restaurants"].includes(mode) ||
     typeof area !== "string" ||
     area.length > 120 ||
+    typeof cuisine !== "string" ||
+    cuisine.length > 80 ||
     typeof radius !== "number" ||
     !Number.isFinite(radius) ||
     radius < 1 ||
@@ -171,6 +179,12 @@ discovery.post("/discovery/search", async (req, res) => {
           group: undefined,
         }));
   const eligible = candidates
+    // Explicit cuisine is a constraint; semantic similarity only ranks within it.
+    .filter(
+      (c) =>
+        !cuisine.trim() ||
+        c.restaurant.cuisine.toLowerCase() === cuisine.trim().toLowerCase(),
+    )
     .filter((c) => !excluded.has(c.key))
     .map((c) => ({
       ...c,
@@ -231,9 +245,18 @@ discovery.post("/discovery/decision", async (req, res) => {
     });
   res.json({ previous: previous?.decision ?? null });
 });
-discovery.get("/discovery/saved", async (_req, res) => {
+discovery.get("/discovery/saved", async (req, res) => {
+  const mode = req.query.mode;
+  if (mode !== undefined && mode !== "restaurants" && mode !== "groups")
+    throw new HttpError(400, "Invalid shortlist filter.");
   const saved = await db.discoveryDecision.findMany({
-    where: { userId: res.locals.userId, decision: "SAVE" },
+    where: {
+      userId: res.locals.userId,
+      decision: "SAVE",
+      ...(mode && {
+        targetKey: { startsWith: mode === "restaurants" ? "restaurant:" : "group:" },
+      }),
+    },
     orderBy: { updatedAt: "desc" },
   });
   const results = await Promise.all(

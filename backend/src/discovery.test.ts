@@ -100,6 +100,41 @@ test("local semantic ranking, availability, radius, shortlist isolation and undo
     });
     assert.equal(defaultMode.results[0].restaurant.id, "il-cielo");
     assert.ok(defaultMode.results.every((result: { group?: unknown }) => !result.group));
+    const western = await api("/discovery/search", {
+      mood: "Chinese dumplings and shared dishes",
+      cuisine: "  wEsTeRn  ",
+    });
+    assert.ok(western.results.length > 0);
+    assert.ok(
+      western.results.every(
+        (r: { restaurant: { cuisine: string } }) => r.restaurant.cuisine === "Western",
+      ),
+    );
+    assert.equal(western.results[0].restaurant.id, "lazy-lizard");
+    const outsideRadius = await api("/discovery/search", {
+      mood: "Chinese food",
+      cuisine: "Western",
+      area: "orchard",
+      radius: 1,
+    });
+    assert.deepEqual(outsideRadius.results, []);
+    const unknownCuisine = await api("/discovery/search", {
+      mood: "lunch",
+      cuisine: "Unlisted cuisine",
+    });
+    assert.deepEqual(unknownCuisine.results, []);
+    const invalidCuisine = await fetch("http://localhost:4000/api/discovery/search", {
+      method: "POST",
+      headers: { cookie, "Content-Type": "application/json" },
+      body: JSON.stringify({ mood: "lunch", cuisine: ["Western"] }),
+    });
+    assert.equal(invalidCuisine.status, 400);
+    console.log(
+      "Explicit Western cuisine excludes Chinese recommendations, including conflicting moods; empty filters never fall back.",
+    );
+    const groupKey = (await search("lunch")).results[0].key;
+    await api("/discovery/decision", { key: groupKey, decision: "SAVE" });
+    assert.deepEqual((await api("/discovery/saved?mode=restaurants")).results, []);
     const key = restaurants.results[0].key;
     assert.equal(
       (await api("/discovery/decision", { key, decision: "SAVE" })).previous,
@@ -108,6 +143,18 @@ test("local semantic ranking, availability, radius, shortlist isolation and undo
     assert.ok(
       (await api("/discovery/saved")).results.some((r: { key: string }) => r.key === key),
     );
+    const restaurantShortlist = await api("/discovery/saved?mode=restaurants");
+    assert.deepEqual(
+      restaurantShortlist.results.map((r: { key: string }) => r.key),
+      [key],
+    );
+    assert.deepEqual(
+      (await api("/discovery/saved?mode=groups")).results.map(
+        (r: { key: string }) => r.key,
+      ),
+      [groupKey],
+    );
+    await api("/discovery/decision", { key: groupKey, decision: null });
     assert.equal(
       (await api("/discovery/saved", undefined, otherCookie)).results.length,
       0,
