@@ -28,6 +28,10 @@ The root integration script exercises authentication through port 3000. Backend 
 | Dining integration        | Input validation, host authorization, automatic confirmation/reversion, weighted Party counts, Host Handover, changes after confirmation, start-time freeze, concurrent last-seat joins, competing ordinary/group reservations, expiry, personal deletion of cancelled bookings |
 | Discovery integration     | Real-model semantic rankings, radius filtering, available seats, per-account decisions, save/skip/undo                                                                                                                                                                          |
 
+## Isolated CI integration
+
+`npm run ci:integration` builds and tests a fresh Docker stack on port 3001, then removes only its temporary project resources. This is the same integration entry point used by GitHub Actions. It does not test against or reset the local demo database. See [CI_CD.md](CI_CD.md) for the workflow, evidence and release process.
+
 ## Browser verification
 
 Check restaurant browsing and photo-map selection at desktop and phone widths. Open For you from restaurant discovery and exercise swipe/save/undo and the shortlist. Changing search mode or preferences must clear the previous results. My bookings should show two compact, independently paginated lists, with Upcoming/History filters and personal deletion for cancelled bookings. Page headings should remain visible after navigating between tabs and loading detail pages.

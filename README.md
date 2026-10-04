@@ -20,6 +20,7 @@ Verification commands and coverage: [Testing](docs/TESTING.md).
 - [EatTogether concept alignment and deferred scope](docs/EATTOGETHER_SCOPE.md)
 - [Architecture, schema and API](docs/IMPLEMENTATION_PLAN.md)
 - [Setup, demo credentials and verification](docs/DEVELOPMENT.md)
+- [CI and release deployment](docs/CI_CD.md)
 - [Two-user demo walkthrough](docs/DEMO_WALKTHROUGH.md)
 - [Discovery architecture and evidence](docs/DISCOVERY.md)
 - [Restaurant, photo, map and model sources](docs/SOURCES.md)

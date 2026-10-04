@@ -48,6 +48,10 @@ docker compose down
 
 For frontend development, `npm run dev --workspace frontend` starts port 3000 and proxies /api to localhost:4000. Run the backend against a reachable PostgreSQL database with DATABASE_URL configured. The default Compose database intentionally has no host port.
 
+## Release deployment
+
+GitHub Actions validates changes and prepares a source release for manual deployment on this laptop. See [CI_CD.md](CI_CD.md) for the pipeline and artifact instructions. Normal `docker compose up --build -d` remains available for development. The default port is unchanged; `EATIGO_PORT` and `EATIGO_BIND_ADDRESS` allow isolated testing. `/version.json` returns the release commit, or `development` for a normal local build.
+
 ## Manual foundation checks
 
 1. Log in as Jacob with the documented password; refresh and verify identity persists.
