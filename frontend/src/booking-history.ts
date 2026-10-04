@@ -11,6 +11,23 @@ export function isPastBooking(booking: Booking, now = Date.now()) {
   return booking.status === "CONFIRMED" && hasStarted(booking.slot.startsAt, now);
 }
 
+export function bookingDisplayStatus(booking: Booking, now = Date.now()) {
+  return booking.status === "CONFIRMED"
+    ? isPastBooking(booking, now)
+      ? "PAST"
+      : "UPCOMING"
+    : booking.status;
+}
+
+export function eventDisplayStatus(group: Group, now = Date.now()) {
+  const status = currentGroupStatus(group, now);
+  return status === "CONFIRMED"
+    ? hasStarted(group.slot.startsAt, now)
+      ? "PAST"
+      : "UPCOMING"
+    : status;
+}
+
 export function matchesBooking(booking: Booking, filter: BookingFilter, now: number) {
   return (
     filter === "all" ||

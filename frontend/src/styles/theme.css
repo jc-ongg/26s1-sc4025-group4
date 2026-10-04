@@ -959,8 +959,8 @@ select {
   min-height: 170px;
 }
 .status.past {
-  background: #eeece8;
-  color: #46505c;
+  background: #e7f2ea;
+  color: #27643c;
 }
 .restaurant-tools {
   display: flex;
@@ -1021,4 +1021,175 @@ select {
   font-size: 12px;
   font-weight: 400;
   color: #59616a;
+}
+
+/* Booking colours retain written labels so status never depends on colour alone. */
+.status.upcoming {
+  background: #e8f0fc;
+  color: #245b94;
+}
+.status.cancelled {
+  background: #fbe9e9;
+  color: #a4303d;
+}
+.status.open,
+.status.full,
+.status.pending {
+  background: #fbf0da;
+  color: #805913;
+}
+.status.expired {
+  background: #eeece8;
+  color: #625d56;
+}
+.plan-row[data-status] {
+  border-left: 3px solid transparent;
+  padding-left: 13px;
+}
+.plan-row[data-status="upcoming"] {
+  border-left-color: #4a78ac;
+}
+.plan-row[data-status="past"] {
+  border-left-color: #4a855e;
+}
+.plan-row[data-status="cancelled"] {
+  border-left-color: #bd5460;
+}
+.plan-row[data-status="open"],
+.plan-row[data-status="full"],
+.plan-row[data-status="pending"] {
+  border-left-color: #b88a34;
+}
+.plan-row[data-status="expired"] {
+  border-left-color: #969089;
+}
+
+/* Time selection and Event discovery share one restaurant booking flow. */
+.reservation-flow {
+  align-items: start;
+}
+.reservation-flow .booking-panel {
+  position: static;
+}
+.reservation-flow .time-zone {
+  margin: 12px 0 18px;
+}
+.reservation-flow .mode-tabs {
+  margin: 0 0 8px;
+}
+.reservation-flow .mode-tabs button {
+  flex: 1;
+}
+.slot-events {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #d2cec7;
+}
+.slot-events h2 {
+  font-size: 20px;
+}
+.slot-event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+.slot-event-choice {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 18px;
+  text-align: left;
+  justify-content: stretch;
+  justify-items: stretch;
+  background: #fff;
+  color: #303641;
+  border: 1px solid #d2cec7;
+  font-weight: 400;
+}
+.slot-event-choice > span {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.slot-event-choice .row {
+  flex-wrap: wrap;
+}
+.slot-event-choice .row strong {
+  overflow-wrap: anywhere;
+}
+.slot-event-choice:hover {
+  background: #f4f2ee;
+  border-color: #aaa49c;
+}
+.slot-event-choice.selected {
+  border-color: #b9233a;
+  background: #faf5f4;
+}
+.slot-event-choice .event-choice-action {
+  color: #b9233a;
+  font-weight: 600;
+}
+.event-preview {
+  border-top: 1px solid #d2cec7;
+  padding-top: 18px;
+  min-width: 0;
+}
+.event-preview .row {
+  align-items: start;
+  flex-wrap: wrap;
+}
+.event-preview h3 {
+  margin: 0;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.event-preview .button,
+.event-preview > button {
+  width: 100%;
+  margin-top: 10px;
+}
+.event-details-link {
+  display: inline-block;
+  font-size: 13px;
+  margin-top: 18px;
+  color: #b9233a;
+}
+.create-event-heading {
+  font-size: 18px;
+  margin: 8px 0 0;
+}
+.party-size-summary {
+  display: block;
+  padding: 13px;
+  border: 1px solid #d4d0cb;
+  border-radius: 5px;
+  background: #f4f2ee;
+}
+.booking-panel form {
+  margin-bottom: 0;
+}
+.booking-panel .note {
+  font-size: 13px;
+  margin: 0;
+}
+.event-booking-actions {
+  flex-wrap: wrap;
+}
+.event-booking-actions .text-button {
+  padding: 0;
+  min-height: 24px;
+}
+@media (max-width: 800px) {
+  .reservation-flow {
+    display: flex;
+    flex-direction: column;
+  }
+  .reservation-flow > section,
+  .reservation-flow > aside {
+    width: 100%;
+  }
+  .reservation-flow .booking-panel {
+    scroll-margin-top: 150px;
+  }
 }

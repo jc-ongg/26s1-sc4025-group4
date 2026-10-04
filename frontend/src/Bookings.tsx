@@ -5,7 +5,8 @@ import {
   matchesBooking,
   matchesEvent,
   byDiningTime,
-  isPastBooking,
+  bookingDisplayStatus,
+  eventDisplayStatus,
   type BookingFilter,
 } from "./booking-history";
 import { reservationProgress } from "./event-feedback";
@@ -52,10 +53,11 @@ function ListPages({
   label: string;
 }) {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const noun = label === "Reservations" ? "reservation" : "Event";
   return (
     <div className="list-pagination">
       <span>
-        {total} {total === 1 ? "plan" : "plans"} · Page {page + 1} of {pages}
+        {`${total} ${noun}${total === 1 ? "" : "s"}`} · Page {page + 1} of {pages}
       </span>
       {pages > 1 && (
         <div>
@@ -96,7 +98,7 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
     .filter((g) => matchesEvent(g, filter, now))
     .sort(byDiningTime(filter));
   const bookings = (data?.bookings ?? [])
-    .filter((b) => matchesBooking(b, filter, now))
+    .filter((b) => !b.group && matchesBooking(b, filter, now))
     .sort(byDiningTime(filter));
   // Deletion or live updates can shrink either list while a later page is selected.
   const groupPage = Math.min(
@@ -146,14 +148,16 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
               {bookings
                 .slice(reservationPage * PAGE_SIZE, (reservationPage + 1) * PAGE_SIZE)
                 .map((b) => (
-                  <li className="plan-row" key={b.id}>
+                  <li
+                    className="plan-row"
+                    data-status={bookingDisplayStatus(b, now).toLowerCase()}
+                    key={b.id}
+                  >
                     <Art restaurant={b.slot.restaurant} />
                     <div className="plan-content">
                       <div className="row">
-                        <span className="small muted">
-                          {b.group ? "EatTogether" : "Reservation"}
-                        </span>
-                        <Status value={isPastBooking(b, now) ? "PAST" : b.status} />
+                        <span className="small muted">Private reservation</span>
+                        <Status value={bookingDisplayStatus(b, now)} />
                       </div>
                       <h3 className="plan-title" title={b.slot.restaurant.name}>
                         {b.slot.restaurant.name}
@@ -161,18 +165,13 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
                       <p className="small">
                         {date(b.slot.startsAt)} · {time(b.slot.startsAt)}
                       </p>
-                      {b.group ? (
-                        <PartyCounts yourSize={b.yourPartySize} total={b.partySize} />
-                      ) : (
-                        <p className="plan-diners">
-                          {b.partySize} {b.partySize === 1 ? "diner" : "diners"}
-                        </p>
-                      )}
+                      <p className="plan-diners">
+                        {b.partySize} {b.partySize === 1 ? "diner" : "diners"}
+                      </p>
                       <p className="small muted">
                         {b.slot.discount}% off · #{b.id.slice(0, 8).toUpperCase()}
                       </p>
                       <div className="plan-actions">
-                        {b.group && <a href={`#/groups/${b.group.id}`}>View Event →</a>}
                         {b.status === "CANCELLED" ? (
                           <button
                             className="text-button danger-text"
@@ -188,7 +187,6 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
                             Delete
                           </button>
                         ) : (
-                          !b.group &&
                           new Date(b.slot.startsAt).getTime() > now &&
                           (cancelId === b.id ? (
                             <>
@@ -238,7 +236,7 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
                 text={
                   filter === "upcoming"
                     ? "Confirmed future reservations appear here."
-                    : "Confirmed and cancelled reservations appear here."
+                    : "Your private reservations appear here."
                 }
               />
             )}
@@ -253,7 +251,7 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
         <section aria-label="EatTogether">
           <div className="section-heading">
             <h2>
-              EatTogether <span className="count-badge">{groups.length}</span>
+              EatTogether Events <span className="count-badge">{groups.length}</span>
             </h2>
           </div>
           <State data={parties.data} error={parties.error}>
@@ -261,12 +259,16 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
               {groups
                 .slice(groupPage * PAGE_SIZE, (groupPage + 1) * PAGE_SIZE)
                 .map((g) => (
-                  <li key={g.id} className="plan-row">
+                  <li
+                    key={g.id}
+                    className="plan-row"
+                    data-status={eventDisplayStatus(g, now).toLowerCase()}
+                  >
                     <Art restaurant={g.slot.restaurant} />
                     <div className="plan-content">
                       <div className="row">
                         <span className="small muted">EatTogether</span>
-                        <Status value={currentGroupStatus(g, now)} />
+                        <Status value={eventDisplayStatus(g, now)} />
                       </div>
                       <a className="plan-title" href={`#/groups/${g.id}`} title={g.title}>
                         {g.title}
@@ -288,9 +290,29 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
                       {["OPEN", "FULL"].includes(currentGroupStatus(g, now)) && (
                         <p className="plan-pending">{reservationProgress(g, now)}</p>
                       )}
-                      <div className="row small">
-                        <span>{g.slot.discount}% off</span>
+                      <div className="row small event-booking-actions">
+                        <span>
+                          {g.slot.discount}% off
+                          {g.booking &&
+                            g.booking.status !== "PENDING" &&
+                            ` · #${g.booking.id.slice(0, 8).toUpperCase()}`}
+                        </span>
                         <a href={`#/groups/${g.id}`}>View Event →</a>
+                        {g.booking?.status === "CANCELLED" && (
+                          <button
+                            className="text-button danger-text"
+                            disabled={busy}
+                            onClick={() =>
+                              act(
+                                `/bookings/${g.booking!.id}/delete`,
+                                {},
+                                "Cancelled booking deleted from your history.",
+                              )
+                            }
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </div>
                   </li>

@@ -105,7 +105,7 @@ export function DiningApp({
         {page === "discover" ? (
           <Restaurants key={page} {...actions} initialPanel="discover" />
         ) : page === "restaurants" && id ? (
-          <RestaurantDetail key={id} id={id} {...actions} />
+          <RestaurantDetail key={id} id={id} user={user} {...actions} />
         ) : page === "restaurants" ? (
           <Restaurants key={page} {...actions} />
         ) : page === "groups" && id ? (

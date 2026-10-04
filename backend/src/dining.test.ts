@@ -156,6 +156,16 @@ test("confirmation is automatic, reversible and preserves one shared booking", a
   const repeat = await request(`/groups/${g.id}/confirm`, "jacob", {});
   assert.equal(repeat.data.group.booking.id, id);
   assert.equal(await db.booking.count({ where: { groupId: g.id } }), 1);
+  const restaurant = (await request(`/restaurants/${g.slot.restaurant.id}`)).data;
+  assert.equal(
+    restaurant.groups.find((event: { id: string }) => event.id === g.id)?.booking.id,
+    id,
+  );
+  assert.equal(
+    restaurant.restaurant.slots.find((slot: { id: string }) => slot.id === g.slotId)
+      ?.allocation.groupId,
+    g.id,
+  );
   assert.ok(
     (await request("/me/bookings", "chongwei")).data.bookings.some(
       (b: { id: string }) => b.id === id,
@@ -168,6 +178,13 @@ test("confirmation is automatic, reversible and preserves one shared booking", a
   await request(`/groups/${g.id}/cancel`, "jacob", {});
   assert.equal((await request(`/groups/${g.id}`)).data.group.booking.status, "CANCELLED");
   assert.equal(await db.slotAllocation.count({ where: { slotId: g.slotId } }), 0);
+  const released = (await request(`/restaurants/${g.slot.restaurant.id}`)).data;
+  assert.ok(!released.groups.some((event: { id: string }) => event.id === g.id));
+  assert.equal(
+    released.restaurant.slots.find((slot: { id: string }) => slot.id === g.slotId)
+      ?.allocation,
+    null,
+  );
 });
 test("simultaneous last-seat joins never overfill; leaving a full table reopens it", async () => {
   const g = await group(2);

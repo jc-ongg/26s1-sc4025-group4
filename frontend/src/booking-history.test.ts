@@ -6,6 +6,8 @@ import {
   isPastBooking,
   matchesBooking,
   matchesEvent,
+  bookingDisplayStatus,
+  eventDisplayStatus,
 } from "./booking-history";
 
 const now = Date.parse("2026-10-04T12:00:00+08:00");
@@ -50,4 +52,32 @@ test("Upcoming sorts soonest first and History sorts latest dining times first",
   const items = [booking("2026-10-06T04:00:00Z"), booking("2026-10-05T04:00:00Z")];
   assert.equal([...items].sort(byDiningTime("upcoming"))[0], items[1]);
   assert.equal([...items].sort(byDiningTime("history"))[0], items[0]);
+});
+
+test("reservation and Event badges agree before and after dining starts", () => {
+  for (const [start, expected] of [
+    ["2026-10-04T12:00:01+08:00", "UPCOMING"],
+    ["2026-10-04T12:00:00+08:00", "PAST"],
+  ]) {
+    const b = booking(start);
+    const group = { status: "CONFIRMED", slot: b.slot } as Group;
+    assert.equal(bookingDisplayStatus(b, now), expected);
+    assert.equal(eventDisplayStatus(group, now), expected);
+    assert.equal(bookingDisplayStatus({ ...b, status: "CANCELLED" }, now), "CANCELLED");
+    assert.equal(eventDisplayStatus({ ...group, status: "CANCELLED" }, now), "CANCELLED");
+  }
+  assert.equal(
+    eventDisplayStatus(
+      { status: "OPEN", slot: { startsAt: "2026-10-05T04:00:00Z" } } as Group,
+      now,
+    ),
+    "OPEN",
+  );
+  assert.equal(
+    eventDisplayStatus(
+      { status: "OPEN", slot: { startsAt: new Date(now).toISOString() } } as Group,
+      now,
+    ),
+    "EXPIRED",
+  );
 });

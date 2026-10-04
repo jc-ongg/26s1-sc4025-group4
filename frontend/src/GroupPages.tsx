@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { Group, User } from "./types";
 import { EventUpdates } from "./EventUpdates";
 import { reservationProgress } from "./event-feedback";
+import { eventDisplayStatus } from "./booking-history";
+import { eventJoinState } from "./booking-flow";
 import { currentGroupStatus, hasStarted, dinerCount, canJoinEvent } from "./availability";
 import {
   Art,
@@ -94,6 +96,7 @@ export function GroupDetail({
     revision,
   );
   const [cancelPrompt, setCancelPrompt] = useState(false);
+  const [leavePrompt, setLeavePrompt] = useState(false);
   const [joiningSize, setJoiningSize] = useState(1);
   const [editedSize, setEditedSize] = useState<number | null>(null);
   const g = data?.group,
@@ -110,13 +113,17 @@ export function GroupDetail({
   const partySize = editedSize ?? party?.partySize ?? 1;
   const partyLimit = remaining + (party?.partySize ?? 0);
   const joiningPartySize = Math.min(joiningSize, Math.max(1, joinLimit));
+  const joinState = g && eventJoinState(g, joiningPartySize, user.id);
   const perform = (action: string, message: string, body = {}) =>
     act(`/groups/${id}/${action}`, body, message);
   return (
     <>
       <EventUpdates group={g} userId={user.id} />
-      <a className="back" href="#/restaurants">
-        ← All restaurants
+      <a
+        className="back"
+        href={g ? `#/restaurants/${g.slot.restaurant.id}` : "#/restaurants"}
+      >
+        ← Back to restaurant
       </a>
       <State data={data} error={error}>
         {g && (
@@ -125,7 +132,7 @@ export function GroupDetail({
               <div>
                 <h1>{g.title}</h1>
                 <div className="row start">
-                  <Status value={status!} />
+                  <Status value={eventDisplayStatus(g)} />
                   <span className="small muted">Hosted by {g.host.name}</span>
                 </div>
               </div>
@@ -204,7 +211,8 @@ export function GroupDetail({
                     : "This Event is closed to changes."}
                 </p>
                 <p className="small">
-                  {count} / {g.capacity} diners · {remaining} seats remaining
+                  {count} / {g.capacity} diners
+                  {mutable && ` · ${remaining} seats remaining`}
                 </p>
                 {g.booking && party && (
                   <p className="small booking-reference">
@@ -223,7 +231,7 @@ export function GroupDetail({
                       <label htmlFor="event-party-size">Your Party size</label>
                       <select
                         id="event-party-size"
-                        disabled={busy}
+                        disabled={busy || !g.slot.restaurant.active}
                         value={partySize}
                         onChange={(e) => setEditedSize(Number(e.target.value))}
                       >
@@ -240,7 +248,10 @@ export function GroupDetail({
                       </select>
                       <button
                         disabled={
-                          busy || partySize === party.partySize || partySize > partyLimit
+                          busy ||
+                          !g.slot.restaurant.active ||
+                          partySize === party.partySize ||
+                          partySize > partyLimit
                         }
                         onClick={async () => {
                           if (
@@ -253,13 +264,49 @@ export function GroupDetail({
                       >
                         Update Party
                       </button>
-                      <button
-                        className="secondary"
-                        disabled={busy}
-                        onClick={() => perform("leave", "Your Party has left the Event.")}
-                      >
-                        Leave Event
-                      </button>
+                      {leavePrompt ? (
+                        <div className="cancel-prompt">
+                          <p>
+                            {host
+                              ? "Leave your Event? The next party becomes the host. An empty Event is cancelled."
+                              : "Remove your party from this Event?"}
+                          </p>
+                          <p className="small">
+                            The reservation returns to waiting if the remaining diners
+                            fall below the minimum.
+                          </p>
+                          <button
+                            className="danger"
+                            disabled={busy}
+                            onClick={async () => {
+                              if (
+                                await perform("leave", "Your party has left the Event.")
+                              )
+                                setLeavePrompt(false);
+                            }}
+                          >
+                            Confirm leave
+                          </button>
+                          <button
+                            className="text-button"
+                            disabled={busy}
+                            onClick={() => setLeavePrompt(false)}
+                          >
+                            Stay in Event
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="secondary"
+                          disabled={busy}
+                          onClick={() => {
+                            setLeavePrompt(true);
+                            setCancelPrompt(false);
+                          }}
+                        >
+                          Leave Event
+                        </button>
+                      )}
                     </>
                   ) : (
                     <>
@@ -283,7 +330,9 @@ export function GroupDetail({
                         </>
                       )}
                       <button
-                        disabled={busy || joinLimit === 0}
+                        disabled={
+                          busy || joinState !== "eligible" || !g.slot.restaurant.active
+                        }
                         onClick={() =>
                           perform("join", "Your Party has joined the Event.", {
                             partySize: joiningPartySize,
@@ -331,7 +380,10 @@ export function GroupDetail({
                     <button
                       className="text-button danger-text"
                       disabled={busy}
-                      onClick={() => setCancelPrompt(true)}
+                      onClick={() => {
+                        setCancelPrompt(true);
+                        setLeavePrompt(false);
+                      }}
                     >
                       Cancel Event for everyone
                     </button>

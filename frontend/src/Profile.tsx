@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { PersonalBooking, User } from "./types";
 import { isPastBooking, isUpcomingBooking, byDiningTime } from "./booking-history";
-import { Art, State, date, time, useResource, Empty } from "./dining-ui";
+import { Art, State, Status, date, time, useResource, Empty } from "./dining-ui";
 
 export function Profile({ user, revision }: { user: User; revision: number }) {
   const resource = useResource<{ bookings: PersonalBooking[] }>("/me/bookings", revision);
@@ -61,12 +61,15 @@ export function Profile({ user, revision }: { user: User; revision: number }) {
               <>
                 <ul className="plan-list">
                   {past.slice(current * 2, current * 2 + 2).map((booking) => (
-                    <li className="plan-row" key={booking.id}>
+                    <li className="plan-row" data-status="past" key={booking.id}>
                       <Art restaurant={booking.slot.restaurant} />
                       <div className="plan-content">
-                        <span className="small muted">
-                          {booking.group ? "EatTogether" : "Reservation"}
-                        </span>
+                        <div className="row">
+                          <span className="small muted">
+                            {booking.group ? "EatTogether" : "Reservation"}
+                          </span>
+                          <Status value="PAST" />
+                        </div>
                         <h3>{booking.slot.restaurant.name}</h3>
                         <p className="small">
                           {date(booking.slot.startsAt)} · {time(booking.slot.startsAt)}

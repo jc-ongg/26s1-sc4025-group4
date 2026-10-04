@@ -1,3 +1,4 @@
+import { eventDisplayStatus } from "./booking-history";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "./api";
 import { dinerCount } from "./availability";
@@ -142,10 +143,12 @@ export function Status({ value }: { value: string }) {
     <span className={`status ${value.toLowerCase()}`}>
       {(
         {
-          OPEN: "Undersubscribed",
-          FULL: "Undersubscribed",
+          OPEN: "Waiting for diners",
+          FULL: "Waiting for diners",
           CONFIRMED: "Confirmed",
           PAST: "Past",
+          UPCOMING: "Upcoming",
+          PENDING: "Pending",
           CANCELLED: "Cancelled",
           EXPIRED: "Expired",
         } as Record<string, string>
@@ -160,7 +163,7 @@ export function GroupCard({ group: g }: { group: Group }) {
       <div className="card-body">
         <div className="row">
           <span className="discount">{g.slot.discount}% off</span>
-          <Status value={g.status} />
+          <Status value={eventDisplayStatus(g)} />
         </div>
         <h3>{g.title}</h3>
         <p className="small">
