@@ -11,8 +11,10 @@
     "test": "npm run test --workspace backend && npm run test:web",
     "test:web": "tsx --test frontend/src/*.test.ts",
     "test:integration": "node scripts/check-auth.mjs",
-    "format": "prettier --write \"*.{json,md,yml}\" \".prettierrc.json\" \"frontend/*.{json,ts,html}\" \"frontend/src/**/*.{ts,tsx,css}\" \"backend/*.{json,mjs}\" \"backend/src/**/*.ts\" \"docs/*.md\" \"scripts/*.mjs\"",
-    "format:check": "prettier --check \"*.{json,md,yml}\" \".prettierrc.json\" \"frontend/*.{json,ts,html}\" \"frontend/src/**/*.{ts,tsx,css}\" \"backend/*.{json,mjs}\" \"backend/src/**/*.ts\" \"docs/*.md\" \"scripts/*.mjs\""
+    "format": "prettier --write \"*.{json,md,yml}\" \".prettierrc.json\" \"frontend/*.{json,ts,html}\" \"frontend/src/**/*.{ts,tsx,css}\" \"backend/*.{json,mjs}\" \"backend/src/**/*.ts\" \"docs/*.md\" \"scripts/*.mjs\" \".github/workflows/*.yml\"",
+    "format:check": "prettier --check \"*.{json,md,yml}\" \".prettierrc.json\" \"frontend/*.{json,ts,html}\" \"frontend/src/**/*.{ts,tsx,css}\" \"backend/*.{json,mjs}\" \"backend/src/**/*.ts\" \"docs/*.md\" \"scripts/*.mjs\" \".github/workflows/*.yml\"",
+    "ci:integration": "node scripts/ci-integration.mjs",
+    "release:package": "node scripts/package-release.mjs"
   },
   "engines": {
     "node": ">=22.12.0"

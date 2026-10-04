@@ -1,0 +1,98 @@
+name: CI and delivery
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  quality:
+    name: Code checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL_CUDA: skip
+      - run: npm run generate --workspace backend
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  integration:
+    name: Docker integration
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "22"
+      - name: Build, migrate, seed and test an isolated stack
+        run: npm run ci:integration
+        env:
+          CI_COMPOSE_PROJECT: eatigo-ci-${{ github.run_id }}-${{ github.run_attempt }}
+          EATIGO_PORT: "3001"
+      - name: Save integration evidence and failure logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: integration-evidence
+          path: tmp/ci/
+          if-no-files-found: error
+          retention-days: 1
+
+  delivery:
+    name: Prepare release
+    needs: [quality, integration]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "22"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: integration-evidence
+          path: tmp/ci
+      - name: Package the tested commit
+        run: npm run release:package
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eatigo-release-${{ github.sha }}
+          path: tmp/release/
+          if-no-files-found: error
+          retention-days: 3
+      - name: Explain deployment
+        run: |
+          echo '### Release ready' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Download the release artifact, extract it, and run `./deploy.ps1` in PowerShell on your Docker Desktop laptop.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This is continuous delivery with manual deployment. The existing Compose database volume is retained.' >> "$GITHUB_STEP_SUMMARY"

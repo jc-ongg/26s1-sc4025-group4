@@ -7,6 +7,8 @@ RUN npm ci --workspace frontend --include-workspace-root
 COPY frontend frontend
 RUN npm run build --workspace frontend
 FROM nginx:stable-alpine
+ARG APP_VERSION=development
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
+RUN printf '{"commit":"%s"}\n' "$APP_VERSION" > /usr/share/nginx/html/version.json
 EXPOSE 80

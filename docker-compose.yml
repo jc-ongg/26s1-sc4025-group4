@@ -39,10 +39,17 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        APP_VERSION: ${EATIGO_RELEASE_SHA:-development}
     ports:
-      - "3000:80"
+      - "${EATIGO_BIND_ADDRESS:-0.0.0.0}:${EATIGO_PORT:-3000}:80"
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/api/health >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 volumes:
   postgres_data:
