@@ -1,0 +1,10 @@
+Eatigo demo accounts
+
+jacob@gmail.com
+chongwei@gmail.com
+yojin@gmail.com
+wallace@gmail.com
+harsh@gmail.com
+hansen@gmail.com
+
+Password for every account: password123

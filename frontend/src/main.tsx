@@ -154,25 +154,6 @@ function App() {
                   </button>
                 </form>
               )}
-              <details>
-                <summary>Available accounts</summary>
-                <p>
-                  jacob@gmail.com
-                  <br />
-                  chongwei@gmail.com
-                  <br />
-                  yojin@gmail.com
-                  <br />
-                  wallace@gmail.com
-                  <br />
-                  harsh@gmail.com
-                  <br />
-                  hansen@gmail.com
-                </p>
-                <p>
-                  Password for all accounts: <strong>password123</strong>
-                </p>
-              </details>
             </>
           )}
           {error && (

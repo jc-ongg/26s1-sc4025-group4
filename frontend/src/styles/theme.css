@@ -892,10 +892,15 @@ select {
   min-height: 28px;
   margin: 0 0 12px;
   background: transparent;
-  color: #59616a;
+  color: #1764b1;
   opacity: 1;
   font-weight: 400;
-  cursor: default;
+  cursor: pointer;
+}
+.forgot-password:disabled:hover {
+  color: #104b89;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .profile-layout {
   display: grid;
