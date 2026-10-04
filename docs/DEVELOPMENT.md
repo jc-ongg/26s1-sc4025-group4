@@ -15,14 +15,16 @@ Open http://localhost:3000. On another device on the same Wi-Fi, open http://HOS
 
 ## Accounts
 
-| Email               | Password |
-| ------------------- | -------- |
-| jacob@example.com   | demo123  |
-| alice@example.com   | demo123  |
-| bob@example.com     | demo123  |
-| charlie@example.com | demo123  |
+| Email              | Password    |
+| ------------------ | ----------- |
+| jacob@gmail.com    | password123 |
+| chongwei@gmail.com | password123 |
+| yojin@gmail.com    | password123 |
+| wallace@gmail.com  | password123 |
+| harsh@gmail.com    | password123 |
+| hansen@gmail.com   | password123 |
 
-Use separate browser profiles/private sessions or devices for different users. Tabs in the same browser profile share the login cookie. Accounts are seeded in PostgreSQL; basic password matching happens on the server. Passwords are deliberately public plain-text demo fixtures. There are no roles, registration, reset, or external identity providers. Sessions persist for 24 hours and are revoked on logout. HTTP-only cookies support local HTTP LAN access.
+Use separate browser profiles/private sessions or devices for different users. Tabs in the same browser profile share the login cookie. Accounts are seeded in PostgreSQL; basic password matching happens on the server. Passwords are deliberately public plain-text demo fixtures. There are no roles or external identity providers. Registration and password reset are non-functional interface mockups; their submit controls are disabled. Sessions persist for 24 hours and are revoked on logout. HTTP-only cookies support local HTTP LAN access.
 
 ## Checks and maintenance
 
@@ -51,7 +53,7 @@ For frontend development, `npm run dev --workspace frontend` starts port 3000 an
 1. Log in as Jacob with the documented password; refresh and verify identity persists.
 2. Log out; refresh and verify the login form returns.
 3. Submit a wrong password and verify a readable error without authentication.
-4. Log in as Alice in a separate browser/device and verify the two identities remain independent.
+4. Log in as Chongwei in a separate browser/device and verify the two identities remain independent.
 5. Verify health responds at /api/health and no response exposes demoPassword or a session token in JSON.
 
 ## Verification and known limitations

@@ -19,7 +19,7 @@ try {
     (
       await request("/auth/login", {
         method: "POST",
-        body: { email: "jacob@example.com", password: "wrong" },
+        body: { email: "jacob@gmail.com", password: "wrong" },
       })
     ).status,
     401,
@@ -28,15 +28,15 @@ try {
     (
       await request("/auth/login", {
         method: "POST",
-        body: { email: ["jacob@example.com"], password: "demo123" },
+        body: { email: ["jacob@gmail.com"], password: "password123" },
       })
     ).status,
     400,
   );
-  for (const name of ["Jacob", "Alice"]) {
+  for (const name of ["Jacob", "Chongwei", "Yojin", "Wallace", "Harsh", "Hansen"]) {
     const login = await request("/auth/login", {
       method: "POST",
-      body: { email: `${name.toLowerCase()}@example.com`, password: "demo123" },
+      body: { email: `${name.toLowerCase()}@gmail.com`, password: "password123" },
     });
     assert.equal(login.status, 200);
     const account = await login.json();

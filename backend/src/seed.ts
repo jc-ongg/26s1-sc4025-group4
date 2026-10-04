@@ -1,17 +1,28 @@
 import { readFileSync } from "node:fs";
 import type { Prisma } from "@prisma/client";
 import { db } from "./db.js";
+import { demoAccounts, demoPassword } from "./demo-accounts.js";
 import { syncEvent } from "./event-lifecycle.js";
 
 try {
-  for (const name of ["Jacob", "Alice", "Bob", "Charlie"]) {
-    const email = `${name.toLowerCase()}@example.com`;
-    await db.user.upsert({
-      where: { email },
-      update: {},
-      create: { name, email, demoPassword: "demo123" },
-    });
-  }
+  // Rename legacy fixtures in place so bookings, sessions and memberships keep their user IDs.
+  await db.$transaction(async (tx) => {
+    for (const account of demoAccounts) {
+      const current = await tx.user.findUnique({ where: { email: account.email } });
+      const legacy = account.legacyEmail
+        ? await tx.user.findUnique({ where: { email: account.legacyEmail } })
+        : null;
+      if (current && legacy && current.id !== legacy.id) {
+        throw new Error(
+          `Two accounts exist for ${account.email}; resolve them before seeding.`,
+        );
+      }
+      const data = { name: account.name, email: account.email, demoPassword };
+      const existing = current ?? legacy;
+      if (existing) await tx.user.update({ where: { id: existing.id }, data });
+      else await tx.user.create({ data });
+    }
+  });
   const restaurants: Prisma.RestaurantCreateInput[] = JSON.parse(
     readFileSync(new URL("../data/restaurants.json", import.meta.url), "utf8"),
   );
@@ -67,64 +78,64 @@ try {
       title: "A quiet Japanese lunch after class",
       description:
         "Relaxed conversation over Japanese rice bowls. A low-key lunch for people who prefer a small group.",
-      host: "alice",
-      members: ["alice"],
+      host: "chongwei",
+      members: ["chongwei"],
     },
     {
       restaurantId: "seorae",
       title: "Korean BBQ and new friends",
       description:
         "Share sizzling grilled meat and banchan. A lively dinner for anyone who loves Korean barbecue.",
-      host: "bob",
-      members: ["bob", "charlie"],
+      host: "yojin",
+      members: ["yojin", "wallace"],
     },
     {
       restaurantId: "peacock",
       title: "Curry, naan and a catch-up",
       description:
         "Share North Indian curries and naan over a friendly lunch in Clementi.",
-      host: "charlie",
-      members: ["charlie"],
+      host: "wallace",
+      members: ["wallace"],
     },
     {
       restaurantId: "lazy-lizard",
       title: "Casual comfort food after work",
       description:
         "Unwind with burgers, pizza and relaxed conversation. Easy-going neighbourhood dinner.",
-      host: "alice",
-      members: ["alice", "bob"],
+      host: "chongwei",
+      members: ["chongwei", "yojin"],
     },
     {
       restaurantId: "yan-lai-ju",
       title: "Chinese dishes for the sharing table",
       description:
         "Family-style Chinese food and good conversation. Come ready to share a few dishes.",
-      host: "bob",
-      members: ["bob"],
+      host: "yojin",
+      members: ["yojin"],
     },
     {
       restaurantId: "two-scoops",
       title: "Ice cream and a study break",
       description:
         "Dessert, waffles and ice cream with students taking a break from assignments.",
-      host: "charlie",
-      members: ["charlie", "alice"],
+      host: "wallace",
+      members: ["wallace", "chongwei"],
     },
     {
       restaurantId: "il-cielo",
       title: "Pasta and a little city escape",
       description:
         "Italian pasta, pizza and relaxed conversation in Orchard. Meet new people over lunch.",
-      host: "alice",
-      members: ["alice"],
+      host: "chongwei",
+      members: ["chongwei"],
     },
     {
       restaurantId: "lime",
       title: "A buffet with good company",
       description:
         "Explore an international buffet together in Chinatown. A social lunch with plenty of choice.",
-      host: "bob",
-      members: ["bob", "alice", "charlie", "jacob"],
+      host: "yojin",
+      members: ["yojin", "chongwei", "wallace", "jacob"],
     },
   ];
   for (const demo of demos) {
@@ -141,10 +152,10 @@ try {
     if (!slot) continue;
     const accounts = await db.user.findMany({
       where: {
-        email: { in: demo.members.map((name) => `${name}@example.com`) },
+        email: { in: demo.members.map((name) => `${name}@gmail.com`) },
       },
     });
-    const host = accounts.find((user) => user.email === `${demo.host}@example.com`)!;
+    const host = accounts.find((user) => user.email === `${demo.host}@gmail.com`)!;
     await db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "ReservationSlot" WHERE id = ${slot.id} FOR UPDATE`;
       await tx.groupDiningSession.create({

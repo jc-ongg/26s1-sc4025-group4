@@ -160,6 +160,14 @@ dining.get("/groups/:id", async (req, res) => {
   check(group, 404, "Group not found.");
   res.json({ group });
 });
+dining.get("/me/profile", async (_req, res) => {
+  const profile = await db.user.findUniqueOrThrow({
+    where: { id: res.locals.userId as string },
+    select: { id: true, name: true, email: true, reliabilityStrikes: true },
+  });
+  res.json({ profile });
+});
+
 dining.get("/me/groups", async (_req, res) => {
   res.json({
     groups: await db.groupDiningSession.findMany({

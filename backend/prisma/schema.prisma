@@ -12,6 +12,7 @@ model User {
   email              String               @unique
   name               String
   demoPassword       String
+  reliabilityStrikes Int                  @default(0)
   sessions           Session[]
   hostedGroups       GroupDiningSession[]
   memberships        GroupDiningMember[]
