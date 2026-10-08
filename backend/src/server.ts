@@ -5,11 +5,30 @@ import { db } from "./db.js";
 import { parseCredentials } from "./auth.js";
 import { discovery } from "./discovery.js";
 import { dining, HttpError } from "./dining.js";
+import { ageBand } from "./event-eligibility.js";
 
 const app = express();
 const cookieName = "eatigo_session";
 const cookieOptions = { httpOnly: true, sameSite: "lax" as const, path: "/" };
-const publicUser = { id: true, name: true, email: true } as const;
+const publicUser = {
+  id: true,
+  name: true,
+  email: true,
+  singpassVerified: true,
+  dateOfBirth: true,
+  gender: true,
+} as const;
+function accountView(user: {
+  id: string;
+  name: string;
+  email: string;
+  singpassVerified: boolean;
+  dateOfBirth: Date | null;
+  gender: string | null;
+}) {
+  const { dateOfBirth, ...account } = user;
+  return { ...account, ageBand: ageBand(dateOfBirth) };
+}
 app.disable("x-powered-by");
 app.use(express.json({ limit: "16kb" }));
 app.use(cookieParser());
@@ -43,7 +62,10 @@ app.post("/api/auth/login", async (req, res) => {
     await tx.session.create({ data: { token, userId: user.id, expiresAt } });
   });
   res.cookie(cookieName, token, { ...cookieOptions, expires: expiresAt });
-  res.json({ user: { id: user.id, name: user.name, email: user.email } });
+  const { id, name, email, singpassVerified, dateOfBirth, gender } = user;
+  res.json({
+    user: accountView({ id, name, email, singpassVerified, dateOfBirth, gender }),
+  });
 });
 app.get("/api/auth/me", async (req, res) => {
   const token: unknown = req.cookies[cookieName];
@@ -59,7 +81,7 @@ app.get("/api/auth/me", async (req, res) => {
     res.status(401).json({ message: "Please log in." });
     return;
   }
-  res.set("Cache-Control", "no-store").json({ user: session.user });
+  res.set("Cache-Control", "no-store").json({ user: accountView(session.user) });
 });
 app.post("/api/auth/logout", async (req, res) => {
   if (typeof req.cookies[cookieName] === "string") {

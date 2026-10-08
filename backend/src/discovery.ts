@@ -2,8 +2,9 @@ import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { db } from "./db.js";
 import { embed, embeddingHash, modelVersion } from "./embeddings.js";
-import { groupInclude, HttpError } from "./dining.js";
+import { groupInclude, HttpError, presentGroup } from "./dining.js";
 import { dinerCount } from "./event-lifecycle.js";
+import { canViewEvent, matchesEvent } from "./event-eligibility.js";
 
 export const discovery = Router();
 // Concurrent searches share one indexing pass; changed content is detected by its hash.
@@ -165,12 +166,15 @@ discovery.post("/discovery/search", async (req, res) => {
   const candidates =
     mode === "groups"
       ? groups
-          .filter((g) => dinerCount(g.members) < g.capacity)
+          .filter(
+            (g) =>
+              matchesEvent(res.locals.diner, g) && dinerCount(g.members) < g.capacity,
+          )
           .map((g) => ({
             id: g.id,
             key: `group:${g.id}`,
             restaurant: g.slot.restaurant,
-            group: g,
+            group: presentGroup(g),
           }))
       : restaurants.map((r) => ({
           id: r.id,
@@ -228,9 +232,11 @@ discovery.post("/discovery/decision", async (req, res) => {
   const [kind, id] = key.split(":");
   const exists =
     kind === "group"
-      ? await db.groupDiningSession.findUnique({ where: { id } })
+      ? await db.groupDiningSession.findUnique({ where: { id }, include: groupInclude })
       : await db.restaurant.findUnique({ where: { id } });
   if (!exists) throw new HttpError(404, "This dining option no longer exists.");
+  if (kind === "group" && "members" in exists && !canViewEvent(res.locals.diner, exists))
+    throw new HttpError(404, "This dining option no longer exists.");
   const where = {
     userId_targetKey: { userId: res.locals.userId as string, targetKey: key },
   };
@@ -269,12 +275,15 @@ discovery.get("/discovery/saved", async (req, res) => {
               include: groupInclude,
             })
           : null;
+      if (group && !canViewEvent(res.locals.diner, group)) return null;
       const restaurant =
         group?.slot.restaurant ??
         (kind === "restaurant"
           ? await db.restaurant.findUnique({ where: { id } })
           : null);
-      return restaurant ? { key: d.targetKey, restaurant, group } : null;
+      return restaurant
+        ? { key: d.targetKey, restaurant, group: group ? presentGroup(group) : null }
+        : null;
     }),
   );
   res.json({ results: results.filter(Boolean) });

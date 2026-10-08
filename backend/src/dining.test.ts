@@ -6,6 +6,7 @@ import { db } from "./db.js";
 const base = process.env.TEST_API_URL ?? "http://localhost:4000/api";
 const sessions: Record<string, string> = {};
 const slotIds: string[] = [];
+const identityUserIds: string[] = [];
 async function request(path: string, user = "jacob", body?: unknown) {
   const response = await fetch(`${base}${path}`, {
     method: body === undefined ? "GET" : "POST",
@@ -57,6 +58,29 @@ before(async () => {
     assert.equal(response.status, 200);
     sessions[name] = response.headers.get("set-cookie")!.split(";")[0];
   }
+  for (const [name, singpassVerified, birth] of [
+    ["unverified", false, "2000-01-01"],
+    ["minor", true, "2012-01-01"],
+  ] as const) {
+    const user = await db.user.create({
+      data: {
+        name,
+        email: `${randomUUID()}@example.com`,
+        demoPassword: "test-only",
+        singpassVerified,
+        dateOfBirth: new Date(`${birth}T00:00:00Z`),
+        gender: "MALE",
+      },
+    });
+    identityUserIds.push(user.id);
+    const response = await fetch(`${base}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email, password: "test-only" }),
+    });
+    assert.equal(response.status, 200);
+    sessions[name] = response.headers.get("set-cookie")!.split(";")[0];
+  }
 });
 after(async () => {
   // Delete only fixtures created by this test process, never seed/user records.
@@ -78,7 +102,150 @@ after(async () => {
   await Promise.all(
     Object.keys(sessions).map((user) => request("/auth/logout", user, {})),
   );
+  await db.user.deleteMany({ where: { id: { in: identityUserIds } } });
   await db.$disconnect();
+});
+
+test("Event preferences hide details, slot identifiers and counts from ineligible diners", async () => {
+  const s = await slot();
+  const created = await request("/groups", "jacob", {
+    slotId: s.id,
+    title: "Eligibility test",
+    genderFilter: "MALE",
+    minAge: 18,
+    maxAge: 26,
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+  const g = created.data.group;
+  assert.equal(g.genderFilter, "MALE");
+  for (const eligible of ["jacob", "chongwei"]) {
+    assert.equal((await request(`/groups/${g.id}`, eligible)).status, 200);
+    assert.ok(
+      (await request("/groups", eligible)).data.groups.some(
+        (x: { id: string }) => x.id === g.id,
+      ),
+    );
+  }
+  for (const ineligible of ["yojin", "harsh", "unverified", "minor"]) {
+    assert.equal((await request(`/groups/${g.id}`, ineligible)).status, 404);
+    assert.equal((await request(`/groups/${g.id}/join`, ineligible, {})).status, 404);
+    assert.ok(
+      !(await request("/groups", ineligible)).data.groups.some(
+        (x: { id: string }) => x.id === g.id,
+      ),
+    );
+    const restaurant = (await request("/restaurants/joya", ineligible)).data;
+    assert.ok(!restaurant.groups.some((x: { id: string }) => x.id === g.id));
+    assert.deepEqual(
+      restaurant.restaurant.slots.find((x: { id: string }) => x.id === s.id).allocation,
+      { groupId: null, bookingId: null },
+    );
+    const restaurants = (await request("/restaurants", ineligible)).data.restaurants;
+    assert.ok(!JSON.stringify(restaurants).includes(g.id));
+    assert.equal(
+      (
+        await request("/discovery/decision", ineligible, {
+          key: `group:${g.id}`,
+          decision: "SAVE",
+        })
+      ).status,
+      404,
+    );
+    const discovery = await request("/discovery/search", ineligible, {
+      mood: "Eligibility test",
+      mode: "groups",
+    });
+    assert.equal(discovery.status, 200);
+    assert.ok(
+      !discovery.data.results.some((x: { key: string }) => x.key === `group:${g.id}`),
+    );
+    // A legacy saved decision must not bypass today's eligibility check.
+    const identity = await db.session.findUniqueOrThrow({
+      where: { token: sessions[ineligible].split("=")[1] },
+    });
+    await db.discoveryDecision.create({
+      data: { userId: identity.userId, targetKey: `group:${g.id}`, decision: "SAVE" },
+    });
+    assert.ok(
+      !(await request("/discovery/saved?mode=groups", ineligible)).data.results.some(
+        (x: { key: string }) => x.key === `group:${g.id}`,
+      ),
+    );
+    await db.discoveryDecision.deleteMany({
+      where: { userId: identity.userId, targetKey: `group:${g.id}` },
+    });
+  }
+  const joined = await request(`/groups/${g.id}/join`, "chongwei", {});
+  assert.equal(joined.status, 200);
+  assert.equal(joined.data.group.status, "CONFIRMED");
+  for (const endpoint of [
+    `/groups/${g.id}`,
+    "/groups",
+    "/me/groups",
+    "/restaurants/joya",
+  ])
+    assert.ok(!JSON.stringify((await request(endpoint)).data).includes("dateOfBirth"));
+  assert.ok(!JSON.stringify((await request("/auth/me")).data).includes("dateOfBirth"));
+  const profile = (await request("/me/profile")).data.profile;
+  assert.equal(profile.singpassVerified, true);
+  assert.equal(profile.ageBand, "18–24");
+  assert.ok(!("dateOfBirth" in profile));
+});
+
+test("creation requires a verified adult and preferences that include the Host", async () => {
+  const s = await slot();
+  for (const user of ["unverified", "minor"])
+    assert.equal(
+      (await request("/groups", user, { slotId: s.id, title: "Test" })).status,
+      403,
+    );
+  for (const invalid of [
+    { genderFilter: "FEMALE" },
+    { minAge: 30 },
+    { minAge: 17 },
+    { maxAge: "26" },
+    { minAge: 26, maxAge: 25 },
+    { genderFilter: "ANY" },
+  ])
+    assert.equal(
+      (await request("/groups", "jacob", { slotId: s.id, title: "Test", ...invalid }))
+        .status,
+      400,
+    );
+  assert.equal(await db.slotAllocation.count({ where: { slotId: s.id } }), 0);
+  // Verification is an EatTogether requirement; ordinary bookings remain available.
+  assert.equal(
+    (await request("/bookings", "unverified", { slotId: s.id, partySize: 2 })).status,
+    201,
+  );
+});
+
+test("preferences are immutable through Join and Host Handover", async () => {
+  const s = await slot();
+  const created = await request("/groups", "jacob", {
+    slotId: s.id,
+    title: "Fixed preferences",
+    genderFilter: "MALE",
+    minAge: 18,
+    maxAge: 26,
+  });
+  const g = created.data.group;
+  assert.equal(created.status, 201);
+  assert.equal(
+    (await request(`/groups/${g.id}/join`, "chongwei", { genderFilter: null })).status,
+    400,
+  );
+  await request(`/groups/${g.id}/join`, "chongwei", {});
+  const handover = await request(`/groups/${g.id}/leave`, "jacob", {});
+  assert.equal(handover.status, 200);
+  assert.equal(handover.data.group.host.name, "Chongwei");
+  assert.equal(handover.data.group.genderFilter, "MALE");
+  assert.equal(handover.data.group.maxAge, 26);
+  assert.equal(
+    (await request(`/groups/${g.id}/edit`, "chongwei", { minAge: 18 })).status,
+    404,
+  );
+  assert.equal((await request(`/groups/${g.id}/join`, "harsh", {})).status, 404);
 });
 
 test("Reliability is private to the account and absent from public Event participants", async () => {

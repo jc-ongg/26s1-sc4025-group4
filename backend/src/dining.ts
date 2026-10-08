@@ -2,6 +2,14 @@ import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { db } from "./db.js";
 import { dinerCount, syncEvent } from "./event-lifecycle.js";
+import {
+  ageBand,
+  canViewEvent,
+  matchesEvent,
+  parseEventFilters,
+  verifiedAdult,
+  type DinerIdentity,
+} from "./event-eligibility.js";
 
 export class HttpError extends Error {
   constructor(
@@ -14,7 +22,7 @@ export class HttpError extends Error {
 function check(condition: unknown, status: number, message: string): asserts condition {
   if (!condition) throw new HttpError(status, message);
 }
-const userFields = { id: true, name: true } as const;
+const userFields = { id: true, name: true, dateOfBirth: true } as const;
 export const groupInclude = {
   host: { select: userFields },
   slot: { include: { restaurant: true } },
@@ -25,6 +33,56 @@ export const groupInclude = {
   booking: true,
 } satisfies Prisma.GroupDiningSessionInclude;
 type Transaction = Prisma.TransactionClient;
+type IncludedGroup = Prisma.GroupDiningSessionGetPayload<{
+  include: typeof groupInclude;
+}>;
+
+// Public participants expose an age band, never a birth date or verification payload.
+export function presentGroup(group: IncludedGroup) {
+  const participant = (user: IncludedGroup["host"]) => ({
+    id: user.id,
+    name: user.name,
+    ageBand: ageBand(user.dateOfBirth),
+  });
+  return {
+    ...group,
+    host: participant(group.host),
+    members: group.members.map((member) => ({
+      ...member,
+      user: participant(member.user),
+    })),
+  };
+}
+
+async function concealRestrictedSlots<
+  T extends {
+    slots: { allocation: { groupId: string | null; bookingId: string | null } | null }[];
+  },
+>(restaurants: T[], diner: DinerIdentity) {
+  const ids = restaurants.flatMap((r) =>
+    r.slots.flatMap((s) => (s.allocation?.groupId ? [s.allocation.groupId] : [])),
+  );
+  const events = ids.length
+    ? await db.groupDiningSession.findMany({
+        where: { id: { in: ids } },
+        include: {
+          members: { select: { userId: true } },
+          slot: { select: { startsAt: true } },
+        },
+      })
+    : [];
+  const hidden = new Set(events.filter((g) => !canViewEvent(diner, g)).map((g) => g.id));
+  return restaurants.map((r) => ({
+    ...r,
+    slots: r.slots.map((s) => ({
+      ...s,
+      allocation:
+        s.allocation?.groupId && hidden.has(s.allocation.groupId)
+          ? { groupId: null, bookingId: null }
+          : s.allocation,
+    })),
+  }));
+}
 
 function text(value: unknown, max: number, required = true): string {
   check(typeof value === "string", 400, "Please provide valid text.");
@@ -108,6 +166,10 @@ dining.use(async (req, res, next) => {
     "Your session has expired. Please log in again.",
   );
   res.locals.userId = session.userId;
+  res.locals.diner = await db.user.findUniqueOrThrow({
+    where: { id: session.userId },
+    select: { id: true, singpassVerified: true, dateOfBirth: true, gender: true },
+  });
   res.set("Cache-Control", "no-store");
   await expireGroups();
   next();
@@ -125,7 +187,7 @@ dining.get("/restaurants", async (_req, res) => {
       },
     },
   });
-  res.json({ restaurants });
+  res.json({ restaurants: await concealRestrictedSlots(restaurants, res.locals.diner) });
 });
 dining.get("/restaurants/:id", async (req, res) => {
   const restaurant = await db.restaurant.findUnique({
@@ -147,18 +209,25 @@ dining.get("/restaurants/:id", async (req, res) => {
     include: groupInclude,
     orderBy: { slot: { startsAt: "asc" } },
   });
-  res.json({ restaurant, groups });
+  res.json({
+    restaurant: (await concealRestrictedSlots([restaurant], res.locals.diner))[0],
+    groups: groups.filter((g) => canViewEvent(res.locals.diner, g)).map(presentGroup),
+  });
 });
 dining.get("/groups", async (_req, res) => {
   res.json({
-    groups: await db.groupDiningSession.findMany({
-      where: {
-        status: { in: ["OPEN", "FULL", "CONFIRMED"] },
-        slot: { startsAt: { gt: new Date() }, restaurant: { active: true } },
-      },
-      include: groupInclude,
-      orderBy: { slot: { startsAt: "asc" } },
-    }),
+    groups: (
+      await db.groupDiningSession.findMany({
+        where: {
+          status: { in: ["OPEN", "FULL", "CONFIRMED"] },
+          slot: { startsAt: { gt: new Date() }, restaurant: { active: true } },
+        },
+        include: groupInclude,
+        orderBy: { slot: { startsAt: "asc" } },
+      })
+    )
+      .filter((g) => canViewEvent(res.locals.diner, g))
+      .map(presentGroup),
   });
 });
 dining.get("/groups/:id", async (req, res) => {
@@ -166,30 +235,41 @@ dining.get("/groups/:id", async (req, res) => {
     where: { id: String(req.params.id) },
     include: groupInclude,
   });
-  check(group, 404, "Group not found.");
-  res.json({ group });
+  check(group && canViewEvent(res.locals.diner, group), 404, "Event not found.");
+  res.json({ group: presentGroup(group) });
 });
 dining.get("/me/profile", async (_req, res) => {
   const profile = await db.user.findUniqueOrThrow({
     where: { id: res.locals.userId as string },
-    select: { id: true, name: true, email: true, reliabilityStrikes: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      reliabilityStrikes: true,
+      singpassVerified: true,
+      dateOfBirth: true,
+      gender: true,
+    },
   });
-  res.json({ profile });
+  const { dateOfBirth, ...account } = profile;
+  res.json({ profile: { ...account, ageBand: ageBand(dateOfBirth) } });
 });
 
 dining.get("/me/groups", async (_req, res) => {
   res.json({
-    groups: await db.groupDiningSession.findMany({
-      where: {
-        NOT: { booking: { deletedFor: { has: res.locals.userId } } },
-        OR: [
-          { hostId: res.locals.userId },
-          { members: { some: { userId: res.locals.userId } } },
-        ],
-      },
-      include: groupInclude,
-      orderBy: { createdAt: "desc" },
-    }),
+    groups: (
+      await db.groupDiningSession.findMany({
+        where: {
+          NOT: { booking: { deletedFor: { has: res.locals.userId } } },
+          OR: [
+            { hostId: res.locals.userId },
+            { members: { some: { userId: res.locals.userId } } },
+          ],
+        },
+        include: groupInclude,
+        orderBy: { createdAt: "desc" },
+      })
+    ).map(presentGroup),
   });
 });
 dining.get("/me/bookings", async (_req, res) => {
@@ -231,6 +311,13 @@ dining.post("/groups", async (req, res) => {
     title = text(req.body?.title, 80);
   const description = text(req.body?.description ?? "", 500, false),
     partySize = singleDiner(req.body?.partySize);
+  const filters = parseEventFilters(req.body ?? {});
+  check(filters, 400, "Choose a valid gender and age range starting at 18.");
+  check(
+    verifiedAdult(res.locals.diner),
+    403,
+    "Singpass verification is required for EatTogether.",
+  );
   const group = await db.$transaction(async (tx) => {
     const slot = await lockSlot(tx, slotId);
     check(
@@ -243,6 +330,11 @@ dining.post("/groups", async (req, res) => {
       "This restaurant is no longer available for new reservations.",
     );
     check(slot.startsAt > new Date(), 409, "This dining slot has already started.");
+    check(
+      matchesEvent(res.locals.diner, { ...filters, slot }),
+      400,
+      "Your Event preferences must include your own age and gender.",
+    );
     const capacity = size(
       req.body?.capacity === undefined ? slot.capacity : req.body.capacity,
     );
@@ -266,6 +358,7 @@ dining.post("/groups", async (req, res) => {
         slotId,
         title,
         description,
+        ...filters,
         capacity,
         hostId: res.locals.userId,
         status: "OPEN",
@@ -276,7 +369,7 @@ dining.post("/groups", async (req, res) => {
     await tx.slotAllocation.create({ data: { slotId, groupId: group.id } });
     return group;
   });
-  res.status(201).json({ group });
+  res.status(201).json({ group: presentGroup(group) });
 });
 dining.post("/groups/:id/:action", async (req, res) => {
   const id = String(req.params.id),
@@ -286,6 +379,13 @@ dining.post("/groups/:id/:action", async (req, res) => {
     ["join", "leave", "resize", "confirm", "cancel"].includes(action),
     404,
     "Action not found.",
+  );
+  check(
+    !["genderFilter", "minAge", "maxAge"].some((field) =>
+      Object.hasOwn(req.body ?? {}, field),
+    ),
+    400,
+    "Event preferences are fixed at creation.",
   );
   const reference = await db.groupDiningSession.findUnique({
     where: { id },
@@ -298,6 +398,7 @@ dining.post("/groups/:id/:action", async (req, res) => {
       where: { id },
       include: { members: { orderBy: [{ joinedAt: "asc" }, { userId: "asc" }] } },
     });
+    check(canViewEvent(res.locals.diner, { ...event, slot }), 404, "Event not found.");
     const party = event.members.find((m) => m.userId === userId);
     if (action === "cancel") {
       check(event.hostId === userId, 403, "Only the Host can cancel this Event.");
@@ -337,6 +438,11 @@ dining.post("/groups/:id/:action", async (req, res) => {
       }
       if (action === "join") {
         const partySize = singleDiner(req.body?.partySize);
+        check(
+          matchesEvent(res.locals.diner, { ...event, slot }),
+          403,
+          "Singpass verification and matching Event preferences are required to Join.",
+        );
         if (!party) {
           check(
             partySize < slot.minimumPartySize,
@@ -395,7 +501,7 @@ dining.post("/groups/:id/:action", async (req, res) => {
       include: groupInclude,
     });
   });
-  res.json({ group: result });
+  res.json({ group: presentGroup(result) });
 });
 
 dining.post("/bookings", async (req, res) => {

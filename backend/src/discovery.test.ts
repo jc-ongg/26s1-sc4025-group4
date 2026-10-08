@@ -9,6 +9,9 @@ test("local semantic ranking, availability, radius, shortlist isolation and undo
       name: "Discovery test",
       email: `test-${randomUUID()}@example.com`,
       demoPassword: "test-only",
+      singpassVerified: true,
+      dateOfBirth: new Date("1999-01-01T00:00:00Z"),
+      gender: "MALE",
     },
   });
   const other = await db.user.create({
@@ -59,7 +62,13 @@ test("local semantic ranking, availability, radius, shortlist isolation and undo
         ),
       );
       console.log(`Semantic top-1: ${mood} -> ${expected}`);
+      assert.ok(!JSON.stringify(result).includes("dateOfBirth"));
     }
+    assert.deepEqual(
+      (await api("/discovery/search", { mood: "lunch", mode: "groups" }, otherCookie))
+        .results,
+      [],
+    );
     const nearby = await search("lunch", { area: "ntu", radius: 3 });
     assert.ok(nearby.results.length > 0);
     assert.ok(nearby.results.every((r: { distanceKm: number }) => r.distanceKm <= 3));

@@ -40,7 +40,17 @@ try {
     });
     assert.equal(login.status, 200);
     const account = await login.json();
-    assert.deepEqual(Object.keys(account.user).sort(), ["email", "id", "name"]);
+    assert.deepEqual(Object.keys(account.user).sort(), [
+      "ageBand",
+      "email",
+      "gender",
+      "id",
+      "name",
+      "singpassVerified",
+    ]);
+    assert.equal(account.user.singpassVerified, true);
+    assert.ok(["MALE", "FEMALE"].includes(account.user.gender));
+    assert.match(account.user.ageBand, /^(\d{2}–\d{2}|65\+)$/);
     assert.equal(account.user.name, name);
     const header = login.headers.get("set-cookie");
     assert.ok(header?.includes("HttpOnly"));
@@ -48,7 +58,7 @@ try {
     cookies.push(cookie);
     const me = await request("/auth/me", { cookie });
     assert.equal(me.status, 200);
-    assert.equal((await me.json()).user.name, name);
+    assert.deepEqual((await me.json()).user, account.user);
   }
   assert.equal(
     (await (await request("/auth/me", { cookie: cookies[0] })).json()).user.name,

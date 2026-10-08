@@ -17,7 +17,14 @@ try {
           `Two accounts exist for ${account.email}; resolve them before seeding.`,
         );
       }
-      const data = { name: account.name, email: account.email, demoPassword };
+      const data = {
+        name: account.name,
+        email: account.email,
+        demoPassword,
+        singpassVerified: true,
+        dateOfBirth: new Date(`${account.dateOfBirth}T00:00:00Z`),
+        gender: account.gender,
+      };
       const existing = current ?? legacy;
       if (existing) await tx.user.update({ where: { id: existing.id }, data });
       else await tx.user.create({ data });
