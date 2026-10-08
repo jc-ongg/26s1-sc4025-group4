@@ -44,10 +44,11 @@ test("Event-held times remain discoverable while ordinary reservations are unava
   );
 });
 
-test("joining requires eligibility and enough seats for the whole party", () => {
-  assert.equal(eventJoinState(event, 2, "new", now), "eligible");
+test("each account joins for one diner and cannot reserve companions' seats", () => {
+  assert.equal(eventJoinState(event, 1, "new", now), "eligible");
+  assert.equal(eventJoinState(event, 2, "new", now), "insufficient");
   assert.equal(eventJoinState(event, 3, "new", now), "insufficient");
-  assert.equal(eventJoinState(event, 4, "new", now), "direct");
+  assert.equal(eventJoinState(event, 4, "new", now), "insufficient");
   assert.equal(eventJoinState({ ...event, capacity: 4 }, 1, "new", now), "full");
   assert.equal(eventJoinState(event, 0, "new", now), "insufficient");
 });

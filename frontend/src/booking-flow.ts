@@ -22,8 +22,7 @@ export function eventJoinState(
   )
     return "closed";
   if (dinerCount(event) >= event.capacity) return "full";
+  if (partySize !== 1) return "insufficient";
   if (partySize >= event.slot.minimumPartySize) return "direct";
-  if (partySize < 1 || partySize > event.capacity - dinerCount(event))
-    return "insufficient";
   return "eligible";
 }

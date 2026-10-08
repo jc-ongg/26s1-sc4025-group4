@@ -79,8 +79,6 @@ export function GroupDetail({
   );
   const [cancelPrompt, setCancelPrompt] = useState(false);
   const [leavePrompt, setLeavePrompt] = useState(false);
-  const [joiningSize, setJoiningSize] = useState(1);
-  const [editedSize, setEditedSize] = useState<number | null>(null);
   const g = data?.group,
     host = g?.hostId === user.id,
     party = g?.members.find((m) => m.userId === user.id);
@@ -91,11 +89,7 @@ export function GroupDetail({
     !hasStarted(g.slot.startsAt);
   const count = g ? dinerCount(g) : 0;
   const remaining = g ? g.capacity - count : 0;
-  const joinLimit = g ? Math.min(remaining, g.slot.minimumPartySize - 1) : 0;
-  const partySize = editedSize ?? party?.partySize ?? 1;
-  const partyLimit = remaining + (party?.partySize ?? 0);
-  const joiningPartySize = Math.min(joiningSize, Math.max(1, joinLimit));
-  const joinState = g && eventJoinState(g, joiningPartySize, user.id);
+  const joinState = g && eventJoinState(g, 1, user.id);
   const perform = (action: string, message: string, body = {}) =>
     act(`/groups/${id}/${action}`, body, message);
   return (
@@ -185,7 +179,7 @@ export function GroupDetail({
               </section>
               <aside className="panel action-panel">
                 <h2>
-                  {mutable ? (party ? "Your Party" : "Join Event") : "Event details"}
+                  {mutable ? (party ? "Your seat" : "Join Event") : "Event details"}
                 </h2>
                 <p>
                   {mutable
@@ -210,48 +204,37 @@ export function GroupDetail({
                           becomes the Host. An empty Event is cancelled.
                         </p>
                       )}
-                      <label htmlFor="event-party-size">Your Party size</label>
-                      <select
-                        id="event-party-size"
-                        disabled={busy || !g.slot.restaurant.active}
-                        value={partySize}
-                        onChange={(e) => setEditedSize(Number(e.target.value))}
-                      >
-                        {partySize > partyLimit && (
-                          <option value={partySize} disabled>
-                            {partySize} diners — no longer available
-                          </option>
-                        )}
-                        {Array.from({ length: partyLimit }, (_, i) => i + 1).map((n) => (
-                          <option key={n} value={n}>
-                            {n} {n === 1 ? "diner" : "diners"}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        disabled={
-                          busy ||
-                          !g.slot.restaurant.active ||
-                          partySize === party.partySize ||
-                          partySize > partyLimit
-                        }
-                        onClick={async () => {
-                          if (
-                            await perform("resize", "Your Party size has been updated.", {
-                              partySize,
-                            })
-                          )
-                            setEditedSize(null);
-                        }}
-                      >
-                        Update Party
-                      </button>
+                      <p className="party-size-summary">
+                        {party.partySize}{" "}
+                        {party.partySize === 1 ? "seat reserved" : "seats reserved"}
+                      </p>
+                      {party.partySize > 1 && (
+                        <>
+                          <p className="small">
+                            Each diner now Joins with their own account. Your existing
+                            reservation is unchanged until you update it.
+                          </p>
+                          <button
+                            className="secondary"
+                            disabled={busy || !g.slot.restaurant.active}
+                            onClick={() =>
+                              perform("resize", "Your reservation now holds one seat.", {
+                                partySize: 1,
+                              })
+                            }
+                          >
+                            Keep only my seat
+                          </button>
+                        </>
+                      )}
                       {leavePrompt ? (
                         <div className="cancel-prompt">
                           <p>
                             {host
                               ? "Leave your Event? The next party becomes the host. An empty Event is cancelled."
-                              : "Remove your party from this Event?"}
+                              : party.partySize === 1
+                                ? "Leave this Event and release your seat?"
+                                : `Leave this Event and release your ${party.partySize} seats?`}
                           </p>
                           <p className="small">
                             The reservation returns to waiting if the remaining diners
@@ -261,9 +244,7 @@ export function GroupDetail({
                             className="danger"
                             disabled={busy}
                             onClick={async () => {
-                              if (
-                                await perform("leave", "Your party has left the Event.")
-                              )
+                              if (await perform("leave", "You have left the Event."))
                                 setLeavePrompt(false);
                             }}
                           >
@@ -292,32 +273,17 @@ export function GroupDetail({
                     </>
                   ) : (
                     <>
-                      {joinLimit > 0 && (
-                        <>
-                          <label htmlFor="joining-party-size">Your Party size</label>
-                          <select
-                            id="joining-party-size"
-                            disabled={busy}
-                            value={joiningPartySize}
-                            onChange={(e) => setJoiningSize(Number(e.target.value))}
-                          >
-                            {Array.from({ length: joinLimit }, (_, i) => i + 1).map(
-                              (n) => (
-                                <option key={n} value={n}>
-                                  {n} {n === 1 ? "diner" : "diners"}
-                                </option>
-                              ),
-                            )}
-                          </select>
-                        </>
-                      )}
+                      <p className="small">
+                        One seat per account. Friends Join separately with their own
+                        accounts.
+                      </p>
                       <button
                         disabled={
                           busy || joinState !== "eligible" || !g.slot.restaurant.active
                         }
                         onClick={() =>
-                          perform("join", "Your Party has joined the Event.", {
-                            partySize: joiningPartySize,
+                          perform("join", "You have joined the Event.", {
+                            partySize: 1,
                           })
                         }
                       >

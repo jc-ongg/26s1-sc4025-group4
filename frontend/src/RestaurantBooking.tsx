@@ -34,14 +34,13 @@ export function RestaurantBooking({
     daySlots.some((s) => s.allocation?.groupId === g.id),
   );
   const state = slot && slotState(slot, r.active, now);
-  const joinState = existing && eventJoinState(existing, partySize, user.id, now);
-  const selectedPartySize = yourParty?.partySize ?? partySize;
+  const joinState = existing && eventJoinState(existing, 1, user.id, now);
+  const selectedPartySize = mode === "group" ? 1 : partySize;
   const validParty =
     !!slot && selectedPartySize >= 1 && selectedPartySize <= slot.capacity;
   const canBook =
     state === "available" && validParty && partySize >= slot!.minimumPartySize;
-  const canCreate =
-    state === "available" && validParty && partySize < slot!.minimumPartySize;
+  const canCreate = state === "available" && slot!.minimumPartySize > 1;
 
   function chooseTime(id: string, event = false) {
     setSelected(id);
@@ -71,7 +70,7 @@ export function RestaurantBooking({
         {
           slotId: slot.id,
           capacity: slot.capacity,
-          partySize,
+          partySize: 1,
           title: title.trim(),
           description: description.trim(),
         },
@@ -208,10 +207,16 @@ export function RestaurantBooking({
               </span>
             </div>
             <form onSubmit={submit}>
-              <label htmlFor="party-size">Your party size</label>
+              <label htmlFor="party-size">
+                {mode === "group" ? "Your seat" : "Your party size"}
+              </label>
               {yourParty ? (
                 <output id="party-size" className="party-size-summary">
                   {yourParty.partySize} {yourParty.partySize === 1 ? "diner" : "diners"}
+                </output>
+              ) : mode === "group" ? (
+                <output id="party-size" className="party-size-summary">
+                  1 diner
                 </output>
               ) : (
                 <select
@@ -320,15 +325,13 @@ export function RestaurantBooking({
                       onClick={() =>
                         act(
                           `/groups/${existing.id}/join`,
-                          { partySize },
-                          "Your party has joined the Event.",
+                          { partySize: 1 },
+                          "You have joined the Event.",
                           `/groups/${existing.id}`,
                         )
                       }
                     >
-                      {busy
-                        ? "Joining…"
-                        : `Join Event · ${partySize} ${partySize === 1 ? "diner" : "diners"}`}
+                      {busy ? "Joining…" : "Join Event · 1 diner"}
                     </button>
                   ) : (
                     <p className="note" role="status">
@@ -407,8 +410,11 @@ export function RestaurantBooking({
               ) : (
                 <>
                   <p className="small">
-                    No Event at this time. Start one for your party of {partySize}, or
-                    choose an existing Event at another time.
+                    No Event at this time. Start one for your seat, or choose an existing
+                    Event at another time.
+                  </p>
+                  <p className="small muted">
+                    Friends Join separately with their own accounts.
                   </p>
                   <button type="button" disabled={busy} onClick={() => setCreating(true)}>
                     Start an EatTogether Event

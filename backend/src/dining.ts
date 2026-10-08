@@ -45,6 +45,15 @@ function size(value: unknown) {
   return value;
 }
 
+function singleDiner(value: unknown) {
+  check(
+    value === undefined || value === 1,
+    400,
+    "Each account can reserve one EatTogether seat. Other diners must Join with their own accounts.",
+  );
+  return 1;
+}
+
 // Every inventory mutation takes the same slot-row lock first. This serializes
 // competing joins, confirmation, cancellation, and ordinary booking requests.
 async function lockSlot(tx: Transaction, id: string) {
@@ -221,7 +230,7 @@ dining.post("/groups", async (req, res) => {
   const slotId = text(req.body?.slotId, 100),
     title = text(req.body?.title, 80);
   const description = text(req.body?.description ?? "", 500, false),
-    partySize = size(req.body?.partySize === undefined ? 1 : req.body.partySize);
+    partySize = singleDiner(req.body?.partySize);
   const group = await db.$transaction(async (tx) => {
     const slot = await lockSlot(tx, slotId);
     check(
@@ -327,10 +336,8 @@ dining.post("/groups/:id/:action", async (req, res) => {
         check(restaurant.active, 409, "This restaurant is no longer accepting Parties.");
       }
       if (action === "join") {
+        const partySize = singleDiner(req.body?.partySize);
         if (!party) {
-          const partySize = size(
-            req.body?.partySize === undefined ? 1 : req.body.partySize,
-          );
           check(
             partySize < slot.minimumPartySize,
             400,
@@ -345,7 +352,9 @@ dining.post("/groups/:id/:action", async (req, res) => {
         }
       } else if (action === "resize") {
         check(party, 403, "Only a Party in this Event can change its size.");
-        const partySize = size(req.body?.partySize);
+        // Retain a way to reduce an existing multi-diner reservation to this account's seat.
+        check(req.body?.partySize !== undefined, 400, "Confirm the change to one seat.");
+        const partySize = singleDiner(req.body?.partySize);
         check(
           dinerCount(event.members) - party.partySize + partySize <= event.capacity,
           409,

@@ -45,7 +45,7 @@ async function group(capacity = 4) {
   return created.data.group;
 }
 before(async () => {
-  for (const name of ["jacob", "chongwei", "yojin", "wallace"]) {
+  for (const name of ["jacob", "chongwei", "yojin", "wallace", "harsh", "hansen"]) {
     const response = await fetch(`${base}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -286,83 +286,119 @@ test("cancelled booking deletion is personal, persistent and rejects active or u
   assert.equal(await db.slotAllocation.count({ where: { slotId: g.slotId } }), 0);
 });
 
-test("Party sizes determine qualification, resizing and concurrent remaining capacity", async () => {
-  const s = await slot(4, 6);
-  for (const partySize of [0, 4, 1.5, "2", null]) {
+test("one account reserves one Event seat; concurrent diners cannot overfill", async () => {
+  const s = await slot(4, 5);
+  for (const partySize of [0, 2, 4, 1.5, "1", null]) {
     assert.equal(
       (
         await request("/groups", "jacob", {
           slotId: s.id,
-          title: "Party test",
+          title: "Single-diner test",
           partySize,
         })
       ).status,
       400,
     );
   }
+  assert.equal(await db.slotAllocation.count({ where: { slotId: s.id } }), 0);
   const created = await request("/groups", "jacob", {
     slotId: s.id,
-    title: "Party test",
-    partySize: 2,
+    title: "Single-diner test",
+    partySize: 1,
   });
   assert.equal(created.status, 201);
   const g = created.data.group;
-  assert.equal(g.members[0].partySize, 2);
-  assert.equal(g.status, "OPEN");
-  for (const partySize of [0, 4, 7, 1.5, "2", null]) {
+  assert.equal(g.members[0].partySize, 1);
+  for (const partySize of [0, 2, 7, 1.5, "1", null]) {
     assert.equal(
       (await request(`/groups/${g.id}/join`, "chongwei", { partySize })).status,
       400,
     );
+    assert.equal(
+      (await request(`/groups/${g.id}/resize`, "jacob", { partySize })).status,
+      400,
+    );
   }
   assert.equal(await db.groupDiningMember.count({ where: { groupId: g.id } }), 1);
-  const joined = await request(`/groups/${g.id}/join`, "chongwei", { partySize: 2 });
-  assert.equal(joined.data.group.booking.partySize, 4);
-  const duplicate = await request(`/groups/${g.id}/join`, "chongwei", { partySize: 3 });
+  for (const user of ["chongwei", "yojin"]) {
+    assert.equal(
+      (await request(`/groups/${g.id}/join`, user, { partySize: 1 })).status,
+      200,
+    );
+  }
+  const duplicate = await request(`/groups/${g.id}/join`, "chongwei", {});
   assert.equal(duplicate.status, 200);
-  assert.equal(duplicate.data.group.booking.partySize, 4);
-  const bookingId = joined.data.group.booking.id;
+  assert.equal(duplicate.data.group.members.length, 3);
+  assert.equal(duplicate.data.group.status, "OPEN");
+  assert.equal(
+    (await request(`/groups/${g.id}/join`, "chongwei", { partySize: 2 })).status,
+    400,
+  );
+  const users = ["wallace", "harsh", "hansen"];
   const results = await Promise.all(
-    ["yojin", "wallace"].map((user) =>
-      request(`/groups/${g.id}/join`, user, { partySize: 2 }),
-    ),
+    users.map((user) => request(`/groups/${g.id}/join`, user, {})),
   );
-  assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
+  assert.deepEqual(results.map((r) => r.status).sort(), [200, 200, 409]);
   const full = (await request(`/groups/${g.id}`)).data.group;
-  assert.equal(
-    full.members.reduce((n: number, p: { partySize: number }) => n + p.partySize, 0),
-    6,
-  );
-  assert.equal(full.booking.partySize, 6);
-  assert.equal(
-    (await request(`/groups/${g.id}/resize`, "chongwei", { partySize: 3 })).status,
-    409,
-  );
-  const winner = results[0].status === 200 ? "yojin" : "wallace";
-  await request(`/groups/${g.id}/leave`, winner, {});
-  const short = await request(`/groups/${g.id}/resize`, "chongwei", { partySize: 1 });
-  assert.equal(short.data.group.status, "OPEN");
-  assert.equal(short.data.group.booking.status, "PENDING");
-  const restored = await request(`/groups/${g.id}/resize`, "jacob", { partySize: 3 });
+  assert.equal(full.members.length, 5);
+  assert.ok(full.members.every((party: { partySize: number }) => party.partySize === 1));
+  assert.equal(full.booking.partySize, 5);
+  const bookingId = full.booking.id;
+  const winners = users.filter((_, i) => results[i].status === 200);
+  for (const user of winners) await request(`/groups/${g.id}/leave`, user, {});
+  const short = (await request(`/groups/${g.id}`)).data.group;
+  assert.equal(short.status, "OPEN");
+  assert.equal(short.booking.status, "PENDING");
+  const restored = await request(`/groups/${g.id}/join`, winners[0], {});
   assert.equal(restored.data.group.status, "CONFIRMED");
   assert.equal(restored.data.group.booking.id, bookingId);
-  for (const [user, expectedSize] of [
-    ["jacob", 3],
-    ["chongwei", 1],
-  ] as const) {
+  for (const user of ["jacob", "chongwei"]) {
     const personal = (await request("/me/bookings", user)).data.bookings.find(
       (booking: { id: string }) => booking.id === bookingId,
     );
-    assert.equal(personal.yourPartySize, expectedSize);
+    assert.equal(personal.yourPartySize, 1);
     assert.equal(personal.partySize, 4);
-    assert.ok(!("members" in personal.group));
   }
+  const loser = users[results.findIndex((r) => r.status === 409)];
   assert.equal(
-    (await request(`/groups/${g.id}/resize`, winner, { partySize: 1 })).status,
+    (await request(`/groups/${g.id}/resize`, loser, { partySize: 1 })).status,
     403,
   );
-  const details = (await request(`/restaurants/${s.restaurantId}`)).data;
-  assert.ok(details.groups.some((event: { id: string }) => event.id === g.id));
+  assert.equal(
+    (await request(`/groups/${g.id}/resize`, "jacob", { partySize: 1 })).status,
+    200,
+  );
+});
+
+test("existing multi-diner records are preserved and can only shrink to one seat", async () => {
+  const s = await slot(4, 6);
+  const created = await request("/groups", "jacob", {
+    slotId: s.id,
+    title: "Existing reservation test",
+  });
+  const g = created.data.group;
+  // Represent a reservation made before individual accounts were required.
+  await db.groupDiningMember.update({
+    where: { groupId_userId: { groupId: g.id, userId: g.hostId } },
+    data: { partySize: 3 },
+  });
+  assert.equal((await request(`/groups/${g.id}`)).data.group.members[0].partySize, 3);
+  const joined = await request(`/groups/${g.id}/join`, "chongwei", {});
+  assert.equal(joined.data.group.booking.partySize, 4);
+  assert.equal(
+    (await request(`/groups/${g.id}/resize`, "jacob", { partySize: 2 })).status,
+    400,
+  );
+  assert.equal((await request(`/groups/${g.id}/resize`, "jacob", {})).status, 400);
+  const reduced = await request(`/groups/${g.id}/resize`, "jacob", { partySize: 1 });
+  assert.equal(reduced.data.group.status, "OPEN");
+  assert.equal(reduced.data.group.booking.status, "PENDING");
+  assert.equal(reduced.data.group.booking.id, joined.data.group.booking.id);
+  assert.ok(
+    reduced.data.group.members.every(
+      (party: { partySize: number }) => party.partySize === 1,
+    ),
+  );
 });
 
 test("Host departure hands over to the earliest Joining Party; an empty Event releases the table", async () => {
