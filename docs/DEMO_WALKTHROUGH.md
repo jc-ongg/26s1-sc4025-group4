@@ -10,11 +10,11 @@ Use two browser profiles, a normal/private window pair, or two devices. Tabs in 
 
 ## Shared booking
 
-1. Sign in as Jacob and choose an unallocated future time at Seorae or Yan Lai Ju with a four-diner minimum and six-diner capacity. New seed slots at these venues use those synthetic limits; older slots retain their original limits.
-2. Choose a Party size of two, select **EatTogether**, then **Start an EatTogether Event** and enter an Event name. The Event starts Undersubscribed and holds the table. Its capacity comes from the slot.
-3. Sign in as Chongwei in the second session. Select the same restaurant/time: select the existing Event card or its time button, then **Join Event · 2 diners** in the booking panel. No creation form is shown for an existing Event.
-4. The Event automatically becomes Confirmed at four diners. Both accounts see the same booking reference under **account menu → Bookings**. Private reservations appear on the left and shared Events on the right; a shared reservation is shown once, with its reference. No Host confirmation button is needed.
-5. Before dining time, Chongwei can shrink her Party to one. At three diners, the Event becomes Undersubscribed and the reservation becomes pending, shown as **Waiting for diners** in the EatTogether list, with no confirmed reservation reference there. Grow back to two to restore the same booking ID. Another eligible Party may still Join after confirmation if there is space.
+1. Sign in as Jacob and choose an unallocated future time at Joya Onsen Cafe with a two-diner minimum. Two individual accounts are enough to demonstrate confirmation.
+2. Select **EatTogether** for your one seat, then **Start an EatTogether Event** and enter an Event name. The Event starts Undersubscribed and holds the table. Its capacity comes from the slot.
+3. Sign in as Chongwei in the second session. Select the same restaurant/time: select the existing Event card or its time button, then **Join Event · 1 diner** in the booking panel. No creation form is shown for an existing Event.
+4. The Event automatically becomes Confirmed at two diners. Both accounts see the same booking reference under **account menu → Bookings**. Private reservations appear on the left and shared Events on the right; a shared reservation is shown once, with its reference. No Host confirmation button is needed.
+5. Before dining time, Chongwei can Leave. At one diner, the Event becomes Undersubscribed and its reservation becomes pending, shown as **Waiting for diners**. Rejoin with the same account to restore the same booking ID. Other accounts may still Join after confirmation if there is space.
 6. Jacob can **Leave Event → Confirm leave**: Chongwei becomes Host, and shared-booking ownership follows. This leaves Chongwei's Party in the Event. If Chongwei is the last Party and Leaves, the Event is cancelled and its table is released.
 7. Alternatively, the Host can explicitly **Cancel Event for everyone** before dining time. Each remaining participant can independently delete the cancelled reservation from their own history.
 

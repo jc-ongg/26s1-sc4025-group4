@@ -7,7 +7,7 @@ SC4025 academic MVP extending Eatigo with diner-created shared tables. The imple
 ## Scope
 
 - Responsive Eatigo-inspired web application with sourced real restaurant examples, local photos and simulated offers/bookings.
-- Restaurant browsing, details, discount slots, ordinary bookings, Event discovery and creation, Party joining, resizing, leaving, automatic confirmation, Host Handover, cancellation, and personal bookings.
+- Restaurant browsing, details, discount slots, ordinary bookings, Event discovery and creation, single-diner joining and leaving, automatic confirmation, Host Handover, cancellation, and personal bookings.
 - Seeded diner accounts with an email/password login. No registration, password reset, OAuth, or customer/restaurant roles.
 - Shared PostgreSQL state across browser sessions and LAN devices. Polling is sufficient.
 - Everything runs on the Windows host through Docker Compose. No runtime cloud services.
@@ -16,10 +16,10 @@ SC4025 academic MVP extending Eatigo with diner-created shared tables. The imple
 
 ## Booking rules
 
-- An Event combines Parties at one restaurant slot. Each account represents one Party, with an integer diner count. A Party can contain more than one diner.
-- A Party must be below the slot's minimum party size to create or Join an Event. A Party already meeting the minimum can book directly. Existing Parties may resize within available Event capacity.
+- An Event combines individually booked diners at one restaurant slot. Each account represents one Solo Diner in new EatTogether reservations.
+- Each account reserves one EatTogether seat. Friends need separate accounts and Join the same Event individually. New Events and Joins require a slot minimum above one. Existing multi-diner records are preserved; their owner may explicitly reduce them to one seat. Ordinary reservations retain their party-size choice.
 - The creator is the Host. Total diners across Parties determine occupancy and confirmation, rather than the number of accounts.
-- Confirmation is automatic when the minimum is reached. The shared reservation stays open to Joins, Leaves and Party-size changes until dining time, subject to capacity.
+- Confirmation is automatic when the minimum is reached. The shared reservation stays open to Joins and Leaves until dining time, subject to capacity. Owners of older multi-diner reservations may explicitly reduce them to one seat.
 - Falling below the minimum restores Undersubscribed status. An existing reservation becomes PENDING and disappears from Reservations until the minimum is met again; its booking ID is retained.
 - The Host can Leave. The earliest remaining Joining Party becomes Host, and shared-booking ownership moves with that role. Equal join timestamps use user ID as a deterministic tie-break.
 - If the last Party Leaves, the Event is cancelled and its table hold is released. The Host also retains the existing explicit whole-Event cancellation action, separate from Leave.
