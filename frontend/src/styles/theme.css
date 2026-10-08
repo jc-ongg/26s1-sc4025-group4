@@ -886,6 +886,38 @@ select {
 .auth-tabs button {
   flex: 1;
 }
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 22px 0;
+  color: #59616a;
+  font-size: 13px;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #ddd9d2;
+}
+.singpass-option:disabled {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #b8b5b0;
+  color: #272727;
+  opacity: 1;
+}
+.singpass-option span {
+  color: #c52d3c;
+  font-weight: 700;
+}
+.auth-verification-note {
+  margin: 12px 0 0;
+  color: #59616a;
+  font-size: 13px;
+  line-height: 1.6;
+}
 .forgot-password:disabled {
   justify-self: end;
   padding: 0;
@@ -919,6 +951,18 @@ select {
 }
 .profile-identity > p {
   overflow-wrap: anywhere;
+}
+.profile-verification {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid #c8ddce;
+  border-radius: 4px;
+  background: #edf5ef;
+  color: #27643c;
+  font-size: 13px;
+  font-weight: 600;
 }
 .profile-identity dl {
   text-align: left;

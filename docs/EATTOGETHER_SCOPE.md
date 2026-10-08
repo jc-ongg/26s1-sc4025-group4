@@ -22,6 +22,8 @@ The account menu contains Profile, Bookings and Logout. Profile shows personal d
 
 As of 8 October 2026, new EatTogether reservations use one account per diner. The API rejects multi-diner creation, Joins and increases through the resize endpoint. Existing records are not automatically rewritten; owners can reduce an older reservation to their own seat. Verification and demographic eligibility remain deferred. Ordinary bookings retain their party-size choice.
 
+The demo accounts are treated as preverified in the profile presentation: each displays **Singpass verified**. Login and registration offer disabled Singpass options; only the existing credential login works. The email registration form states that Singpass verification is required before creating or Joining EatTogether Events. Registration and identity-provider authentication are not implemented. The badge is a demonstration assumption, not a real identity-verification result or a backend eligibility check; no birth dates or gender attributes are collected in this update.
+
 ## Existing MVP behaviour retained
 
 Each slot represents one table, held exclusively by either an ordinary booking or an Event. Event capacity defaults to the slot capacity. The API retains its optional capacity field for existing clients; it must remain between the slot minimum and maximum. This is not a shared seat-pool implementation.

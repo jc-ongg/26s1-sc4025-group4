@@ -28,6 +28,9 @@ export function Profile({ user, revision }: { user: User; revision: number }) {
           </span>
           <h2>{user.name}</h2>
           <p>{user.email}</p>
+          <span className="profile-verification">
+            <span aria-hidden="true">✓</span> Singpass verified
+          </span>
           <dl>
             <div>
               <dt>Upcoming reservations</dt>

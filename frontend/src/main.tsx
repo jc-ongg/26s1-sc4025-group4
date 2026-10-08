@@ -125,7 +125,10 @@ function App() {
                   <button disabled={busy}>{busy ? "Logging in…" : "Log in"}</button>
                 </form>
               ) : (
-                <form onSubmit={(event) => event.preventDefault()}>
+                <form
+                  aria-describedby="registration-verification-note"
+                  onSubmit={(event) => event.preventDefault()}
+                >
                   <label htmlFor="register-name">Full name</label>
                   <input id="register-name" autoComplete="name" placeholder="Full name" />
                   <label htmlFor="register-email">Email address</label>
@@ -152,8 +155,21 @@ function App() {
                   <button type="submit" disabled>
                     Create account
                   </button>
+                  <p
+                    id="registration-verification-note"
+                    className="auth-verification-note"
+                  >
+                    After registering with email and password, you’ll still need to verify
+                    your identity through Singpass to create or Join EatTogether Events.
+                  </p>
                 </form>
               )}
+              <div className="auth-divider" aria-hidden="true">
+                or
+              </div>
+              <button type="button" className="singpass-option" disabled>
+                {mode === "login" ? "Log in" : "Register"} with <span>Singpass</span>
+              </button>
             </>
           )}
           {error && (
