@@ -28,9 +28,17 @@ export function Profile({ user, revision }: { user: User; revision: number }) {
           </span>
           <h2>{user.name}</h2>
           <p>{user.email}</p>
-          <span className="profile-verification">
-            <span aria-hidden="true">✓</span> Singpass verified
-          </span>
+          {user.singpassVerified && (
+            <span className="profile-verification">
+              <span aria-hidden="true">✓</span> Singpass verified
+            </span>
+          )}
+          {user.ageBand && (
+            <p className="small muted profile-demographics">
+              Age {user.ageBand}
+              {user.gender && ` · ${user.gender === "FEMALE" ? "Female" : "Male"}`}
+            </p>
+          )}
           <dl>
             <div>
               <dt>Upcoming reservations</dt>

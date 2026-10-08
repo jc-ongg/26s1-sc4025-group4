@@ -1188,6 +1188,60 @@ select {
 .booking-panel form {
   margin-bottom: 0;
 }
+.event-preferences {
+  border: 1px solid #d4d0cb;
+  border-radius: 5px;
+  padding: 14px;
+}
+.event-preferences summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.event-preferences summary .muted {
+  font-weight: 400;
+}
+.event-preferences > p {
+  margin: 14px 0;
+}
+.event-preferences fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.event-preferences legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.event-preferences fieldset > label {
+  display: block;
+  margin-bottom: 8px;
+}
+.event-age-range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+.event-age-range input {
+  margin-top: 8px;
+}
+.event-preferences-label {
+  color: #525962;
+  margin: 8px 0;
+}
+.slot-event-choice .event-preferences-label {
+  margin: 0;
+}
+.profile-demographics {
+  margin-bottom: 0;
+}
 .booking-panel .note {
   font-size: 13px;
   margin: 0;

@@ -1,4 +1,12 @@
-export type User = { id: string; name: string; email: string };
+export type Gender = "MALE" | "FEMALE";
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  singpassVerified: boolean;
+  ageBand: string | null;
+  gender: Gender | null;
+};
 export type Restaurant = {
   id: string;
   name: string;
@@ -31,11 +39,18 @@ export type Group = {
   title: string;
   description: string;
   hostId: string;
-  host: { id: string; name: string };
+  host: { id: string; name: string; ageBand: string | null };
+  genderFilter: Gender | null;
+  minAge: number | null;
+  maxAge: number | null;
   capacity: number;
   status: "OPEN" | "FULL" | "CONFIRMED" | "CANCELLED" | "EXPIRED";
   slot: Slot;
-  members: { userId: string; partySize: number; user: { id: string; name: string } }[];
+  members: {
+    userId: string;
+    partySize: number;
+    user: { id: string; name: string; ageBand: string | null };
+  }[];
   booking: Booking | null;
 };
 export type Booking = {

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "./api";
 import { dinerCount } from "./availability";
 import type { Group, Restaurant } from "./types";
+import { EventPreferences } from "./EventPreferences";
 export const date = (v: string) =>
   new Intl.DateTimeFormat("en-SG", {
     timeZone: "Asia/Singapore",
@@ -172,6 +173,7 @@ export function GroupCard({ group: g }: { group: Group }) {
         <p className="schedule">
           {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
         </p>
+        <EventPreferences event={g} />
         <div className="seats">
           <div style={{ width: `${(dinerCount(g) / g.capacity) * 100}%` }} />
         </div>

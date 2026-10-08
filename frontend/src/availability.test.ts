@@ -78,14 +78,17 @@ test("Event availability counts diners across Parties and includes confirmed Eve
     title: "",
     description: "",
     hostId: "u1",
-    host: { id: "u1", name: "Host" },
+    host: { id: "u1", name: "Host", ageBand: null },
+    genderFilter: null,
+    minAge: null,
+    maxAge: null,
     status: "CONFIRMED" as const,
     capacity: 6,
     booking: null,
     slot: slot("future", "2026-09-29T04:00:00Z"),
     members: [
-      { userId: "u1", partySize: 2, user: { id: "u1", name: "Host" } },
-      { userId: "u2", partySize: 2, user: { id: "u2", name: "Joiner" } },
+      { userId: "u1", partySize: 2, user: { id: "u1", name: "Host", ageBand: null } },
+      { userId: "u2", partySize: 2, user: { id: "u2", name: "Joiner", ageBand: null } },
     ],
   };
   assert.equal(dinerCount(event), 4);
@@ -104,12 +107,17 @@ test("restaurant Event counts include full future tables but exclude closed, sta
     title: "",
     description: "",
     hostId: "host",
-    host: { id: "host", name: "Host" },
+    host: { id: "host", name: "Host", ageBand: null },
+    genderFilter: null,
+    minAge: null,
+    maxAge: null,
     status: "CONFIRMED",
     capacity: 2,
     booking: null,
     slot: slot("future", "2026-09-29T04:00:00Z"),
-    members: [{ userId: "host", partySize: 2, user: { id: "host", name: "Host" } }],
+    members: [
+      { userId: "host", partySize: 2, user: { id: "host", name: "Host", ageBand: null } },
+    ],
   };
   assert.equal(isUpcomingEvent(event, now), true);
   assert.equal(canJoinEvent(event, now), false);

@@ -47,7 +47,7 @@ test("one update explains lost confirmation and Handover to the current account"
     ...event,
     status: "OPEN",
     hostId: "alice",
-    host: { id: "alice", name: "Alice" },
+    host: { id: "alice", name: "Alice", ageBand: null },
     members: [{ partySize: 2 }] as Group["members"],
   };
   const update = eventUpdateMessage(event, handed, "alice", now);

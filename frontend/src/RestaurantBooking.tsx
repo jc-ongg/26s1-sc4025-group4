@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
-import type { Group, Restaurant, User } from "./types";
+import type { Gender, Group, Restaurant, User } from "./types";
+import { EventPreferences } from "./EventPreferences";
 import { dinerCount, hasStarted } from "./availability";
 import { slotState, eventJoinState } from "./booking-flow";
 import { eventDisplayStatus } from "./booking-history";
@@ -19,6 +20,9 @@ export function RestaurantBooking({
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [genderFilter, setGenderFilter] = useState<Gender | "">("");
+  const [minAge, setMinAge] = useState("");
+  const [maxAge, setMaxAge] = useState("");
   const panel = useRef<HTMLElement>(null);
   const now = Date.now();
   const slots = r.slots.filter((s) => !hasStarted(s.startsAt, now));
@@ -40,7 +44,8 @@ export function RestaurantBooking({
     !!slot && selectedPartySize >= 1 && selectedPartySize <= slot.capacity;
   const canBook =
     state === "available" && validParty && partySize >= slot!.minimumPartySize;
-  const canCreate = state === "available" && slot!.minimumPartySize > 1;
+  const canCreate =
+    state === "available" && slot!.minimumPartySize > 1 && user.singpassVerified;
 
   function chooseTime(id: string, event = false) {
     setSelected(id);
@@ -73,6 +78,9 @@ export function RestaurantBooking({
           partySize: 1,
           title: title.trim(),
           description: description.trim(),
+          genderFilter: genderFilter || null,
+          minAge: minAge ? Number(minAge) : null,
+          maxAge: maxAge ? Number(maxAge) : null,
         },
         "Your EatTogether Event has been created.",
         (result) => `/groups/${result.group.id}`,
@@ -173,6 +181,7 @@ export function RestaurantBooking({
                                 ? `${remaining} seats available`
                                 : "Full"}
                           </span>
+                          <EventPreferences event={g} />
                           <span className="event-choice-action">
                             {own ? "Select your Event" : "Select Event"} →
                           </span>
@@ -314,6 +323,7 @@ export function RestaurantBooking({
                   {existing.description && (
                     <p className="small">{existing.description}</p>
                   )}
+                  <EventPreferences event={existing} />
                   {joinState === "joined" ? (
                     <a className="button" href={`#/groups/${existing.id}`}>
                       Manage your Event
@@ -353,6 +363,10 @@ export function RestaurantBooking({
               ) : state === "event" ? (
                 <p className="note" role="status">
                   Event details are refreshing. Please wait before choosing an action.
+                </p>
+              ) : !user.singpassVerified ? (
+                <p className="note" role="status">
+                  Singpass verification is required to create or Join EatTogether Events.
                 </p>
               ) : !canCreate ? (
                 <>
@@ -395,6 +409,58 @@ export function RestaurantBooking({
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                   />
+                  <details className="event-preferences">
+                    <summary>
+                      Diner preferences <span className="muted">(optional)</span>
+                    </summary>
+                    <p className="small muted">
+                      Fixed once created. Age is checked at dining time.
+                    </p>
+                    <fieldset disabled={busy}>
+                      <legend className="sr-only">Diner preferences</legend>
+                      <label htmlFor="event-gender">Gender</label>
+                      <select
+                        id="event-gender"
+                        value={genderFilter}
+                        onChange={(e) => setGenderFilter(e.target.value as Gender | "")}
+                      >
+                        <option value="">All genders</option>
+                        {user.gender === "FEMALE" ? (
+                          <option value="FEMALE">Women only</option>
+                        ) : (
+                          <option value="MALE">Men only</option>
+                        )}
+                      </select>
+                      <div className="event-age-range">
+                        <label htmlFor="event-min-age">
+                          Minimum age
+                          <input
+                            id="event-min-age"
+                            type="number"
+                            min={18}
+                            max={120}
+                            step={1}
+                            placeholder="18"
+                            value={minAge}
+                            onChange={(e) => setMinAge(e.target.value)}
+                          />
+                        </label>
+                        <label htmlFor="event-max-age">
+                          Maximum age
+                          <input
+                            id="event-max-age"
+                            type="number"
+                            min={Number(minAge) || 18}
+                            max={120}
+                            step={1}
+                            placeholder="No limit"
+                            value={maxAge}
+                            onChange={(e) => setMaxAge(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                    </fieldset>
+                  </details>
                   <button disabled={busy || !title.trim()}>
                     {busy ? "Creating…" : "Create Event"}
                   </button>

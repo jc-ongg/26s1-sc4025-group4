@@ -5,6 +5,7 @@ import { reservationProgress } from "./event-feedback";
 import { eventDisplayStatus } from "./booking-history";
 import { eventJoinState } from "./booking-flow";
 import { currentGroupStatus, hasStarted, dinerCount } from "./availability";
+import { EventPreferences } from "./EventPreferences";
 import {
   Art,
   Empty,
@@ -144,6 +145,7 @@ export function GroupDetail({
                     <span>Minimum {g.slot.minimumPartySize} diners for the discount</span>
                   </div>
                 </div>
+                <EventPreferences event={g} />
                 {g.description && (
                   <>
                     <h2>Host's note</h2>
@@ -152,7 +154,9 @@ export function GroupDetail({
                 )}
                 <div className="section-heading">
                   <h2>Who’s joining</h2>
-                  <span className="muted small">{count} diners</span>
+                  <span className="muted small">
+                    {count} {count === 1 ? "diner" : "diners"}
+                  </span>
                 </div>
                 <div className="participants">
                   {g.members.map((m) => (
@@ -163,7 +167,8 @@ export function GroupDetail({
                         {m.userId === user.id ? " (you)" : ""}
                       </strong>
                       <span className="small muted">
-                        {m.userId === g.hostId ? "Host" : "Joining Party"} · {m.partySize}{" "}
+                        {m.userId === g.hostId ? "Host" : "Diner"}
+                        {m.user.ageBand && ` · Age ${m.user.ageBand}`} · {m.partySize}{" "}
                         {m.partySize === 1 ? "diner" : "diners"}
                       </span>
                     </div>
