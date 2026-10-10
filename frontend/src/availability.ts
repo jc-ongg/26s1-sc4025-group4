@@ -5,7 +5,7 @@ export const dinerCount = (group: Pick<Group, "members">) =>
 
 export const isUpcomingEvent = (group: Group, now = Date.now()) =>
   group.slot.restaurant.active &&
-  ["OPEN", "FULL", "CONFIRMED"].includes(group.status) &&
+  ["OPEN", "FULL", "CONFIRMED", "LAST_CALL"].includes(group.status) &&
   !hasStarted(group.slot.startsAt, now);
 
 export const canJoinEvent = (group: Group, now = Date.now()) =>
@@ -28,7 +28,10 @@ export function hasStarted(startsAt: string, now = Date.now()) {
 export function availableSlots(restaurant: Restaurant, now = Date.now()) {
   return restaurant.active
     ? restaurant.slots.filter(
-        (slot) => !slot.allocation && !hasStarted(slot.startsAt, now),
+        (slot) =>
+          (slot.availableSeats !== undefined
+            ? slot.availableSeats >= slot.minimumPartySize
+            : !slot.allocation) && !hasStarted(slot.startsAt, now),
       )
     : [];
 }

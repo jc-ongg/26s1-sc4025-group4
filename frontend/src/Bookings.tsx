@@ -292,7 +292,9 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
                       )}
                       <div className="row small event-booking-actions">
                         <span>
-                          {g.slot.discount}% off
+                          {g.discount === 0
+                            ? "Full price"
+                            : `${g.discount ?? g.slot.discount}% off`}
                           {g.booking &&
                             g.booking.status !== "PENDING" &&
                             ` · #${g.booking.id.slice(0, 8).toUpperCase()}`}

@@ -23,6 +23,7 @@ export function RestaurantBooking({
   const [genderFilter, setGenderFilter] = useState<Gender | "">("");
   const [minAge, setMinAge] = useState("");
   const [maxAge, setMaxAge] = useState("");
+  const [selectedEvent, setSelectedEvent] = useState("");
   const panel = useRef<HTMLElement>(null);
   const now = Date.now();
   const slots = r.slots.filter((s) => !hasStarted(s.startsAt, now));
@@ -30,25 +31,42 @@ export function RestaurantBooking({
   const chosenDay = days.includes(selectedDay) ? selectedDay : days[0];
   const daySlots = slots.filter((s) => date(s.startsAt) === chosenDay);
   const slot = daySlots.find((s) => s.id === selected);
-  // Only the Event currently holding the table is relevant; cancelled history must
-  // never block a new reservation or be mistaken for the current Event.
-  const existing = groups.find((g) => g.id === slot?.allocation?.groupId);
+  // Multiple Events may share a slot's seat pool. Preserve the explicit selection
+  // during polling, falling back to the diner's own Event when possible.
+  const slotEvents = groups.filter((g) => g.slot.id === slot?.id);
+  const existing =
+    slotEvents.find((g) => g.id === selectedEvent) ??
+    slotEvents.find((g) => g.members.some((m) => m.userId === user.id)) ??
+    slotEvents[0];
   const yourParty = existing?.members.find((party) => party.userId === user.id);
-  const dayEvents = groups.filter((g) =>
-    daySlots.some((s) => s.allocation?.groupId === g.id),
-  );
+  const dayEvents = groups.filter((g) => daySlots.some((s) => s.id === g.slot.id));
   const state = slot && slotState(slot, r.active, now);
   const joinState = existing && eventJoinState(existing, 1, user.id, now);
   const selectedPartySize = mode === "group" ? 1 : partySize;
   const validParty =
     !!slot && selectedPartySize >= 1 && selectedPartySize <= slot.capacity;
   const canBook =
-    state === "available" && validParty && partySize >= slot!.minimumPartySize;
+    ["available", "event"].includes(state ?? "") &&
+    validParty &&
+    partySize >= slot!.minimumPartySize &&
+    partySize <= (slot!.availableSeats ?? (state === "available" ? slot!.capacity : 0));
   const canCreate =
-    state === "available" && slot!.minimumPartySize > 1 && user.singpassVerified;
+    ["available", "event"].includes(state ?? "") &&
+    slot!.eatTogetherEnabled !== false &&
+    slot!.discount > 0 &&
+    slot!.minimumPartySize > 1 &&
+    user.singpassVerified &&
+    (slot!.availableSeats ?? slot!.capacity) >= slot!.minimumPartySize &&
+    now < Date.parse(slot!.startsAt) - 2 * 3600000 &&
+    !slotEvents.some(
+      (g) =>
+        eventJoinState(g, 1, user.id, now) === "eligible" ||
+        eventJoinState(g, 1, user.id, now) === "joined",
+    );
 
-  function chooseTime(id: string, event = false) {
+  function chooseTime(id: string, event = false, eventId = "") {
     setSelected(id);
+    setSelectedEvent(eventId);
     setCreating(false);
     setMode(event ? "group" : "booking");
     // On phones the options sit below the time list. Reveal them only after an
@@ -121,7 +139,7 @@ export function RestaurantBooking({
             <div className="slot-grid">
               {daySlots.map((s) => {
                 const availability = slotState(s, r.active, now);
-                const event = groups.find((g) => g.id === s.allocation?.groupId);
+                const event = groups.find((g) => g.slot.id === s.id);
                 const remaining = event ? event.capacity - dinerCount(event) : 0;
                 return (
                   <button
@@ -160,10 +178,10 @@ export function RestaurantBooking({
                     return (
                       <li key={g.id}>
                         <button
-                          className={`slot-event-choice ${selected === g.slot.id ? "selected" : ""}`}
+                          className={`slot-event-choice ${selected === g.slot.id && existing?.id === g.id ? "selected" : ""}`}
                           disabled={busy || !r.active}
-                          aria-pressed={selected === g.slot.id}
-                          onClick={() => chooseTime(g.slot.id, true)}
+                          aria-pressed={selected === g.slot.id && existing?.id === g.id}
+                          onClick={() => chooseTime(g.slot.id, true, g.id)}
                         >
                           <div className="row">
                             <strong>{g.title}</strong>
@@ -278,9 +296,16 @@ export function RestaurantBooking({
                 </p>
               ) : mode === "booking" ? (
                 <>
-                  {state === "event" ? (
+                  {canBook ? (
+                    <button disabled={busy}>
+                      {busy ? "Booking…" : "Confirm reservation"}
+                    </button>
+                  ) : state === "event" ? (
                     <>
-                      <p className="note">This table is held by an EatTogether Event.</p>
+                      <p className="note">
+                        There aren’t enough unreserved seats for this booking. You can
+                        view the existing EatTogether Events.
+                      </p>
                       <button
                         type="button"
                         className="secondary"
@@ -289,10 +314,6 @@ export function RestaurantBooking({
                         View existing Event
                       </button>
                     </>
-                  ) : canBook ? (
-                    <button disabled={busy}>
-                      {busy ? "Booking…" : "Confirm reservation"}
-                    </button>
                   ) : (
                     <>
                       <p className="note">
@@ -310,8 +331,23 @@ export function RestaurantBooking({
                     </>
                   )}
                 </>
-              ) : existing ? (
+              ) : existing && !creating ? (
                 <div className="event-preview">
+                  {slotEvents.length > 1 && (
+                    <label>
+                      Event
+                      <select
+                        value={existing.id}
+                        onChange={(e) => setSelectedEvent(e.target.value)}
+                      >
+                        {slotEvents.map((g) => (
+                          <option value={g.id} key={g.id}>
+                            {g.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                   <div className="row">
                     <h3>{existing.title}</h3>
                     <Status value={eventDisplayStatus(existing, now)} />
@@ -359,8 +395,18 @@ export function RestaurantBooking({
                       View Event details →
                     </a>
                   )}
+                  {canCreate && (
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={busy}
+                      onClick={() => setCreating(true)}
+                    >
+                      Start a new Event
+                    </button>
+                  )}
                 </div>
-              ) : state === "event" ? (
+              ) : state === "event" && !creating ? (
                 <p className="note" role="status">
                   Event details are refreshing. Please wait before choosing an action.
                 </p>
@@ -371,17 +417,20 @@ export function RestaurantBooking({
               ) : !canCreate ? (
                 <>
                   <p className="note">
-                    Your party meets the {slot.minimumPartySize}-diner minimum. You can
-                    book this table directly.
+                    {now >= Date.parse(slot.startsAt) - 2 * 3600000
+                      ? "New Events close two hours before dining time. You can still join an available Event."
+                      : "A new EatTogether Event is unavailable at this time. Choose another time or an existing Event."}
                   </p>
-                  <button
-                    type="button"
-                    className="secondary"
-                    disabled={!validParty || busy}
-                    onClick={() => setMode("booking")}
-                  >
-                    Book a private table
-                  </button>
+                  {canBook && (
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={!validParty || busy}
+                      onClick={() => setMode("booking")}
+                    >
+                      Book a private table
+                    </button>
+                  )}
                 </>
               ) : creating ? (
                 <>

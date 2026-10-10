@@ -152,6 +152,9 @@ export function Status({ value }: { value: string }) {
           PENDING: "Pending",
           CANCELLED: "Cancelled",
           EXPIRED: "Expired",
+          LAST_CALL: "Last Call",
+          PRICE_DECISION: "Action needed",
+          FULL_PRICE: "Full price",
         } as Record<string, string>
       )[value] ?? value}
     </span>
@@ -163,7 +166,9 @@ export function GroupCard({ group: g }: { group: Group }) {
       <Art restaurant={g.slot.restaurant} />
       <div className="card-body">
         <div className="row">
-          <span className="discount">{g.slot.discount}% off</span>
+          <span className="discount">
+            {g.discount === 0 ? "Full price" : `${g.discount ?? g.slot.discount}% off`}
+          </span>
           <Status value={eventDisplayStatus(g)} />
         </div>
         <h3>{g.title}</h3>
@@ -182,7 +187,7 @@ export function GroupCard({ group: g }: { group: Group }) {
             {dinerCount(g)} / {g.capacity} joined
           </span>
           <span>
-            {["OPEN", "FULL", "CONFIRMED"].includes(g.status)
+            {["OPEN", "FULL", "CONFIRMED", "LAST_CALL"].includes(g.status)
               ? `${g.capacity - dinerCount(g)} seats left`
               : "View table"}{" "}
             →

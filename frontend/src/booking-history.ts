@@ -21,7 +21,7 @@ export function bookingDisplayStatus(booking: Booking, now = Date.now()) {
 
 export function eventDisplayStatus(group: Group, now = Date.now()) {
   const status = currentGroupStatus(group, now);
-  return status === "CONFIRMED"
+  return status === "CONFIRMED" || status === "FULL_PRICE"
     ? hasStarted(group.slot.startsAt, now)
       ? "PAST"
       : "UPCOMING"
@@ -41,8 +41,9 @@ export function matchesEvent(group: Group, filter: BookingFilter, now: number) {
   if (filter === "all") return true;
   const status = currentGroupStatus(group, now);
   const upcoming =
-    ["OPEN", "FULL", "CONFIRMED"].includes(status) &&
-    !hasStarted(group.slot.startsAt, now);
+    ["OPEN", "FULL", "CONFIRMED", "LAST_CALL", "PRICE_DECISION", "FULL_PRICE"].includes(
+      status,
+    ) && !hasStarted(group.slot.startsAt, now);
   return filter === "upcoming" ? upcoming : !upcoming;
 }
 

@@ -4,6 +4,11 @@ import { currentGroupStatus, dinerCount } from "./availability";
 export function reservationProgress(group: Group, now = Date.now()) {
   const status = currentGroupStatus(group, now);
   if (status === "CONFIRMED") return "Reservation confirmed.";
+  if (status === "LAST_CALL")
+    return "Last Call · refill before dining time to keep the discount.";
+  if (status === "PRICE_DECISION")
+    return "Cutoff reached · choose full price or decline.";
+  if (status === "FULL_PRICE") return "Reservation confirmed at full price.";
   if (status === "CANCELLED") return "Event cancelled.";
   if (status === "EXPIRED") return "Event expired without confirmation.";
   const missing = Math.max(0, group.slot.minimumPartySize - dinerCount(group));

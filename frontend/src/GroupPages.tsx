@@ -5,6 +5,7 @@ import { reservationProgress } from "./event-feedback";
 import { eventDisplayStatus } from "./booking-history";
 import { eventJoinState } from "./booking-flow";
 import { currentGroupStatus, hasStarted, dinerCount } from "./availability";
+import { EventSocial, DinerSafety } from "./EventSocial";
 import { EventPreferences } from "./EventPreferences";
 import {
   Art,
@@ -86,7 +87,9 @@ export function GroupDetail({
   const status = g && currentGroupStatus(g);
   const mutable =
     !!g &&
-    ["OPEN", "FULL", "CONFIRMED"].includes(status!) &&
+    ["OPEN", "FULL", "CONFIRMED", "LAST_CALL", "PRICE_DECISION", "FULL_PRICE"].includes(
+      status!,
+    ) &&
     !hasStarted(g.slot.startsAt);
   const count = g ? dinerCount(g) : 0;
   const remaining = g ? g.capacity - count : 0;
@@ -114,7 +117,8 @@ export function GroupDetail({
                 </div>
               </div>
               <span className="big-discount">
-                {g.slot.discount}%<small>off your meal</small>
+                {g.discount === 0 ? "Full price" : `${g.discount ?? g.slot.discount}%`}
+                <small>{g.discount === 0 ? "No discount" : "off your meal"}</small>
               </span>
             </div>
             <div className="detail-layout">
@@ -146,6 +150,11 @@ export function GroupDetail({
                   </div>
                 </div>
                 <EventPreferences event={g} />
+                {g.cutoffAt && mutable && (
+                  <p className="small muted">
+                    Cutoff: {date(g.cutoffAt)} · {time(g.cutoffAt)}
+                  </p>
+                )}
                 {g.description && (
                   <>
                     <h2>Host's note</h2>
@@ -171,36 +180,90 @@ export function GroupDetail({
                         {m.user.ageBand && ` · Age ${m.user.ageBand}`} · {m.partySize}{" "}
                         {m.partySize === 1 ? "diner" : "diners"}
                       </span>
+                      {party && m.userId !== user.id && (
+                        <DinerSafety
+                          group={g}
+                          target={m.user}
+                          revision={revision}
+                          act={act}
+                          busy={busy}
+                        />
+                      )}
                     </div>
                   ))}
                   {mutable &&
-                    Array.from({ length: g.capacity - count }, (_, i) => (
+                    ["OPEN", "FULL", "CONFIRMED", "LAST_CALL"].includes(status!) &&
+                    Array.from({ length: Math.max(0, g.capacity - count) }, (_, i) => (
                       <div className="participant vacant" key={i}>
                         <span className="avatar">+</span>
                         <span>Open seat</span>
                       </div>
                     ))}
                 </div>
+                <EventSocial
+                  group={g}
+                  user={user}
+                  revision={revision}
+                  act={act}
+                  busy={busy}
+                />
               </section>
               <aside className="panel action-panel">
                 <h2>
                   {mutable ? (party ? "Your seat" : "Join Event") : "Event details"}
                 </h2>
                 <p>
-                  {mutable
-                    ? `${reservationProgress(g)} ${status === "CONFIRMED" ? "Parties can Join or Leave until dining time." : "Confirmation is automatic when the minimum is met."}`
-                    : "This Event is closed to changes."}
+                  {mutable ? reservationProgress(g) : "This Event is closed to changes."}
                 </p>
                 <p className="small">
                   {count} / {g.capacity} diners
-                  {mutable && ` · ${remaining} seats remaining`}
+                  {mutable &&
+                    ["OPEN", "FULL", "CONFIRMED", "LAST_CALL"].includes(status!) &&
+                    ` · ${remaining} seats remaining`}
                 </p>
                 {g.booking && party && (
                   <p className="small booking-reference">
                     Reservation #{g.booking.id.slice(0, 8).toUpperCase()}
                   </p>
                 )}
+                {mutable && party && status === "PRICE_DECISION" && (
+                  <div className="price-choice">
+                    <p className="note">
+                      The minimum was not reached by Cutoff. The discount is withdrawn.
+                    </p>
+                    {party.priceAccepted ? (
+                      <p className="small">
+                        You accepted full price. Waiting for the other diners’ choices.
+                      </p>
+                    ) : (
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          perform(
+                            "accept-price",
+                            "You accepted a full-price reservation.",
+                          )
+                        }
+                      >
+                        Accept full price
+                      </button>
+                    )}
+                    <button
+                      className="secondary"
+                      disabled={busy}
+                      onClick={() =>
+                        perform(
+                          "decline-price",
+                          "You declined the booking without a penalty.",
+                        )
+                      }
+                    >
+                      Decline without penalty
+                    </button>
+                  </div>
+                )}
                 {mutable &&
+                  status !== "PRICE_DECISION" &&
                   (party ? (
                     <>
                       {host && (
@@ -223,8 +286,13 @@ export function GroupDetail({
                             className="secondary"
                             disabled={busy || !g.slot.restaurant.active}
                             onClick={() =>
+                              (!g.leavePenalty ||
+                                window.confirm(
+                                  "Reducing your reservation after Cutoff records a reliability strike. Continue?",
+                                )) &&
                               perform("resize", "Your reservation now holds one seat.", {
                                 partySize: 1,
+                                acknowledgeStrike: g.leavePenalty === true,
                               })
                             }
                           >
@@ -242,14 +310,21 @@ export function GroupDetail({
                                 : `Leave this Event and release your ${party.partySize} seats?`}
                           </p>
                           <p className="small">
-                            The reservation returns to waiting if the remaining diners
-                            fall below the minimum.
+                            {g.leavePenalty
+                              ? "This Leave records a reliability strike. Three strikes within 90 days suspend EatTogether for one week. Ordinary bookings are unaffected."
+                              : status === "LAST_CALL" || status === "FULL_PRICE"
+                                ? "You can Leave without a reliability strike."
+                                : "The reservation returns to waiting if the remaining diners fall below the minimum."}
                           </p>
                           <button
                             className="danger"
                             disabled={busy}
                             onClick={async () => {
-                              if (await perform("leave", "You have left the Event."))
+                              if (
+                                await perform("leave", "You have left the Event.", {
+                                  acknowledgeStrike: g.leavePenalty === true,
+                                })
+                              )
                                 setLeavePrompt(false);
                             }}
                           >
@@ -305,7 +380,13 @@ export function GroupDetail({
                   host &&
                   (cancelPrompt ? (
                     <div className="cancel-prompt">
-                      <p>Cancel this Event for every Party and release its table?</p>
+                      <p>Cancel this Event for every Party and release its seats?</p>
+                      {g.leavePenalty && (
+                        <p className="small">
+                          This late cancellation records a reliability strike for you.
+                          Other diners receive no strike.
+                        </p>
+                      )}
                       <button
                         className="danger"
                         disabled={busy}
@@ -313,7 +394,8 @@ export function GroupDetail({
                           if (
                             await perform(
                               "cancel",
-                              "Event cancelled. The table is available again.",
+                              "Event cancelled. The seats are available again.",
+                              { acknowledgeStrike: g.leavePenalty === true },
                             )
                           )
                             setCancelPrompt(false);

@@ -31,6 +31,9 @@ export type Slot = {
   minimumPartySize: number;
   capacity: number;
   discount: number;
+  availableSeats?: number;
+  eventIds?: string[];
+  eatTogetherEnabled?: boolean;
   allocation?: { groupId: string | null; bookingId: string | null } | null;
   restaurant: Restaurant;
 };
@@ -44,11 +47,25 @@ export type Group = {
   minAge: number | null;
   maxAge: number | null;
   capacity: number;
-  status: "OPEN" | "FULL" | "CONFIRMED" | "CANCELLED" | "EXPIRED";
+  status:
+    | "OPEN"
+    | "FULL"
+    | "CONFIRMED"
+    | "CANCELLED"
+    | "EXPIRED"
+    | "LAST_CALL"
+    | "PRICE_DECISION"
+    | "FULL_PRICE";
+  cutoffAt?: string;
+  heldSeats?: number;
+  discount?: number;
+  chatOpenedAt?: string | null;
+  leavePenalty?: boolean;
   slot: Slot;
   members: {
     userId: string;
     partySize: number;
+    priceAccepted?: boolean;
     user: { id: string; name: string; ageBand: string | null };
   }[];
   booking: Booking | null;
@@ -57,6 +74,7 @@ export type Booking = {
   id: string;
   userId: string;
   partySize: number;
+  discount?: number | null;
   status: "PENDING" | "CONFIRMED" | "CANCELLED";
   slot: Slot;
   group: { id: string; title: string; hostId: string } | null;

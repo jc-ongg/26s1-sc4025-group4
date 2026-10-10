@@ -8,6 +8,7 @@ import { AccountMenu } from "./AccountMenu";
 import { Profile } from "./Profile";
 import { Bookings } from "./Bookings";
 import { GroupDetail } from "./GroupPages";
+import { Notifications } from "./Notifications";
 
 export function DiningApp({
   user,
@@ -76,19 +77,22 @@ export function DiningApp({
           <a className="brand" href="#/restaurants">
             <img src="/images/brand/eatigo.png" alt="Eatigo" />
           </a>
-          <AccountMenu
-            user={user}
-            busy={busy}
-            onLogout={async () => {
-              setBusy(true);
-              try {
-                await onLogout();
-              } catch (e) {
-                setError((e as Error).message);
-                setBusy(false);
-              }
-            }}
-          />
+          <div className="account-controls">
+            <Notifications {...actions} />
+            <AccountMenu
+              user={user}
+              busy={busy}
+              onLogout={async () => {
+                setBusy(true);
+                try {
+                  await onLogout();
+                } catch (e) {
+                  setError((e as Error).message);
+                  setBusy(false);
+                }
+              }}
+            />
+          </div>
         </header>
       </div>
       <main className="app-main">
@@ -115,7 +119,7 @@ export function DiningApp({
         ) : page === "my-groups" ? (
           <Bookings {...actions} user={user} />
         ) : page === "profile" ? (
-          <Profile user={user} revision={revision} />
+          <Profile user={user} {...actions} />
         ) : page === "bookings" ? (
           <Bookings {...actions} user={user} />
         ) : (

@@ -1,0 +1,230 @@
+/* Secondary diner tools remain collapsed until requested. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.account-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+.notification-trigger {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  color: #46505f;
+  background: transparent;
+  border: 1px solid #d4d0cb;
+}
+.notification-trigger:hover {
+  background: #f0eeea;
+}
+.notification-count {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 19px;
+  padding: 2px 4px;
+  border-radius: 10px;
+  background: #b9233a;
+  color: #fff;
+  font-size: 10px;
+}
+.compact-dialog {
+  width: min(520px, calc(100% - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid #d4d0cb;
+  border-radius: 8px;
+  color: #303641;
+  background: #fff;
+  box-shadow: 0 12px 48px #25242225;
+}
+.compact-dialog::backdrop {
+  background: #24201b65;
+}
+.compact-dialog h2 {
+  margin: 0;
+}
+.compact-dialog > .row {
+  margin-bottom: 18px;
+}
+.notification-list,
+.plain-list {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0;
+}
+.notification-list li {
+  border-top: 1px solid #dedbd6;
+  padding: 18px 10px;
+}
+.notification-list li.unread {
+  border-left: 3px solid #b9233a;
+  background: #faf5f4;
+}
+.notification-list p {
+  margin: 8px 0 12px;
+}
+.notification-list .row {
+  flex-wrap: wrap;
+}
+.plain-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid #dedbd6;
+}
+.event-social {
+  margin-top: 28px;
+  border-top: 1px solid #d4d0cb;
+}
+.event-social > details,
+.profile-setting {
+  padding: 18px 0;
+  border-bottom: 1px solid #d4d0cb;
+  text-align: left;
+}
+.event-social summary,
+.profile-setting summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+.event-social details[open] summary,
+.profile-setting[open] summary {
+  margin-bottom: 18px;
+}
+.event-messages {
+  max-height: 280px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: #f4f2ee;
+  border: 1px solid #dedbd6;
+  border-radius: 5px;
+}
+.event-message {
+  max-width: 92%;
+  min-width: 150px;
+  padding: 12px;
+  border: 1px solid #dedbd6;
+  border-radius: 5px;
+  background: #fff;
+}
+.event-message.own {
+  align-self: flex-end;
+  background: #fbf1f2;
+  border-color: #e3cdd1;
+}
+.event-message p {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.chat-compose {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 0;
+}
+.chat-compose input {
+  flex: 1;
+  min-width: 0;
+}
+.feedback-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.feedback-form > p,
+.feedback-form > button,
+.feedback-form .inline-check,
+.feedback-safety {
+  grid-column: 1 / -1;
+}
+.feedback-form select,
+.feedback-form textarea {
+  margin-top: 8px;
+  width: 100%;
+}
+.inline-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.inline-check input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.diner-safety {
+  width: 100%;
+}
+.diner-safety > .text-button {
+  min-height: 32px;
+  padding: 3px 10px;
+}
+.safety-options {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid #d4d0cb;
+  background: #f4f2ee;
+  border-radius: 5px;
+  text-align: left;
+}
+.safety-options form {
+  margin: 0;
+}
+.safety-options textarea {
+  width: 100%;
+  margin: 8px 0;
+}
+.feedback-safety > .row {
+  padding: 8px 0;
+  align-items: start;
+}
+.feedback-safety .diner-safety {
+  width: auto;
+  max-width: 260px;
+}
+.status.last_call,
+.status.price_decision {
+  background: #fbf0da;
+  color: #805913;
+}
+.status.full_price {
+  background: #e8f0fc;
+  color: #245b94;
+}
+@media (max-width: 600px) {
+  .account-controls {
+    gap: 8px;
+  }
+  .compact-dialog {
+    padding: 18px;
+  }
+  .feedback-form {
+    grid-template-columns: 1fr;
+  }
+  .chat-compose {
+    gap: 6px;
+  }
+  .chat-compose button {
+    padding: 12px;
+  }
+}

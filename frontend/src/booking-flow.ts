@@ -5,6 +5,8 @@ export function slotState(slot: Slot, active: boolean, now = Date.now()) {
   if (!active || hasStarted(slot.startsAt, now)) return "unavailable";
   // A held Event is still discoverable, including after its reservation confirms.
   if (slot.allocation?.groupId) return "event";
+  if (slot.availableSeats !== undefined)
+    return slot.availableSeats >= slot.minimumPartySize ? "available" : "reserved";
   return slot.allocation ? "reserved" : "available";
 }
 
@@ -17,7 +19,9 @@ export function eventJoinState(
   if (event.members.some((party) => party.userId === userId)) return "joined";
   if (
     !event.slot.restaurant.active ||
-    !["OPEN", "FULL", "CONFIRMED"].includes(currentGroupStatus(event, now)) ||
+    !["OPEN", "FULL", "CONFIRMED", "LAST_CALL"].includes(
+      currentGroupStatus(event, now),
+    ) ||
     hasStarted(event.slot.startsAt, now)
   )
     return "closed";
