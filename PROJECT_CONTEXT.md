@@ -19,26 +19,26 @@ SC4025 academic MVP extending Eatigo with diner-created shared tables. The imple
 - An Event combines individually booked diners at one restaurant slot. Each account represents one Solo Diner in new EatTogether reservations.
 - Each account reserves one EatTogether seat. Friends need separate accounts and Join the same Event individually. New Events and Joins require a slot minimum above one. Existing multi-diner records are preserved; their owner may explicitly reduce them to one seat. Ordinary reservations retain their party-size choice.
 - EatTogether creation/Join requires a verified adult with a stored birth date and gender. Six demo accounts have fictional preverified identity fixtures; real Singpass authentication remains disabled. Optional age/gender preferences are immutable and must include the Host. Ages are checked at dining time using Singapore dates, with adulthood required already at the time of the request.
-- Only eligible Events enter discovery, map/card counts, saved items and direct-link reads. Hidden Event-held slots appear reserved with identifiers concealed. Existing members retain their own reservation/history access. Public participants expose age bands rather than birth dates or gender.
+- Only eligible Events enter discovery, map/card counts, saved items and direct-link reads. Hidden Event identifiers are concealed while free seats in the shared pool remain bookable. Existing members retain history access. Public participants expose age bands rather than birth dates or gender.
 - The creator is the Host. Total diners across Parties determine occupancy and confirmation, rather than the number of accounts.
 - Confirmation is automatic when the minimum is reached. The shared reservation stays open to Joins and Leaves until dining time, subject to capacity. Owners of older multi-diner reservations may explicitly reduce them to one seat.
-- Falling below the minimum restores Undersubscribed status. An existing reservation becomes PENDING and disappears from Reservations until the minimum is met again; its booking ID is retained.
+- Before Cutoff, falling below the minimum restores Waiting for diners. An existing reservation becomes PENDING until requalification, retaining its ID. After Cutoff, undersubscribed confirmed Events enter Last Call; short unconfirmed Events offer full-price acceptance/decline.
 - The Host can Leave. The earliest remaining Joining Party becomes Host, and shared-booking ownership moves with that role. Equal join timestamps use user ID as a deterministic tie-break.
 - If the last Party Leaves, the Event is cancelled and its table hold is released. The Host also retains the existing explicit whole-Event cancellation action, separate from Leave.
-- At dining time, Undersubscribed Events expire and release their hold. Confirmed Events remain as reservation history. Joining, leaving and resizing are closed once dining starts.
+- At dining time, unanswered full-price choices expire. Accepted full-price and confirmed bookings remain as history; unfilled Last Call reservations revert to full price. Membership changes close once dining starts.
 - See docs/EATTOGETHER_SCOPE.md for alignment with the product lead's concept and deferred decisions.
 
 ## Engineering assumptions to keep explicit
 
-- Model each reservation slot as one bookable table at one time, with minimum and maximum party size. Multiple tables can have distinct slot IDs.
-- Creating a group holds that slot. Cancellation releases it. Ordinary bookings compete for the same slot.
-- Undersubscribed Events expire when their slot begins, releasing their hold. No payment or financial commitment is involved.
+- Slots provide shared seat pools and a separate maximum table size. Each Event is one table; ordinary bookings draw from the same pool. Row locks serialize allocations and timing transitions.
+- Cutoff is two hours before dining. Short Events offer per-account full-price acceptance or penalty-free decline. Late undersubscription opens Last Call. See docs/EATTOGETHER_SCOPE.md for current rules, superseding earlier lifecycle assumptions above.
+- Late-Leave reliability, private reports/blocks, member Chat, optional post-time feedback and persisted in-app notifications are implemented. No-show penalties require restaurant attendance and remain deferred.
 - Demo account credentials are public fixtures, checked on the backend. Browser sessions identify the authenticated user; clients cannot supply an arbitrary acting user ID.
 - The prototype does not connect to Eatigo inventory or claim real reservations.
 
 ## Priorities
 
-Demo reliability, coherent user flows, understandable code, straightforward local startup, responsive visual quality. Microservices, native apps, payments, chat and cloud deployment are outside the current scope.
+Demo reliability, coherent user flows, understandable code, straightforward local startup, responsive visual quality. Microservices, native apps, payments and cloud deployment are outside the current scope. Restaurant-side work is paused. Report artifacts stay unchanged until final product scope is confirmed.
 
 ## References and reporting
 
