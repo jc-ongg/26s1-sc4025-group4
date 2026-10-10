@@ -26,6 +26,19 @@ const event = {
   slot: { startsAt: new Date("2026-10-09T04:00:00Z") },
 };
 
+test("suspension closes Joins but preserves discovery; blocks exclude future shared Events", () => {
+  const suspended = { ...diner, suspendedUntil: new Date(now.getTime() + 86400000) };
+  assert.equal(matchesEvent(suspended, event, now), false);
+  assert.equal(canViewEvent(suspended, event), true);
+  assert.equal(matchesEvent({ ...suspended, suspendedUntil: now }, event, now), true);
+  const blocked = { ...diner, blockedUserIds: [event.hostId] };
+  assert.equal(canViewEvent(blocked, event), false);
+  assert.equal(
+    canViewEvent(blocked, { ...event, members: [{ userId: diner.id }] }),
+    true,
+  );
+});
+
 test("birthdays cross at Singapore midnight and age bands reveal no exact birth date", () => {
   assert.equal(ageAt(diner.dateOfBirth, new Date("2026-10-08T15:59:59Z")), 23);
   assert.equal(ageAt(diner.dateOfBirth, new Date("2026-10-08T16:00:00Z")), 24);

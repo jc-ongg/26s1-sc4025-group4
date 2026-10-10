@@ -72,6 +72,7 @@ try {
             startsAt,
             minimumPartySize: ["seorae", "yan-lai-ju"].includes(restaurant.id!) ? 4 : 2,
             capacity: ["seorae", "yan-lai-ju"].includes(restaurant.id!) ? 6 : 4,
+            discountedSeats: ["seorae", "yan-lai-ju"].includes(restaurant.id!) ? 12 : 8,
             discount,
           },
         });
@@ -152,7 +153,7 @@ try {
       where: {
         restaurantId: demo.restaurantId,
         startsAt: { gte: new Date(`${tomorrowSG}T00:00:00+08:00`) },
-        allocation: null,
+        allocations: { none: {} },
       },
       orderBy: { startsAt: "asc" },
     });
@@ -173,12 +174,17 @@ try {
           hostId: host.id,
           description: demo.description,
           capacity: slot.capacity,
+          initialHeldSeats: slot.minimumPartySize,
           status: "OPEN",
           members: { create: accounts.map((user) => ({ userId: user.id })) },
         },
       });
       await tx.slotAllocation.create({
-        data: { slotId: slot.id, groupId: id },
+        data: {
+          slotId: slot.id,
+          groupId: id,
+          seats: Math.max(slot.minimumPartySize, accounts.length),
+        },
       });
       await syncEvent(tx, id);
     });

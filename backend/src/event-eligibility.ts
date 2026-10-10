@@ -5,6 +5,8 @@ export type DinerIdentity = {
   singpassVerified: boolean;
   dateOfBirth: Date | null;
   gender: Gender | null;
+  suspendedUntil?: Date | null;
+  blockedUserIds?: string[];
 };
 export type EventFilters = {
   genderFilter: Gender | null;
@@ -41,10 +43,17 @@ export function verifiedAdult(diner: DinerIdentity, now = new Date()) {
 
 export function matchesEvent(
   diner: DinerIdentity,
-  event: EventFilters & { slot: { startsAt: Date } },
+  event: EventFilters & {
+    slot: { startsAt: Date };
+    hostId?: string;
+    members?: { userId: string }[];
+  },
   now = new Date(),
 ) {
   if (!verifiedAdult(diner, now)) return false;
+  if (diner.suspendedUntil && diner.suspendedUntil > now) return false;
+  const participants = [event.hostId, ...(event.members?.map((m) => m.userId) ?? [])];
+  if (diner.blockedUserIds?.some((id) => participants.includes(id))) return false;
   const age = ageAt(diner.dateOfBirth, event.slot.startsAt)!;
   return (
     (!event.genderFilter || event.genderFilter === diner.gender) &&
@@ -65,7 +74,7 @@ export function canViewEvent(
   return (
     event.hostId === diner.id ||
     event.members.some((m) => m.userId === diner.id) ||
-    matchesEvent(diner, event)
+    matchesEvent({ ...diner, suspendedUntil: null }, event)
   );
 }
 

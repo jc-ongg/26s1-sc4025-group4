@@ -138,7 +138,7 @@ test("Event preferences hide details, slot identifiers and counts from ineligibl
     assert.ok(!restaurant.groups.some((x: { id: string }) => x.id === g.id));
     assert.deepEqual(
       restaurant.restaurant.slots.find((x: { id: string }) => x.id === s.id).allocation,
-      { groupId: null, bookingId: null },
+      null,
     );
     const restaurants = (await request("/restaurants", ineligible)).data.restaurants;
     assert.ok(!JSON.stringify(restaurants).includes(g.id));
@@ -339,7 +339,7 @@ test("confirmation is automatic, reversible and preserves one shared booking", a
     ),
   );
   assert.equal(
-    (await request("/bookings", "yojin", { slotId: g.slotId, partySize: 2 })).status,
+    (await request("/bookings", "yojin", { slotId: g.slotId, partySize: 3 })).status,
     409,
   );
   await request(`/groups/${g.id}/cancel`, "jacob", {});
@@ -372,7 +372,7 @@ test("simultaneous last-seat joins never overfill; leaving a full table reopens 
   assert.equal(reopened.status, "OPEN");
   assert.equal(reopened.members.length, 1);
 });
-test("competing normal booking and group creation share one exclusive slot allocation", async () => {
+test("normal bookings and Events share the seat pool without exceeding inventory", async () => {
   const s = await slot();
   const results = await Promise.all([
     request("/groups", "jacob", {
@@ -382,15 +382,24 @@ test("competing normal booking and group creation share one exclusive slot alloc
     }),
     request("/bookings", "chongwei", { slotId: s.id, partySize: 2 }),
   ]);
-  assert.deepEqual(results.map((r) => r.status).sort(), [201, 409]);
-  assert.equal(await db.slotAllocation.count({ where: { slotId: s.id } }), 1);
-  if (results[0].status === 201)
-    await request(`/groups/${results[0].data.group.id}/cancel`, "jacob", {});
-  else {
-    const id = results[1].data.booking.id;
-    assert.equal((await request(`/bookings/${id}/cancel`, "yojin", {})).status, 403);
-    await request(`/bookings/${id}/cancel`, "chongwei", {});
-  }
+  assert.deepEqual(
+    results.map((r) => r.status),
+    [201, 201],
+  );
+  assert.equal(await db.slotAllocation.count({ where: { slotId: s.id } }), 2);
+  assert.equal(
+    (
+      await db.slotAllocation.aggregate({
+        where: { slotId: s.id },
+        _sum: { seats: true },
+      })
+    )._sum.seats,
+    4,
+  );
+  await request(`/groups/${results[0].data.group.id}/cancel`, "jacob", {});
+  const id = results[1].data.booking.id;
+  assert.equal((await request(`/bookings/${id}/cancel`, "yojin", {})).status, 403);
+  await request(`/bookings/${id}/cancel`, "chongwei", {});
   assert.equal(
     (await request("/bookings", "yojin", { slotId: s.id, partySize: 2 })).status,
     201,

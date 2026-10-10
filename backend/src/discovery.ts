@@ -2,7 +2,8 @@ import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { db } from "./db.js";
 import { embed, embeddingHash, modelVersion } from "./embeddings.js";
-import { groupInclude, HttpError, presentGroup } from "./dining.js";
+import { groupInclude, HttpError, presentGroup, presentRestaurants } from "./dining.js";
+import { centres, distance } from "./geography.js";
 import { dinerCount } from "./event-lifecycle.js";
 import { canViewEvent, matchesEvent } from "./event-eligibility.js";
 
@@ -26,7 +27,7 @@ async function indexContent() {
     }
     const groups = await db.groupDiningSession.findMany({
       where: {
-        status: { in: ["OPEN", "FULL", "CONFIRMED"] },
+        status: { in: ["OPEN", "FULL", "CONFIRMED", "LAST_CALL"] },
         slot: { startsAt: { gt: new Date() }, restaurant: { active: true } },
       },
       include: { slot: { include: { restaurant: true } } },
@@ -42,31 +43,6 @@ async function indexContent() {
     indexing = undefined;
   });
   return indexing;
-}
-const centres: Record<string, [number, number]> = {
-  ntu: [1.3483, 103.6831],
-  jurong: [1.333, 103.742],
-  clementi: [1.315, 103.765],
-  city: [1.293, 103.852],
-  "city hall": [1.293, 103.852],
-  "jurong east": [1.333, 103.742],
-  "jurong west": [1.34, 103.709],
-  "joo koon": [1.327, 103.678],
-  orchard: [1.304, 103.832],
-  chinatown: [1.284, 103.844],
-  "bukit batok": [1.349, 103.749],
-  "bukit timah": [1.329, 103.797],
-  "holland village": [1.311, 103.796],
-  "nanyang technological university": [1.3483, 103.6831],
-};
-function distance(lat: number, lon: number, centre: [number, number]) {
-  const rad = Math.PI / 180,
-    a =
-      Math.sin(((lat - centre[0]) * rad) / 2) ** 2 +
-      Math.cos(lat * rad) *
-        Math.cos(centre[0] * rad) *
-        Math.sin(((lon - centre[1]) * rad) / 2) ** 2;
-  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 discovery.post("/discovery/search", async (req, res) => {
   const {
@@ -139,7 +115,7 @@ discovery.post("/discovery/search", async (req, res) => {
     mode === "groups"
       ? await db.groupDiningSession.findMany({
           where: {
-            status: { in: ["OPEN", "FULL", "CONFIRMED"] },
+            status: { in: ["OPEN", "FULL", "CONFIRMED", "LAST_CALL"] },
             members: { none: { userId: res.locals.userId } },
             slot: {
               startsAt: { gt: new Date() },
@@ -154,11 +130,12 @@ discovery.post("/discovery/search", async (req, res) => {
       ? await db.restaurant.findMany({
           where: {
             active: true,
-            slots: { some: { startsAt: { gt: new Date() }, allocation: null } },
+            slots: { some: { startsAt: { gt: new Date() } } },
           },
           include: {
             slots: {
-              where: { startsAt: { gt: new Date() }, allocation: null },
+              where: { startsAt: { gt: new Date() } },
+              include: { allocations: true },
             },
           },
         })
@@ -168,7 +145,8 @@ discovery.post("/discovery/search", async (req, res) => {
       ? groups
           .filter(
             (g) =>
-              matchesEvent(res.locals.diner, g) && dinerCount(g.members) < g.capacity,
+              matchesEvent(res.locals.diner, g) &&
+              dinerCount(g.members) < presentGroup(g).capacity,
           )
           .map((g) => ({
             id: g.id,
@@ -176,12 +154,14 @@ discovery.post("/discovery/search", async (req, res) => {
             restaurant: g.slot.restaurant,
             group: presentGroup(g),
           }))
-      : restaurants.map((r) => ({
-          id: r.id,
-          key: `restaurant:${r.id}`,
-          restaurant: r,
-          group: undefined,
-        }));
+      : (await presentRestaurants(restaurants, res.locals.diner))
+          .filter((r) => r.slots.some((s) => s.availableSeats >= s.minimumPartySize))
+          .map((r) => ({
+            id: r.id,
+            key: `restaurant:${r.id}`,
+            restaurant: r,
+            group: undefined,
+          }));
   const eligible = candidates
     // Explicit cuisine is a constraint; semantic similarity only ranks within it.
     .filter(

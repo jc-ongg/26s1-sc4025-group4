@@ -9,7 +9,7 @@
     "start": "node dist/server.js",
     "seed": "tsx src/seed.ts",
     "test": "tsx --test src/auth.test.ts src/event-eligibility.test.ts",
-    "test:integration": "tsx --test src/dining.test.ts",
+    "test:integration": "tsx --test src/dining.test.ts src/lifecycle.test.ts",
     "generate": "prisma generate",
     "test:discovery": "tsx --test src/discovery.test.ts"
   },

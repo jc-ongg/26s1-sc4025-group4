@@ -6,6 +6,8 @@ import { parseCredentials } from "./auth.js";
 import { discovery } from "./discovery.js";
 import { dining, HttpError } from "./dining.js";
 import { ageBand } from "./event-eligibility.js";
+import { social } from "./social.js";
+import { processLifecycle } from "./event-lifecycle.js";
 
 const app = express();
 const cookieName = "eatigo_session";
@@ -92,6 +94,7 @@ app.post("/api/auth/logout", async (req, res) => {
 // Dining middleware authenticates all downstream routes, including discovery.
 app.use("/api", dining);
 app.use("/api", discovery);
+app.use("/api", social);
 app.use((_req, res) => {
   res.status(404).json({ message: "Endpoint not found." });
 });
@@ -111,7 +114,14 @@ app.use(errors);
 const server = app.listen(4000, "0.0.0.0", () =>
   console.log("API listening on port 4000"),
 );
+const lifecycleTimer = setInterval(() => {
+  void processLifecycle().catch((error) =>
+    console.error("Event lifecycle update failed", error),
+  );
+}, 30000);
+lifecycleTimer.unref();
 async function shutdown() {
+  clearInterval(lifecycleTimer);
   server.close();
   await db.$disconnect();
 }
