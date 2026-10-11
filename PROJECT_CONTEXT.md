@@ -8,6 +8,7 @@ SC4025 academic MVP extending Eatigo with diner-created shared tables. The imple
 
 - Responsive Eatigo-inspired web application with sourced real restaurant examples, local photos and simulated offers/bookings.
 - Restaurant browsing, details, discount slots, ordinary bookings, Event discovery and creation, single-diner joining and leaving, automatic confirmation, Host Handover, cancellation, and personal bookings.
+- One restaurant collection supports grid/map views, three cards per page, combined Restaurant/Event counts, and cuisine, price-band, minimum-discount and EatTogether availability filters. Each restaurant contains its Events; there is no separate EatTogether collection. For you opens from the right of the search toolbar. Profile shows identity/settings and notification history; the bell shows unread messages. Booking details stay in Bookings.
 - Seeded diner accounts with an email/password login. No registration, password reset, OAuth, or customer/restaurant roles.
 - Shared PostgreSQL state across browser sessions and LAN devices. Polling is sufficient.
 - Everything runs on the Windows host through Docker Compose. No runtime cloud services.
