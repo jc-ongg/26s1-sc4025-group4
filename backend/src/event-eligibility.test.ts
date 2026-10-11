@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   ageAt,
-  ageBand,
   canViewEvent,
   matchesEvent,
   parseEventFilters,
@@ -39,17 +38,17 @@ test("suspension closes Joins but preserves discovery; blocks exclude future sha
   );
 });
 
-test("birthdays cross at Singapore midnight and age bands reveal no exact birth date", () => {
+test("exact ages cross birthdays at Singapore midnight", () => {
   assert.equal(ageAt(diner.dateOfBirth, new Date("2026-10-08T15:59:59Z")), 23);
   assert.equal(ageAt(diner.dateOfBirth, new Date("2026-10-08T16:00:00Z")), 24);
   for (const [birth, expected] of [
-    ["2008-10-09", null],
-    ["2008-10-08", "18–24"],
-    ["2001-10-08", "25–34"],
-    ["1991-10-08", "35–44"],
-    ["1961-10-08", "65+"],
+    ["2008-10-09", 17],
+    ["2008-10-08", 18],
+    ["2001-10-08", 25],
+    ["1991-10-08", 35],
+    ["1961-10-08", 65],
   ])
-    assert.equal(ageBand(new Date(`${birth}T00:00:00Z`), now), expected);
+    assert.equal(ageAt(new Date(`${birth}T00:00:00Z`), now), expected);
   assert.equal(ageAt(null, now), null);
 });
 

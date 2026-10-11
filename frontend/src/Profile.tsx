@@ -1,6 +1,13 @@
 import { useState } from "react";
 import type { PersonalBooking, User } from "./types";
-import { isPastBooking, isUpcomingBooking, byDiningTime } from "./booking-history";
+import {
+  isPastBooking,
+  isUpcomingBooking,
+  byDiningTime,
+  bookingDisplayStatus,
+} from "./booking-history";
+import { InfoTip } from "./InfoTip";
+import { Pagination } from "./Pagination";
 import {
   Art,
   State,
@@ -32,8 +39,13 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
   const past = bookings
     .filter((b) => isPastBooking(b, now))
     .sort(byDiningTime("history"));
+  const upcoming = bookings
+    .filter((b) => isUpcomingBooking(b, now))
+    .sort(byDiningTime("upcoming"));
+  const [view, setView] = useState<"upcoming" | "past">("upcoming");
+  const shown = view === "upcoming" ? upcoming : past;
   const [page, setPage] = useState(0);
-  const current = Math.min(page, Math.max(0, Math.ceil(past.length / 2) - 1));
+  const current = Math.min(page, Math.max(0, Math.ceil(shown.length / 2) - 1));
   return (
     <>
       <section className="page-intro">
@@ -51,9 +63,9 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
               <span aria-hidden="true">✓</span> Singpass verified
             </span>
           )}
-          {user.ageBand && (
+          {user.age && (
             <p className="small muted profile-demographics">
-              Age {user.ageBand}
+              Age {user.age}
               {user.gender && ` · ${user.gender === "FEMALE" ? "Female" : "Male"}`}
             </p>
           )}
@@ -73,16 +85,25 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
           </dl>
           <div className="profile-reliability">
             <h3>
-              Reliability Score <span className="badge">Private</span>
+              <span className="row start">
+                Reliability{" "}
+                <InfoTip label="About reliability">
+                  A strike is recorded when you Leave a confirmed Event after Cutoff (two
+                  hours before the meal). Strikes expire after 90 days. Three strikes
+                  within that period suspend new EatTogether participation for one week.
+                  Ordinary bookings stay available.
+                </InfoTip>
+              </span>
+              <span className="badge">Private</span>
             </h3>
             <State data={reliability.data} error={reliability.error}>
               <p className="reliability-count">
                 {reliability.data?.profile.reliabilityStrikes}{" "}
-                <span>strikes in the last 90 days</span>
-              </p>
-              <p className="small muted">
-                3 strikes within 90 days: 1 week suspended from EatTogether. Ordinary
-                bookings stay available.
+                <span>
+                  {reliability.data?.profile.reliabilityStrikes === 1
+                    ? "active strike"
+                    : "active strikes"}
+                </span>
               </p>
               {reliability.data?.profile.suspendedUntil &&
                 Date.parse(reliability.data.profile.suspendedUntil) > now && (
@@ -166,21 +187,42 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
             </details>
           )}
         </aside>
-        <section className="panel profile-history" aria-label="Past bookings">
-          <h2>Past bookings</h2>
+        <section className="panel profile-history" aria-label="Your bookings">
+          <div className="section-heading profile-booking-heading">
+            <h2>Your bookings</h2>
+            <div className="mode-tabs" role="group" aria-label="Profile bookings">
+              {(["upcoming", "past"] as const).map((option) => (
+                <button
+                  key={option}
+                  className={view === option ? "selected" : ""}
+                  aria-pressed={view === option}
+                  onClick={() => {
+                    setView(option);
+                    setPage(0);
+                  }}
+                >
+                  {option === "upcoming" ? "Upcoming" : "Past"}
+                </button>
+              ))}
+            </div>
+          </div>
           <State data={resource.data} error={resource.error}>
-            {past.length ? (
+            {shown.length ? (
               <>
                 <ul className="plan-list">
-                  {past.slice(current * 2, current * 2 + 2).map((booking) => (
-                    <li className="plan-row" data-status="past" key={booking.id}>
+                  {shown.slice(current * 2, current * 2 + 2).map((booking) => (
+                    <li
+                      className="plan-row"
+                      data-status={bookingDisplayStatus(booking, now).toLowerCase()}
+                      key={booking.id}
+                    >
                       <Art restaurant={booking.slot.restaurant} />
                       <div className="plan-content">
                         <div className="row">
                           <span className="small muted">
                             {booking.group ? "EatTogether" : "Reservation"}
                           </span>
-                          <Status value="PAST" />
+                          <Status value={bookingDisplayStatus(booking, now)} />
                         </div>
                         <h3>{booking.slot.restaurant.name}</h3>
                         <p className="small">
@@ -209,35 +251,24 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
                     </li>
                   ))}
                 </ul>
-                <div className="list-pagination">
-                  <span>
-                    {past.length} bookings · Page {current + 1} of{" "}
-                    {Math.ceil(past.length / 2)}
-                  </span>
-                  {past.length > 2 && (
-                    <div>
-                      <button
-                        className="text-button"
-                        disabled={current === 0}
-                        onClick={() => setPage(current - 1)}
-                      >
-                        Previous
-                      </button>
-                      <button
-                        className="text-button"
-                        disabled={(current + 1) * 2 >= past.length}
-                        onClick={() => setPage(current + 1)}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <Pagination
+                  total={shown.length}
+                  page={current}
+                  pageSize={2}
+                  onPageChange={setPage}
+                  label="bookings"
+                />
               </>
             ) : (
               <Empty
-                title="No past bookings"
-                text="Your past confirmed reservations appear here."
+                title={
+                  view === "upcoming" ? "No upcoming reservations" : "No past bookings"
+                }
+                text={
+                  view === "upcoming"
+                    ? "Your confirmed upcoming reservations appear here."
+                    : "Your past confirmed reservations appear here."
+                }
               />
             )}
           </State>

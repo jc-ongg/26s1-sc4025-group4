@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Pagination } from "./Pagination";
 import type { Group, User } from "./types";
 import { EventUpdates } from "./EventUpdates";
 import { reservationProgress } from "./event-feedback";
@@ -21,7 +22,7 @@ import {
 
 export function Groups({ groups, error }: { groups: Group[] | null; error: string }) {
   const [page, setPage] = useState(0);
-  const pageSize = 6;
+  const pageSize = 3;
   const pages = Math.max(1, Math.ceil((groups?.length ?? 0) / pageSize));
   const currentPage = Math.min(page, pages - 1);
   return (
@@ -40,29 +41,13 @@ export function Groups({ groups, error }: { groups: Group[] | null; error: strin
             text="Try another cuisine, Event name or neighbourhood."
           />
         )}
-        {pages > 1 && (
-          <div className="list-pagination">
-            <span>
-              Page {currentPage + 1} of {pages}
-            </span>
-            <div>
-              <button
-                className="text-button"
-                disabled={currentPage === 0}
-                onClick={() => setPage(currentPage - 1)}
-              >
-                Previous
-              </button>
-              <button
-                className="text-button"
-                disabled={currentPage + 1 === pages}
-                onClick={() => setPage(currentPage + 1)}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          total={groups?.length ?? 0}
+          page={currentPage}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          label="Events"
+        />
       </State>
     </>
   );
@@ -177,7 +162,7 @@ export function GroupDetail({
                       </strong>
                       <span className="small muted">
                         {m.userId === g.hostId ? "Host" : "Diner"}
-                        {m.user.ageBand && ` · Age ${m.user.ageBand}`} · {m.partySize}{" "}
+                        {m.user.age && ` · Age ${m.user.age}`} · {m.partySize}{" "}
                         {m.partySize === 1 ? "diner" : "diners"}
                       </span>
                       {party && m.userId !== user.id && (

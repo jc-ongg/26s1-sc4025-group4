@@ -183,15 +183,19 @@
   flex: 1;
 }
 .restaurant-browse .for-you-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
   min-height: 42px;
   padding: 10px 20px;
-  background: #fff;
-  border: 1px solid #c9c4bd;
-  color: #b9233a;
+  background: #b9233a;
+  border: 1px solid #b9233a;
+  color: #fff;
 }
 .restaurant-browse .for-you-trigger:hover {
-  background: #faf3f3;
-  border-color: #b9233a;
+  background: #991c30;
+  border-color: #991c30;
 }
 .pick-caption .restaurant-event-label {
   color: #fff;

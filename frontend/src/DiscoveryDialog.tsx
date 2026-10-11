@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Discover } from "./Discover";
+import { CloseIcon } from "./icons";
 
 export function DiscoveryDialog({
   open,
@@ -70,8 +71,12 @@ export function DiscoveryDialog({
     >
       <header className="discovery-dialog-header">
         <h2 id="for-you-title">For you</h2>
-        <button className="text-button" aria-label="Close For you" onClick={onClose}>
-          ×
+        <button
+          className="icon-button dialog-close"
+          aria-label="Close For you"
+          onClick={onClose}
+        >
+          <CloseIcon />
         </button>
       </header>
       <div className="discovery-dialog-body">

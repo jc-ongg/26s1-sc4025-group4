@@ -13,7 +13,7 @@ export { HttpError } from "./http-error.js";
 import { lockSlot, availableSeats, holdSeats, poolSize } from "./inventory.js";
 import { recordLateLeave, strikeWindow } from "./reliability.js";
 import {
-  ageBand,
+  ageAt,
   canViewEvent,
   matchesEvent,
   parseEventFilters,
@@ -37,12 +37,12 @@ type IncludedGroup = Prisma.GroupDiningSessionGetPayload<{
   include: typeof groupInclude;
 }>;
 
-// Public participants expose an age band, never a birth date or verification payload.
+// Verified demo ages are visible; birth dates and verification payloads stay private.
 export function presentGroup(group: IncludedGroup, viewer?: DinerIdentity) {
   const participant = (user: IncludedGroup["host"]) => ({
     id: user.id,
     name: user.name,
-    ageBand: ageBand(user.dateOfBirth),
+    age: ageAt(user.dateOfBirth),
   });
   return {
     ...group,
@@ -305,7 +305,7 @@ dining.get("/me/profile", async (_req, res) => {
       ...account,
       reliabilityStrikes: strikes.length,
       strikes,
-      ageBand: ageBand(dateOfBirth),
+      age: ageAt(dateOfBirth),
     },
   });
 });

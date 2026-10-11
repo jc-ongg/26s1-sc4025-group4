@@ -4,7 +4,7 @@ export type User = {
   name: string;
   email: string;
   singpassVerified: boolean;
-  ageBand: string | null;
+  age: number | null;
   gender: Gender | null;
 };
 export type Restaurant = {
@@ -42,7 +42,7 @@ export type Group = {
   title: string;
   description: string;
   hostId: string;
-  host: { id: string; name: string; ageBand: string | null };
+  host: { id: string; name: string; age: number | null };
   genderFilter: Gender | null;
   minAge: number | null;
   maxAge: number | null;
@@ -66,7 +66,7 @@ export type Group = {
     userId: string;
     partySize: number;
     priceAccepted?: boolean;
-    user: { id: string; name: string; ageBand: string | null };
+    user: { id: string; name: string; age: number | null };
   }[];
   booking: Booking | null;
 };

@@ -5,7 +5,7 @@ import { db } from "./db.js";
 import { parseCredentials } from "./auth.js";
 import { discovery } from "./discovery.js";
 import { dining, HttpError } from "./dining.js";
-import { ageBand } from "./event-eligibility.js";
+import { ageAt } from "./event-eligibility.js";
 import { social } from "./social.js";
 import { processLifecycle } from "./event-lifecycle.js";
 
@@ -29,7 +29,7 @@ function accountView(user: {
   gender: string | null;
 }) {
   const { dateOfBirth, ...account } = user;
-  return { ...account, ageBand: ageBand(dateOfBirth) };
+  return { ...account, age: ageAt(dateOfBirth) };
 }
 app.disable("x-powered-by");
 app.use(express.json({ limit: "16kb" }));

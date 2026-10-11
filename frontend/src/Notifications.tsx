@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { State, useResource, type Actions } from "./dining-ui";
+import { CloseIcon } from "./icons";
 
 type Notice = {
   id: string;
@@ -60,11 +61,11 @@ export function Notifications({ revision, act, busy }: Actions) {
         <div className="row">
           <h2 id="notifications-title">Notifications</h2>
           <button
-            className="text-button"
+            className="icon-button dialog-close"
             aria-label="Close notifications"
             onClick={() => setOpen(false)}
           >
-            ×
+            <CloseIcon />
           </button>
         </div>
         <State data={data} error={error}>

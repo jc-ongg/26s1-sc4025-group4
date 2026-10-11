@@ -41,7 +41,7 @@ try {
     assert.equal(login.status, 200);
     const account = await login.json();
     assert.deepEqual(Object.keys(account.user).sort(), [
-      "ageBand",
+      "age",
       "email",
       "gender",
       "id",
@@ -50,7 +50,11 @@ try {
     ]);
     assert.equal(account.user.singpassVerified, true);
     assert.ok(["MALE", "FEMALE"].includes(account.user.gender));
-    assert.match(account.user.ageBand, /^(\d{2}–\d{2}|65\+)$/);
+    assert.ok(
+      Number.isInteger(account.user.age) &&
+        account.user.age >= 21 &&
+        account.user.age <= 26,
+    );
     assert.equal(account.user.name, name);
     const header = login.headers.get("set-cookie");
     assert.ok(header?.includes("HttpOnly"));

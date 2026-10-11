@@ -1,0 +1,122 @@
+/* Shared icon controls and compact discovery navigation. */
+.icon-button,
+.discovery-dialog-header .icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #46505f;
+  border-radius: 5px;
+}
+.icon-button:hover {
+  background: #f0eeea;
+  color: #27292b;
+}
+.dialog-close {
+  background: #f4f2ee;
+  border-color: #d4d0cb;
+}
+.password-field {
+  position: relative;
+}
+.password-field input {
+  width: 100%;
+  padding-right: 54px;
+}
+.password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.info-tip {
+  display: inline-flex;
+  position: relative;
+  vertical-align: middle;
+}
+.icon-button.info-trigger {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+}
+.info-tooltip {
+  position: absolute;
+  z-index: 1200;
+  top: calc(100% + 8px);
+  left: -95px;
+  width: 260px;
+  padding: 12px 14px;
+  border: 1px solid #c9c4bd;
+  border-radius: 5px;
+  background: #fff;
+  color: #303641;
+  box-shadow: 0 4px 16px #25242220;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+  text-align: left;
+}
+.reliability-count {
+  font-size: 24px;
+  font-weight: 600;
+}
+.reliability-count span {
+  font-size: 13px;
+  font-weight: 400;
+  color: #59616a;
+}
+.profile-history .profile-booking-heading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+.profile-booking-heading h2,
+.profile-booking-heading .mode-tabs {
+  margin: 0;
+}
+.profile-booking-heading .mode-tabs {
+  width: auto;
+}
+.browse-results .card h3 {
+  min-height: 2.5em;
+}
+.map-group > .row {
+  align-items: flex-start;
+  gap: 8px;
+}
+.map-group > .row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.map-group .status {
+  flex-shrink: 0;
+}
+.map-event-action {
+  color: #b9233a;
+  font-weight: 600;
+}
+.map-detail .list-pagination {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+@media (max-width: 600px) {
+  .discovery-toolbar {
+    flex-wrap: wrap;
+  }
+  .discovery-toolbar .collection-toggle {
+    min-width: 240px;
+  }
+  .profile-history .profile-booking-heading {
+    flex-wrap: wrap;
+  }
+  .profile-booking-heading .mode-tabs {
+    width: 100%;
+  }
+}

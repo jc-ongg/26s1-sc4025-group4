@@ -27,15 +27,6 @@ export function ageAt(birthDate: Date | null, at = new Date()): number | null {
   );
 }
 
-export function ageBand(birthDate: Date | null, at = new Date()) {
-  const age = ageAt(birthDate, at);
-  if (age === null || age < 18) return null;
-  if (age < 25) return "18–24";
-  if (age >= 65) return "65+";
-  const start = Math.floor((age - 5) / 10) * 10 + 5;
-  return `${start}–${start + 9}`;
-}
-
 export function verifiedAdult(diner: DinerIdentity, now = new Date()) {
   const age = ageAt(diner.dateOfBirth, now);
   return diner.singpassVerified && diner.gender !== null && age !== null && age >= 18;

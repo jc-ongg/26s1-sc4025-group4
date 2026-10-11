@@ -113,7 +113,7 @@ test("Event preferences hide details, slot identifiers and counts from ineligibl
     title: "Eligibility test",
     genderFilter: "MALE",
     minAge: 18,
-    maxAge: 26,
+    maxAge: 24,
   });
   assert.equal(created.status, 201, JSON.stringify(created.data));
   const g = created.data.group;
@@ -188,7 +188,7 @@ test("Event preferences hide details, slot identifiers and counts from ineligibl
   assert.ok(!JSON.stringify((await request("/auth/me")).data).includes("dateOfBirth"));
   const profile = (await request("/me/profile")).data.profile;
   assert.equal(profile.singpassVerified, true);
-  assert.equal(profile.ageBand, "18–24");
+  assert.equal(profile.age, 21);
   assert.ok(!("dateOfBirth" in profile));
 });
 
@@ -227,7 +227,7 @@ test("preferences are immutable through Join and Host Handover", async () => {
     title: "Fixed preferences",
     genderFilter: "MALE",
     minAge: 18,
-    maxAge: 26,
+    maxAge: 24,
   });
   const g = created.data.group;
   assert.equal(created.status, 201);
@@ -240,7 +240,7 @@ test("preferences are immutable through Join and Host Handover", async () => {
   assert.equal(handover.status, 200);
   assert.equal(handover.data.group.host.name, "Chongwei");
   assert.equal(handover.data.group.genderFilter, "MALE");
-  assert.equal(handover.data.group.maxAge, 26);
+  assert.equal(handover.data.group.maxAge, 24);
   assert.equal(
     (await request(`/groups/${g.id}/edit`, "chongwei", { minAge: 18 })).status,
     404,

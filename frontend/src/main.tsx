@@ -4,6 +4,7 @@ import { api, ApiError } from "./api";
 import { Footer } from "./Footer";
 import { DiningApp } from "./DiningApp";
 import type { User } from "./types";
+import { EyeIcon } from "./icons";
 import "./style.css";
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -35,6 +37,7 @@ function App() {
     try {
       setUser((await api<{ user: User }>("/auth/login", { email, password })).user);
       setPassword("");
+      setPasswordVisible(false);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -80,6 +83,7 @@ function App() {
                   className={mode === "login" ? "selected" : ""}
                   onClick={() => {
                     setMode("login");
+                    setPasswordVisible(false);
                     setError("");
                   }}
                 >
@@ -91,6 +95,7 @@ function App() {
                   className={mode === "register" ? "selected" : ""}
                   onClick={() => {
                     setMode("register");
+                    setPasswordVisible(false);
                     setError("");
                   }}
                 >
@@ -111,14 +116,26 @@ function App() {
                     placeholder="Email address"
                   />
                   <label htmlFor="password">Password</label>
-                  <input
-                    id="password"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
+                  <div className="password-field">
+                    <input
+                      id="password"
+                      type={passwordVisible ? "text" : "password"}
+                      autoComplete="current-password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="icon-button password-toggle"
+                      aria-label={passwordVisible ? "Hide password" : "Show password"}
+                      aria-pressed={passwordVisible}
+                      aria-controls="password"
+                      onClick={() => setPasswordVisible(!passwordVisible)}
+                    >
+                      <EyeIcon visible={passwordVisible} />
+                    </button>
+                  </div>
                   <button type="button" className="forgot-password" disabled>
                     Forgot password?
                   </button>
@@ -159,8 +176,7 @@ function App() {
                     id="registration-verification-note"
                     className="auth-verification-note"
                   >
-                    After registering with email and password, you’ll still need to verify
-                    your identity through Singpass to create or Join EatTogether Events.
+                    Please note that Singpass verification is required for some features!
                   </p>
                 </form>
               )}
