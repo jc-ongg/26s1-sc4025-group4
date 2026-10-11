@@ -115,7 +115,7 @@ export function DiningApp({
         ) : page === "groups" && id ? (
           <GroupDetail key={id} id={id} user={user} {...actions} />
         ) : page === "groups" ? (
-          <Restaurants key={page} {...actions} initialCollection="events" />
+          <Restaurants key={page} {...actions} initialEatTogether />
         ) : page === "my-groups" ? (
           <Bookings {...actions} user={user} />
         ) : page === "profile" ? (

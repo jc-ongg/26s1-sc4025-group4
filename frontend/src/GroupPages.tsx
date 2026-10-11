@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Pagination } from "./Pagination";
 import type { Group, User } from "./types";
 import { EventUpdates } from "./EventUpdates";
 import { reservationProgress } from "./event-feedback";
@@ -8,50 +7,7 @@ import { eventJoinState } from "./booking-flow";
 import { currentGroupStatus, hasStarted, dinerCount } from "./availability";
 import { EventSocial, DinerSafety } from "./EventSocial";
 import { EventPreferences } from "./EventPreferences";
-import {
-  Art,
-  Empty,
-  GroupCard,
-  State,
-  Status,
-  date,
-  time,
-  useResource,
-  type Actions,
-} from "./dining-ui";
-
-export function Groups({ groups, error }: { groups: Group[] | null; error: string }) {
-  const [page, setPage] = useState(0);
-  const pageSize = 3;
-  const pages = Math.max(1, Math.ceil((groups?.length ?? 0) / pageSize));
-  const currentPage = Math.min(page, pages - 1);
-  return (
-    <>
-      <State data={groups} error={error}>
-        <div className="grid party-results">
-          {groups
-            ?.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
-            .map((g) => (
-              <GroupCard group={g} key={g.id} />
-            ))}
-        </div>
-        {groups?.length === 0 && (
-          <Empty
-            title="No Events found"
-            text="Try another cuisine, Event name or neighbourhood."
-          />
-        )}
-        <Pagination
-          total={groups?.length ?? 0}
-          page={currentPage}
-          pageSize={pageSize}
-          onPageChange={setPage}
-          label="Events"
-        />
-      </State>
-    </>
-  );
-}
+import { Art, State, Status, date, time, useResource, type Actions } from "./dining-ui";
 
 export function GroupDetail({
   id,

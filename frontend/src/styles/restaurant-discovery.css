@@ -1,0 +1,124 @@
+/* One restaurant collection, with EatTogether available inside each venue. */
+.restaurant-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #d4d0cb;
+  border-radius: 5px;
+  background: #f4f2ee;
+}
+.restaurant-filters label {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.restaurant-filters select {
+  width: 100%;
+  min-width: 0;
+  font-size: 13px;
+  min-height: 42px;
+  padding: 10px;
+  margin: 0;
+}
+.restaurant-filters > button {
+  min-height: 42px;
+  white-space: nowrap;
+}
+.restaurant-browse > .section-heading {
+  align-items: center;
+}
+.restaurant-browse > .section-heading > span {
+  text-align: right;
+}
+.restaurant-card h3 a {
+  text-decoration: none;
+}
+.restaurant-card h3 a:hover {
+  color: #b9233a;
+}
+.restaurant-photo-link {
+  display: block;
+}
+.restaurant-card .card-body {
+  display: flex;
+  flex-direction: column;
+}
+.restaurant-booking-action {
+  gap: 12px;
+  margin: 4px 0 18px;
+  font-size: 12px;
+}
+.restaurant-booking-action a {
+  color: #303641;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.venue-events {
+  border-top: 1px solid #dedbd6;
+  margin-top: 4px;
+  padding-top: 14px;
+}
+.venue-events-trigger {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #e0c8cd;
+  border-radius: 5px;
+  background: #faf3f4;
+  color: #a32035;
+  font-size: 12px;
+  text-align: left;
+}
+.venue-events-trigger:hover {
+  background: #f3e5e8;
+}
+.venue-event-link {
+  display: grid;
+  gap: 8px;
+  padding: 16px 0 4px;
+  font-size: 12px;
+  color: #46505f;
+  text-decoration: none;
+}
+.venue-event-link strong {
+  color: #27292b;
+  font-size: 14px;
+}
+.venue-event-link:hover .venue-event-action {
+  text-decoration: underline;
+}
+.venue-event-link .event-preferences-label {
+  margin: 0;
+}
+.venue-events .list-pagination {
+  font-size: 12px;
+}
+.venue-events .list-pagination button {
+  min-width: 0;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+@media (max-width: 800px) {
+  .restaurant-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .restaurant-filters > button {
+    justify-self: end;
+  }
+}
+@media (max-width: 600px) {
+  .restaurant-filters {
+    gap: 12px;
+    padding: 14px;
+    grid-template-columns: 1fr;
+  }
+  .restaurant-browse > .section-heading > span {
+    text-align: left;
+  }
+}

@@ -71,38 +71,25 @@
   font-weight: 400;
   color: #59616a;
 }
-.profile-history .profile-booking-heading {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 16px;
-}
-.profile-booking-heading h2,
-.profile-booking-heading .mode-tabs {
-  margin: 0;
-}
-.profile-booking-heading .mode-tabs {
-  width: auto;
-}
 .browse-results .card h3 {
   min-height: 2.5em;
 }
-.map-group > .row {
+.venue-event-link > .row {
   align-items: flex-start;
   gap: 8px;
 }
-.map-group > .row strong {
+.venue-event-link > .row strong {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.map-group .status {
+.venue-event-link .status {
   flex-shrink: 0;
 }
-.map-event-action {
+.venue-event-action {
   color: #b9233a;
   font-weight: 600;
 }
-.map-detail .list-pagination {
+.venue-events .list-pagination {
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -110,13 +97,8 @@
   .discovery-toolbar {
     flex-wrap: wrap;
   }
-  .discovery-toolbar .collection-toggle {
-    min-width: 240px;
-  }
-  .profile-history .profile-booking-heading {
-    flex-wrap: wrap;
-  }
-  .profile-booking-heading .mode-tabs {
-    width: 100%;
+  .discovery-toolbar .search {
+    flex-basis: 100%;
+    order: 2;
   }
 }

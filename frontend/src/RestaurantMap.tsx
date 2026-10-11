@@ -1,23 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import { dinerCount, isUpcomingEvent } from "./availability";
+
 import "leaflet/dist/leaflet.css";
 import type { Restaurant, Group } from "./types";
-import { Art, RestaurantEventCount, Status, date, time } from "./dining-ui";
-import { Pagination } from "./Pagination";
-import { EventPreferences } from "./EventPreferences";
-import { eventDisplayStatus } from "./booking-history";
+import { Art } from "./dining-ui";
+import { VenueEvents } from "./VenueEvents";
 
 export function RestaurantMap({
   restaurants,
   groups,
-  eventCounts,
-  mode = "restaurants",
 }: {
   restaurants: Restaurant[];
-  groups: Group[];
-  eventCounts: Map<string, number> | undefined;
-  mode?: "restaurants" | "events";
+  groups: Group[] | undefined;
 }) {
   const container = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null);
@@ -37,10 +31,6 @@ export function RestaurantMap({
   const pins = useRef<L.LayerGroup | null>(null);
   const [selected, setSelected] = useState<string | null>(null),
     [error, setError] = useState("");
-  const [eventSelection, setEventSelection] = useState<{
-    venueId: string;
-    eventId: string;
-  } | null>(null);
   useEffect(() => {
     if (!container.current) return;
     setLoading(true);
@@ -165,7 +155,6 @@ export function RestaurantMap({
       marker.bindTooltip(nameLabel, { direction: "top", offset: [0, -16] });
       marker.on("click", () => {
         setSelected(r.id);
-        setEventSelection(null);
         m.setView([r.latitude!, r.longitude!], Math.max(m.getZoom(), 15));
         if (window.matchMedia("(max-width: 800px)").matches)
           details.current?.scrollIntoView({
@@ -177,29 +166,12 @@ export function RestaurantMap({
       });
     });
   }, [markerData, selected, attempt]);
-  const r = restaurants.find((r) => r.id === selected),
-    open = groups
-      .filter((g) => g.slot.restaurant.id === selected && isUpcomingEvent(g))
-      .sort(
-        (a, b) =>
-          Date.parse(a.slot.startsAt) - Date.parse(b.slot.startsAt) ||
-          a.id.localeCompare(b.id),
-      );
-  // Keep the selected Event stable across polling and newly added Events.
-  const eventIndex = Math.max(
-    0,
-    open.findIndex(
-      (g) => eventSelection?.venueId === selected && eventSelection.eventId === g.id,
-    ),
-  );
-  const event = open[eventIndex];
+  const r = restaurants.find((r) => r.id === selected);
   return (
     <div className="map-layout">
       <div>
         <div className="map-tools">
-          <span className="small">
-            {mode === "events" ? "EatTogether restaurants" : "Restaurants"}
-          </span>
+          <span className="small">Restaurants</span>
           <button
             className="text-button"
             onClick={() => {
@@ -224,11 +196,7 @@ export function RestaurantMap({
         <div
           ref={container}
           className="offline-map"
-          aria-label={
-            mode === "events"
-              ? "EatTogether map of western and central Singapore"
-              : "Restaurant map of western and central Singapore"
-          }
+          aria-label="Restaurant map of western and central Singapore"
         />
         {error && (
           <p role="alert" className="error">
@@ -251,7 +219,6 @@ export function RestaurantMap({
           value={r?.id ?? ""}
           onChange={(e) => {
             setSelected(e.target.value);
-            setEventSelection(null);
             const venue = restaurants.find((v) => v.id === e.target.value);
             if (venue?.latitude != null && venue.longitude != null)
               map.current?.setView([venue.latitude, venue.longitude], 15);
@@ -272,51 +239,15 @@ export function RestaurantMap({
             </p>
             <h3>{r.name}</h3>
             <p className="small">{r.address}</p>
-            <RestaurantEventCount
-              count={
-                mode === "events"
-                  ? open.length
-                  : eventCounts && (eventCounts.get(r.id) ?? 0)
-              }
+            <a className="button dark" href={`#/restaurants/${r.id}`}>
+              Book a table →
+            </a>
+            <VenueEvents
+              key={r.id}
+              restaurantName={r.name}
+              events={groups?.filter((g) => g.slot.restaurant.id === r.id)}
+              defaultOpen
             />
-            {mode === "restaurants" && (
-              <a className="button dark" href={`#/restaurants/${r.id}`}>
-                Book a table →
-              </a>
-            )}
-            {event && (
-              <>
-                <a className="map-group" href={`#/groups/${event.id}`}>
-                  <div className="row">
-                    <strong>{event.title}</strong>
-                    <Status value={eventDisplayStatus(event)} />
-                  </div>
-                  <span>
-                    {date(event.slot.startsAt)} · {time(event.slot.startsAt)}
-                  </span>
-                  <EventPreferences event={event} />
-                  <span>
-                    {event.capacity > dinerCount(event)
-                      ? `${event.capacity - dinerCount(event)} seats left`
-                      : "Full"}{" "}
-                    ·{" "}
-                    {event.discount === 0
-                      ? "Full price"
-                      : `${event.discount ?? event.slot.discount}% off`}
-                  </span>
-                  <span className="map-event-action">View Event →</span>
-                </a>
-                <Pagination
-                  total={open.length}
-                  page={eventIndex}
-                  pageSize={1}
-                  label="Events"
-                  onPageChange={(next) =>
-                    setEventSelection({ venueId: r.id, eventId: open[next].id })
-                  }
-                />
-              </>
-            )}
           </>
         ) : (
           <>

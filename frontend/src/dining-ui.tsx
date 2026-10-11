@@ -1,9 +1,6 @@
-import { eventDisplayStatus } from "./booking-history";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "./api";
-import { dinerCount } from "./availability";
-import type { Group, Restaurant } from "./types";
-import { EventPreferences } from "./EventPreferences";
+import type { Restaurant } from "./types";
 export const date = (v: string) =>
   new Intl.DateTimeFormat("en-SG", {
     timeZone: "Asia/Singapore",
@@ -158,47 +155,6 @@ export function Status({ value }: { value: string }) {
         } as Record<string, string>
       )[value] ?? value}
     </span>
-  );
-}
-export function GroupCard({ group: g }: { group: Group }) {
-  return (
-    <a className="card group-card" href={`#/groups/${g.id}`}>
-      <Art restaurant={g.slot.restaurant} />
-      <div className="card-body">
-        <div className="row">
-          <span className="discount">
-            {g.discount === 0 ? "Full price" : `${g.discount ?? g.slot.discount}% off`}
-          </span>
-          <Status value={eventDisplayStatus(g)} />
-        </div>
-        <h3>{g.title}</h3>
-        <p className="small">
-          {g.slot.restaurant.name} · {g.slot.restaurant.area}
-        </p>
-        <p className="schedule">
-          {date(g.slot.startsAt)} · {time(g.slot.startsAt)}
-        </p>
-        <EventPreferences event={g} />
-        <div className="seats">
-          <div style={{ width: `${(dinerCount(g) / g.capacity) * 100}%` }} />
-        </div>
-        <div className="row small">
-          <span>
-            {dinerCount(g)} / {g.capacity} joined
-          </span>
-          <span>
-            {["OPEN", "FULL", "CONFIRMED", "LAST_CALL"].includes(g.status)
-              ? `${g.capacity - dinerCount(g)} seats left`
-              : "View table"}{" "}
-            →
-          </span>
-        </div>
-        <div className="host-line">
-          <span className="avatar small-avatar">{g.host.name[0]}</span> Host:{" "}
-          {g.host.name}
-        </div>
-      </div>
-    </a>
   );
 }
 export function RestaurantEventCount({ count }: { count: number | undefined }) {

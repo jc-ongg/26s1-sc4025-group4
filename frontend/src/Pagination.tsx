@@ -4,21 +4,30 @@ export function Pagination({
   pageSize,
   onPageChange,
   label = "items",
+  navigationLabel,
+  showTotal = true,
 }: {
   total: number;
   page: number;
   pageSize: number;
   onPageChange: (page: number) => void;
   label?: string;
+  navigationLabel?: string;
+  showTotal?: boolean;
 }) {
   if (!total) return null;
   const pages = Math.ceil(total / pageSize),
     current = Math.min(page, pages - 1);
   const countLabel = total === 1 && label.endsWith("s") ? label.slice(0, -1) : label;
   return (
-    <nav className="list-pagination" aria-label={`${label} pages`}>
+    <nav className="list-pagination" aria-label={navigationLabel ?? `${label} pages`}>
       <span>
-        {total} {countLabel} · Page {current + 1} of {pages}
+        {showTotal && (
+          <>
+            {total} {countLabel} ·{" "}
+          </>
+        )}
+        Page {current + 1} of {pages}
       </span>
       <div>
         <button
