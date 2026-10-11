@@ -1,6 +1,6 @@
 # EatTogether implementation scope
 
-Current diner scope: 11 October 2026. Restaurant management remains paused pending the team's decision. The technical report and diagrams have not been updated.
+Current diner scope: 11 October 2026. Restaurant management remains paused pending the team's decision. The technical report and editable diagrams now describe this consumer scope, including shared inventory, lifecycle rules, unified discovery and continuous delivery with manual deployment. Sections 5.1 and 5.2 remain reserved for later product work.
 
 ## Seats and eligibility
 
@@ -43,6 +43,6 @@ Optional private Feedback opens after the scheduled start of a confirmed/full-pr
 
 ## Interface and deferred scope
 
-Restaurants and EatTogether share the main page toggle. For you is a restaurant-only popup. Book | EatTogether lives inside restaurant booking. My bookings has private reservations left and Events right, two per page; Profile history includes both without claiming verified attendance. Chat, Feedback, dining area and blocked diners are collapsed disclosures.
+Restaurants form one main collection with nested EatTogether Events, shared grid/map views and availability filters. For you is a restaurant-only popup. Book | EatTogether lives inside restaurant booking. My bookings has private reservations left and Events right, two per page. Profile retains notification history without duplicating booking details. Chat, Feedback, dining area and blocked diners are collapsed disclosures.
 
 Deferred: restaurant accounts/portal, Restaurant Events, Corppass, merchant slot-management controls, verified attendance, no-show penalties, moderation/appeals, payments, mutual Connections, real Singpass, registration and password reset. Slot-level EatTogether eligibility exists as data, with no merchant editor yet. Do not claim deferred features in the report.

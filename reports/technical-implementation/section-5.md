@@ -1,275 +1,275 @@
 # 5 MVP and Technical Implementation
 
-The Eatigo prototype implements restaurant discovery and reservations, with Eatogether as an optional way for diners to form a group before confirming a shared booking. The technical design preserves the ordinary reservation journey while allowing both journeys to use the same inventory. A local semantic search feature helps diners find restaurants or open parties from a description of their dining preferences.
+The Eatigo prototype provides restaurant discovery and ordinary reservations, with EatTogether integrated into the same restaurant journey. EatTogether lets individual verified diners join a shared Event so that their combined party size can meet a restaurant slot's minimum party size. Local semantic discovery provides a separate way to find and shortlist restaurants from a dining preference. The implementation connects these journeys through shared inventory, authenticated accounts and persistent data.
 
-This implementation provides a working browser interface, authenticated APIs and persistent database operations. Its principal technical contribution is the connection between group formation, reservation availability and recommendation eligibility. A party shown in a search result must still satisfy the booking rules when a diner joins it; a successful recommendation never bypasses capacity or ownership checks.
+This section describes the implemented system as at 11 October 2026, using application source snapshot dc360ad and the repository's recorded engineering checks. The Product Engineer is responsible for the frontend, backend, database, local deployment and verification. Sections 5.1 and 5.2 are reserved for the group's later hypothesis and development-approach discussion. Restaurant management, genuine identity verification and real restaurant inventory integration remain outside this implementation.
 
 ## 5.3 System Architecture and Technology Stack
 
-The application uses a three-tier architecture consisting of a React frontend, an Express backend and a PostgreSQL database. These run as three Docker Compose services on one host. The backend contains separate modules for authentication, dining operations and semantic discovery, but remains one deployable application. This modular monolith keeps the operational workload manageable for a single Product Engineer while separating the main responsibilities in the source code.
+The system uses a three-tier architecture: a React browser application, an Express application server and a PostgreSQL database. Docker Compose runs three containers on one host. Authentication, dining operations, Event lifecycle processing, social features and semantic discovery are separate backend modules within one deployable application. This modular monolith reduces the operational work for a single Product Engineer while keeping related business rules together.
 
-Figure 5.1 shows the runtime arrangement. The frontend container serves the compiled application through Nginx and exposes port 3000 on the host. Browser requests to /api are forwarded to the backend on port 4000 inside the Compose network. The database is accessible to the backend within that network and has no host port published in the current configuration. The browser therefore accesses the interface and API through one origin, without needing separate API addresses for a laptop and a phone.
+Figure 5.1 shows the runtime boundaries. The frontend container serves compiled assets through Nginx and publishes host port 3000. Requests under /api are proxied to Express on port 4000 inside the Compose network. PostgreSQL is available only inside that network in the current configuration. The browser uses one origin for the interface and API, so a second device does not require a different backend address.
 
 @figure architecture | Figure 5.1 Runtime architecture and deployment boundaries
 
-The embedding model runs within the backend process on the host CPU. Its model files are downloaded during the Docker build, and remote model loading is disabled at runtime. PostgreSQL stores both the relational application data and the vectors used for semantic ranking. This avoids operating a separate inference server or vector database for a small demonstration dataset.
-
-The design prioritises a complete, reproducible reservation journey over service-level scalability. A single backend process is straightforward to run and debug, but it also couples recommendation work to ordinary API traffic. CPU inference is serialised to limit competing model allocations. A larger deployment would require measured throughput and latency data before deciding whether inference should become a separate service.
+The embedding model runs on CPU inside the backend process, rather than in a fourth container or a hosted inference service. Its files are downloaded during the image build; runtime remote model loading is disabled. PostgreSQL stores relational records and 384-dimensional vectors through pgvector. A lifecycle worker in the backend checks time-dependent Event rules every 30 seconds. Relevant requests also reconcile lifecycle state under the same locking convention, allowing the application to catch up after a restart.
 
 ### Technology choices
-
-Table 5.1 summarises the technologies used in the implementation. Versions describe the project configuration rather than a recommendation to adopt the latest available release.
 
 @table Table 5.1 Technology stack and implementation rationale
 | Layer | Technology | Role and rationale |
 |---|---|---|
-| Interface | React 19 and TypeScript | Component-based pages and typed application models support consistent restaurant, group and booking displays. |
-| Frontend tooling | Vite 7 and CSS | Compiles the browser application; shared CSS files control typography, surfaces and responsive layouts. |
-| Web serving | Nginx | Serves compiled assets and proxies /api requests through the same browser origin. |
-| Application server | Node.js 22 and Express 5 | Handles authentication, JSON endpoints and reservation rules in a TypeScript codebase. |
-| Data access | Prisma 6 | Defines relational models, generates a typed client and manages database migrations. |
-| Database | PostgreSQL 16 and pgvector 0.8.2 | Stores accounts, reservations and groups alongside 384-dimensional embeddings. |
-| Semantic inference | Transformers.js 3.8 and quantised MiniLM | Produces sentence embeddings locally on CPU without a hosted model API. |
-| Map | Leaflet 1.9 and local GeoJSON | Displays restaurant locations using bundled geographical data rather than online map tiles. |
-| Packaging and checks | Docker Compose, Node test runner and Prettier | Packages services, exercises application behaviour and maintains consistent formatting. |
+| Browser interface | React 19 and TypeScript 5.9 | Reusable components and typed account, restaurant, Event and booking models. |
+| Frontend build | Vite 7 and shared CSS | Production compilation and consistent responsive layouts without a large UI framework. |
+| Web serving | Nginx | Local assets and a same-origin reverse proxy for /api. |
+| Application server | Node.js 22 and Express 5 | JSON APIs, session checks and modular business rules in TypeScript. |
+| Data access | Prisma 6 | Typed relational access, schema definition and versioned migrations. |
+| Database | PostgreSQL 16 and pgvector 0.8.2 | Persistent inventory, participation and vectors in one database. |
+| Embeddings | Transformers.js 3.8 and quantised MiniLM | Local CPU sentence embeddings for descriptive restaurant retrieval. |
+| Map | Leaflet 1.9 and bundled GeoJSON | Restaurant locations over a local OpenStreetMap-derived extract. |
+| Deployment | Docker Compose and PowerShell | Reproducible service startup and manual deployment of a tested source package. |
+| Quality and delivery | Node test runner, Prettier and GitHub Actions | Automated checks, isolated integration tests and delivery artifacts. |
 
-TypeScript is used on both sides of the API, although the frontend response types are maintained separately rather than generated from an API schema. Prisma supplies typed access to the relational models. Vector columns are declared as unsupported database types in Prisma and accessed through parameterised SQL where required. This combination keeps ordinary data operations readable while retaining pgvector functionality.
+TypeScript is used on both sides of the API, although frontend response types are maintained separately rather than generated from an API specification. Prisma supplies typed access to ordinary relational fields. Vector fields are declared as unsupported database types in the Prisma schema and accessed through parameterised SQL. Versions in Table 5.1 describe project configuration, not a claim that they are the latest releases.
 
 ## 5.4 Application Design and API Boundaries
 
 ### Frontend organisation
 
-The frontend separates the login shell from the authenticated dining application. On loading, the root component checks /api/auth/me and either restores the session or displays the login form. The main application then uses hash-based navigation for Restaurants, Eatogether and My bookings. Restaurant and party detail views retain their identifiers in the URL, allowing navigation back to the same record without storing the entire journey in component state.
+The root component checks /api/auth/me to restore a session or show the login interface. Hash-based navigation identifies restaurant details, Event details, Profile and Bookings. The main discovery page contains one restaurant collection, avoiding duplicate restaurant and Event lists. Restaurant cards and map details expose the same related Events through a shared component. Each venue shows its upcoming Event count, and expanded Events can be inspected one at a time.
 
-The page modules reflect the product tasks. RestaurantPages manages browsing and booking; RestaurantMap handles spatial browsing; GroupPages handles party discovery and participation; Discover implements semantic search and shortlisting; and Bookings consolidates the account's reservations and Eatogether parties. Shared components in dining-ui provide consistent loading, error, date and time behaviour. Dates are displayed in the Asia/Singapore time zone.
+The collection supports text search, cuisine, price-band, minimum-discount and EatTogether-availability filters. The availability filter distinguishes any venue, venues with Events and venues with seats to Join. The heading displays both filtered restaurant and Event counts. List view displays at most three restaurant cards per page; map view uses one marker per restaurant, including when that venue has several Events. Price bands are catalogue categories, not calculated menu prices.
 
-Ordinary booking is the default action on the restaurant detail page. The Book and Eatogether toggle exposes group creation as an additional choice rather than requiring every diner to use the social feature. Within Eatogether, Explore parties provides direct browsing and For you provides semantic discovery. My bookings displays reservations on the left and Eatogether parties on the right at desktop widths. Each list has independent pagination with two records per page, while narrower layouts stack the sections.
+For you opens a restaurant-only discovery popup from the main page. Its mood and location fields begin empty; placeholders do not create a default request. My shortlist stays within that popup. Profile, Bookings and Logout are accessed through the account menu. Bookings displays Reservations on the left and EatTogether on the right at desktop widths, with two records per independently paginated list. Smaller screens stack the sections. Profile contains identity, settings, reliability information and notification history, without duplicating booking details.
 
-The interface uses local React state for form inputs, selected views, pagination and temporary feedback. Persisted entities remain on the server. A shared resource hook polls relevant dining resources every five seconds and refreshes them after mutations. It prevents overlapping requests within the active polling cycle and ignores responses after the effect is disposed. Existing content stays visible during refreshes of the same resource, reducing the flicker caused by replacing populated content with a loading state.
-
-Polling makes another diner's changes visible on a later refresh; it does not provide instant synchronisation. Server validation remains necessary because a displayed seat can become unavailable before a user clicks Join. The interface disables actions while its request is pending and displays an error if the backend rejects an operation. These controls improve feedback, but the database transaction is what enforces the reservation rule.
+Local React state handles inputs, pagination, view selection and temporary feedback. Server records remain authoritative. A shared resource hook polls relevant data every five seconds, avoids overlapping requests and ignores disposed responses. Refreshes retain existing content and selected Event identifiers where possible. This reduces flicker but does not provide instant synchronisation. A displayed seat may disappear before Join is submitted, so the backend always checks availability again.
 
 ### Backend responsibilities and authentication
 
-The Express entry point configures JSON parsing, cookies, authentication endpoints and error handling. The dining router applies session authentication before its own endpoints and before the downstream discovery router. Protected requests resolve the user from the server-side session rather than trusting an account identifier supplied by the browser.
+Express configures request parsing, cookies, authentication and error handling. Authenticated dining and social endpoints derive the user from a server-side session; the browser cannot select another account by supplying its identifier. Mutations check ownership, membership, Event eligibility, start time and current inventory before changing data.
 
-The MVP uses four pre-created demonstration accounts. Login normalises the email address and compares the submitted password with the stored demonstration password. A successful login creates a random 32-byte token, stores a session with a 24-hour expiry and sets an HttpOnly, SameSite=Lax cookie. Logout removes the corresponding session and clears the cookie. Public account responses expose the account ID, name and email, while participant displays use names and IDs.
+Six fictional diner accounts use seeded email identities and the shared password password123. Login normalises the email and compares it with the stored demonstration credentials. Successful login creates a random 32-byte token, stores a session with a 24-hour expiry, and sets an HttpOnly, SameSite=Lax cookie. Logout revokes the session. The password visibility control changes only how the entered password is displayed.
 
-All accounts use the same application model. Hosting a party is a relationship between a user and a specific group, rather than a separate restaurant or host account type. The API checks that relationship when confirming or cancelling a party. This allows a person to host one party and join another without changing account roles. Registration, password recovery and restaurant management are outside the implemented scope.
+The fixtures represent already Singpass-verified adults, with fixed birth dates producing ages 21–26 in October 2026. Age is calculated using Singapore calendar dates; birth dates are not returned publicly. Login and registration include inactive Singpass options, and credential registration explains that verification is needed for some features. These controls are presentation only: there is no registration, password-reset or Singpass API integration. Example credentials are held in a separate text file rather than displayed as an account list on the login page.
+
+All implemented accounts are diners. Hosting is an Event-specific relationship, not a permanent account type. A host can cancel their Event before dining, while a member can leave without controlling the entire Event. Automatic confirmation does not require a host-only confirmation action. Restaurant account permissions and a merchant interface are deferred.
 
 ### API contract
 
-The API exchanges JSON through the /api prefix. Table 5.2 groups endpoints by user task. Mutation endpoints use POST, including cancellation and personal deletion. The design is a small HTTP JSON API rather than a fully documented, versioned public API.
+The application uses an HTTP JSON API under /api. Table 5.2 groups the main routes; it is a summary rather than a complete public API specification. The /groups paths retain the original implementation terminology, while the interface calls the shared gathering an EatTogether Event.
 
-@table Table 5.2 Main API endpoints
+@table Table 5.2 Main API boundaries
 | Method and path | Purpose | Key rule |
 |---|---|---|
-| GET /health | Check API and database readiness | Executes a database query; does not warm the embedding model. |
-| POST /auth/login; GET /auth/me; POST /auth/logout | Start, inspect and end a session | Credentials and token are validated on the server. |
-| GET /restaurants and /restaurants/:id | Retrieve venues and future slots | Listing returns active restaurants; allocations identify unavailable slots. |
-| POST /bookings | Make an ordinary reservation | Future, unallocated slot and valid party size required. |
-| GET /groups and /groups/:id | Browse parties and inspect details | Browse list contains future OPEN or FULL groups at active venues. |
-| POST /groups | Create a party and hold its slot | Host is added as the first member; capacity must fit the slot. |
-| POST /groups/:id/:action | Join, leave, confirm or cancel | Membership, capacity, lifecycle and host rules are checked. |
-| GET /me/bookings and /me/groups | Retrieve personal plans | Records must belong to the account or a group it participates in. |
-| POST /bookings/:id/cancel or /delete | Cancel or hide a cancelled booking | Cancellation checks ownership; deletion affects only the requesting account. |
-| POST /discovery/search | Retrieve semantically ranked candidates | Valid preferences, eligibility and optional radius filters apply. |
-| POST /discovery/decision; GET /discovery/saved | Save, skip, undo and retrieve a shortlist | Decisions are scoped to the authenticated account. |
+| GET /health | Check API and database readiness | Queries the database; does not prove the embedding model is warmed. |
+| POST /auth/login; GET /auth/me; POST /auth/logout | Create, inspect and revoke a session | Identity comes from the validated session token. |
+| GET /restaurants and /restaurants/:id | Retrieve venues, slots and related Events | Active venues and current slot availability are exposed. |
+| POST /bookings | Create an ordinary reservation | Future slot, valid party size and sufficient pool seats are required. |
+| GET /groups and /groups/:id | Retrieve eligible Events and details | Verification, demographic and blocking rules apply. |
+| POST /groups; POST /groups/:id/:action | Create, Join, Leave, cancel or respond to price decisions | One seat per account; inventory and lifecycle are checked transactionally. |
+| GET /me/bookings and /me/groups | Retrieve personal plans | Ownership or Event participation is required. |
+| POST /bookings/:id/cancel or /delete | Cancel or personally hide a cancelled record | Shared history is preserved for other participants. |
+| GET or POST /me/profile; /me/notifications routes | Profile settings and persistent notices | Private reliability and notifications belong to the current account. |
+| /groups/:id/messages, /feedback and /safety | Chat, private feedback and safety reporting | Membership and lifecycle restrict access and submission. |
+| POST /discovery/search and /decision; GET /discovery/saved | Rank restaurants and manage a shortlist | Cuisine constraints and per-account decisions are enforced. |
 
-The server distinguishes malformed input from conflicting state. For example, an invalid party size receives HTTP 400, an unauthenticated request receives 401, an unauthorised host action receives 403, and a seat that has already been taken receives 409. A local model failure produces 503 rather than silently substituting a different recommendation method. This makes failures understandable to the interface and keeps the meaning of a successful response consistent.
+Malformed inputs return 400; unauthenticated requests return 401; prohibited actions return 403; unavailable or concealed records return 404; competing state changes can return 409. Model unavailability returns 503 rather than silently replacing semantic retrieval with a different algorithm. Client errors are therefore separated from business-rule conflicts and inference failures.
 
 ### External data boundaries
 
-There is no live connection to Eatigo's reservation system. The eight restaurant examples and their photographs were imported from public branch pages as a source snapshot. Reservation times, discounts, capacity, demonstration identities and group activity are generated locally. A confirmed reservation therefore represents a state change in this prototype, not a booking accepted by the real restaurant.
+Eight restaurant examples and photographs were imported from public Eatigo branch pages, including Joya Onsen Cafe, Seorae Korean Charcoal BBQ, 2SCOOPS, il Cielo and Lime Restaurant. These are source snapshots. Slots, discounts, seat pools, accounts and Event activity are generated locally; confirmation is a prototype database operation, not a reservation accepted by a real restaurant.
 
-The map uses a bundled OpenStreetMap-derived extract covering western and central Singapore. Leaflet renders this data locally, while restaurant coordinates come from the imported venue metadata. There is no runtime tile service, external geocoder or payment provider. Initial package and model downloads require network access; ordinary application use does not require those providers after setup. Source records and attribution are retained in docs/SOURCES.md and the map notice.
+Leaflet renders a bundled OpenStreetMap-derived extract covering western and central Singapore. There is no runtime tile provider, external geocoder, payment provider or Eatigo booking API. Typed discovery locations resolve against local neighbourhood and restaurant metadata. Asset provenance and attribution are retained in docs/SOURCES.md and the map notice. Initial downloads require network access; application inference and map rendering use local files after setup.
 
 ## 5.5 Data Model and Reservation Consistency
 
-The data model distinguishes a restaurant, a reservation opportunity, a party and a confirmed booking. A Restaurant has multiple ReservationSlot records. Each slot represents one exclusive reservation opportunity with a start time, minimum party size, capacity and discount. This is a deliberate simplification of restaurant inventory: the prototype does not model multiple physical tables, combined tables or multiple simultaneous allocations for one slot.
+The model separates a restaurant, its time slots, Event participation and a booking. ReservationSlot is unique by restaurant and start time. Its capacity is the maximum size of one table or Event, while discountedSeats describes the aggregate seat pool for that slot. Multiple ordinary reservations and Events can allocate seats from that pool, subject to the individual table limit. The fallback pool size is capacity when discountedSeats is absent.
 
-Figure 5.2 shows the core relationships. The separate membership entity represents the many-to-many relationship between users and groups. A shared booking references one group, while an ordinary booking has no group reference. Both types still refer to the same ReservationSlot entity.
-
-@figure data-model | Figure 5.2 Core data relationships and exclusive slot allocation
+@figure data-model | Figure 5.2 Core relationships and shared seat allocations
 
 @table Table 5.3 Main entities and constraints
 | Entity | Important fields or key | Responsibility |
 |---|---|---|
-| User and Session | Unique email; token primary key; expiry | Account identity and server-side login sessions. |
-| Restaurant | ID; active flag; coordinates; vector(384) | Venue content, map position and semantic description. |
-| ReservationSlot | Unique restaurant and start time | Defines party limits, discount and the reservation opportunity. |
-| SlotAllocation | Slot ID primary key; optional group or booking ID | Enforces one allocation owner per slot. |
-| GroupDiningSession | Host ID; slot ID; status; capacity | Stores the social party and its lifecycle. |
-| GroupDiningMember | Composite key of group ID and user ID | Prevents the same account occupying two seats in one group. |
-| Booking | Optional unique group ID; party size; status | Stores an ordinary or shared confirmed reservation. |
-| DiscoveryDecision | Composite key of user ID and target key | Stores each account's SAVE or SKIP decision. |
+| User and Session | Unique email; verification, birth date and gender; token and expiry | Demo identity, eligibility and authenticated access. |
+| Restaurant | Active flag, coordinates and vector(384) | Venue content, map position and semantic description. |
+| ReservationSlot | Unique restaurant and start time; capacity and discountedSeats | Individual table limit and shared inventory pool. |
+| SlotAllocation | ID primary key; indexed slotId; unique optional owner IDs | Seats held by exactly one Event or ordinary booking. |
+| GroupDiningSession | hostId, slotId, status, immutable preferences and Cutoff fields | Event eligibility and lifecycle. |
+| GroupDiningMember | Composite key of groupId and userId; priceAccepted | One membership per account and individual full-price decisions. |
+| Booking | Optional unique groupId; status, discount and deletedFor | Ordinary reservation or one shared Event booking. |
+| DiscoveryDecision | Composite userId and targetKey | Account-specific SAVE, SKIP and undo. |
+| Social records | Notifications, strikes, blocks, messages, feedback and reports | Persistent private communication and safeguards. |
 
-SlotAllocation is central to the consistency design. Its slot ID is the primary key, so a slot can have at most one allocation record. A database CHECK constraint requires exactly one owner: either a group ID or an ordinary booking ID. Group and booking references are also unique. An open party therefore holds the slot immediately and prevents an ordinary booking from claiming it while diners are assembling.
+SlotAllocation has its own primary key, so one slot may have several allocations. A database CHECK constraint requires exactly one owner, either an Event or an ordinary booking. Each owner reference is unique. Available pool seats equal the pool limit minus the sum of held seats, never below zero. An Event initially holds its minimum-party-size requirement, even when only its host is present. Before Cutoff, its hold is the greater of that minimum and its current diner count; at Cutoff, unused held seats are released.
 
-When the host confirms a group, the system creates a Booking linked to that group and records its current member count as partySize. The allocation remains owned by the group; it is not converted into a second booking-owned allocation. The unique group reference on Booking prevents multiple bookings for the same party. Repeated confirmation by the host returns the existing confirmed result.
+A confirmed Event has one Booking because groupId is unique on that model. Its allocation remains Event-owned, avoiding a second allocation for the same diners. If participation falls below the minimum before Cutoff, the booking becomes PENDING. Requalification updates the same booking reference rather than creating a duplicate. After Cutoff, full-price seats still consume inventory because diners continue to occupy a physical table.
 
 ### Transactions and competing requests
 
-Every dining mutation that changes inventory acquires the same ReservationSlot row lock using SELECT FOR UPDATE within a Prisma transaction. The code checks the relevant conditions after obtaining that lock. If two requests compete for the same last seat or the same reservation slot, the requests are serialised around that shared row. PostgreSQL documents that this lock blocks competing updates and locking operations until the transaction ends (PostgreSQL Global Development Group, n.d.).
+Inventory-changing operations lock the ReservationSlot row using SELECT FOR UPDATE inside a Prisma transaction before checking the current pool and memberships. All relevant paths, including lifecycle processing, use the same convention. PostgreSQL row locks make competing updates and locking operations wait until the transaction ends (PostgreSQL Global Development Group, n.d.).
 
-For example, suppose a two-person party already contains its host. Three other diners submit Join concurrently. The first successful transaction adds one member and marks the group FULL. The later transactions read the updated membership after obtaining the lock and return a conflict. The integration test checks for one successful response, two conflicts and a final member count of two. The same locking convention also covers ordinary booking versus group creation, so the two journeys cannot each allocate the same slot through separate code paths.
+For example, if only two pool seats remain and three diners Join concurrently, only two requests may succeed. The third must observe the updated allocations and receive a conflict. Ordinary bookings compete against Event creation and growth through the same pool, so neither path can rely on a stale display of availability. Database keys prevent duplicate membership and shared bookings; transaction logic enforces conditions spanning several rows.
 
-Database constraints provide a second layer of protection. They restrict discounts to 0–100, require valid slot capacity ranges, restrict booking and group sizes to 1–20, and enforce unique membership and allocation records. Conditions spanning multiple rows, such as whether a group's member count fits its capacity, remain in the transaction logic. Neither client-side validation nor TypeScript types alone would enforce these conditions under concurrent requests.
-
-### Cancellation, expiry and history
-
-Before a reservation starts, an ordinary booking owner can cancel it and release its allocation. A group host can cancel the party; if a shared booking exists, that booking is cancelled as part of the same transaction. Members cannot cancel the entire party. They can leave an unconfirmed party, and leaving a FULL party returns it to OPEN. After confirmation, membership is frozen so the booking's party size does not drift away from the confirmed membership.
-
-Unconfirmed groups expire when their slot start time is reached. Expiry is processed when an authenticated API request runs the dining middleware, which checks overdue groups, locks the affected slots and releases their allocations. There is no continuously running expiry worker. A stored status can therefore remain OPEN or FULL until the next request processes it, although time checks prevent joining a party whose slot has started.
-
-The Delete action on a cancelled booking is personal removal from history. It adds the requesting account to Booking.deletedFor rather than deleting the shared row. This preserves the record for other participants and avoids losing the relationship between the group and its cancelled reservation. It is not a general account-data erasure mechanism. Archived restaurant records are similarly retained so that historical bookings continue to reference the original venue.
+Cancellation releases the corresponding allocation before returning success. A host leaving transfers the host relationship to the earliest remaining member and moves booking ownership accordingly. If the final member leaves, the Event is cancelled and its allocation released. An explicit host cancellation cancels the shared Event and booking together. Personal deletion of a cancelled booking adds the requesting account to deletedFor; it preserves the underlying record for other participants. Archived venues are also retained for historical references.
 
 ## 5.6 Functional MVP Implementation
 
 ### 5.6.1 Restaurant Discovery and Ordinary Reservations
 
-The restaurant journey provides a familiar starting point for the proposed feature. Diners browse a top-picks carousel and restaurant cards, search by restaurant text and apply cuisine filters. A full-width Restaurant view and Map view toggle changes the presentation of the venue collection. On the map, restaurant photographs and name labels identify venues; selecting one reveals its details and related Eatogether parties. A map marker represents a restaurant rather than an individual party.
+The homepage combines a compact top-picks carousel with the restaurant collection, filters and list/map toggle. EatTogether is visible through venue counts and expandable Events, rather than a separate main tab. A venue with several Events retains one restaurant card and one map marker. Event selection is paginated within that venue, preventing repeated venue information.
 
-On a restaurant detail page, the diner selects a future time slot and sees its discount and party-size requirements. Book is the default mode. Submitting a valid party size creates a confirmed reservation only if the slot remains available at transaction time. The result appears in My bookings, where the owner can cancel a future reservation and subsequently remove the cancelled entry from their personal history.
+Selecting a restaurant opens its time slots. Book is the default flow, with EatTogether available as an optional alternative. An ordinary reservation accepts a party size within the slot's minimum and table capacity, checks shared pool availability, and creates a confirmed booking. The one-account-one-seat rule applies to EatTogether participation; ordinary bookings retain their party-size selector.
 
-The catalogue contains eight real restaurant examples, including Joya Onsen Cafe, Seorae Korean Charcoal BBQ, 2SCOOPS and il Cielo. Their presence gives the demonstration recognisable locations and cuisine descriptions, but the time slots and discounts are synthetic. The seed routine creates a seven-day window of future slots, each with a minimum of two diners and capacity of four. This makes the minimum-party-size scenario reproducible without implying that those conditions describe the restaurants' current offers.
+Filters respect the selected booking route. For instance, a 50% ordinary offer cannot satisfy a 40% EatTogether filter if the Event offers only 30%. An explicit zero-discount Event is treated as full price, not replaced with the slot discount. Upcoming counts use future eligible Events at active venues; cancelled, expired and started Events are excluded. Full future Events may still be displayed, while the available-seats filter excludes them.
 
-### 5.6.2 Eatogether Party Formation and Host Confirmation
+My bookings distinguishes upcoming activity from history using start time and state. Reservations and Event participation remain related but have different meanings: an unconfirmed Event is a plan awaiting qualification, not a confirmed restaurant reservation. Status colours support that distinction. A past booking indicates that its scheduled time has passed; it does not establish attendance or successful meal completion.
 
-Eatogether adds a group-formation stage before confirmation. A diner can create a party from an available restaurant slot, provide a title and description, and choose a capacity within the slot's limits. The creator becomes the host and occupies the first seat. Other authenticated diners can inspect the party and join while it is open and has capacity. A joined account cannot consume another seat by repeating the request.
+### 5.6.2 EatTogether Participation and Automatic Confirmation
 
-Figure 5.3 describes the implemented lifecycle. OPEN means the group can accept members. FULL means it has reached its selected capacity, but the host has not yet confirmed the reservation. The host may confirm from either state once the restaurant's minimum party size is met. This distinction matters: reaching the minimum and reaching capacity are different conditions, and a group does not need to fill every optional seat before booking.
+Each new participation occupies one EatTogether seat. Friends who want to attend together need their own verified accounts and Join separately. Creation adds the host as the first diner. The backend rejects new multi-seat participation and repeated Join requests cannot add extra seats. A diner must Join an existing eligible Event with space at the same slot before creating another one, and cannot participate in competing active Events for that slot.
 
-@figure lifecycle | Figure 5.3 Eatogether lifecycle and confirmation rules
+Events can have fixed age and gender eligibility preferences. The host must satisfy their own preferences, which remain unchanged through Handover. Verification, adulthood, suspension, preferences and blocks are checked by the server. Age eligibility uses the dining date. Other participants can see names and exact ages, but private birth dates and reliability strikes are not published.
 
-For example, a host can create a four-person party at a slot requiring at least two diners. With only the host present, confirmation is rejected. Once one other diner joins, the host can confirm a booking for two people even though the group is still below capacity. Confirmation creates one shared booking and prevents further joining or leaving. The booking is visible to its participants; it is not duplicated into an independent restaurant reservation for each person.
+@figure lifecycle | Figure 5.3 Event qualification Cutoff and Last Call
 
-The host retains the decision to confirm because joining expresses participation in a group, while confirmation commits its current size to the reservation. The interface exposes that difference, and the API enforces it. A normal participant receives a forbidden response if they attempt a host-only action. This control supports the agreed product flow without introducing a separate restaurant account or restaurant approval process.
+An Event automatically becomes CONFIRMED once its diner count reaches the slot minimum. The shared Booking is created or updated in that transaction. Confirmation does not freeze membership: eligible diners may continue to Join until the table limit or pool limit is reached, and members may Leave before dining subject to the applicable warning. Before Cutoff, falling below the minimum returns the Event to OPEN and its booking to PENDING.
+
+Cutoff is two hours before the dining time. No new Event may be created after Cutoff. A short unconfirmed Event enters PRICE_DECISION: each member can accept full price or decline without a reliability strike. Accepted members can continue with a zero-discount booking; unresolved decisions are reconciled by dining time, and an Event with no remaining accepted diner expires.
+
+If a confirmed Event loses enough diners after Cutoff to fall below the minimum, it enters LAST_CALL. The system sends in-app invitations to eligible verified diners whose configured dining area is within approximately five kilometres. This uses stored local locations, not live GPS. Reaching the minimum again restores the discount. If the Event remains short at dining time, the remaining diners continue at full price. Leaving during Last Call is an exception to the late-Leave penalty.
 
 ### 5.6.3 Semantic Discovery and Personal Shortlisting
 
-For you accepts a freely typed dining preference and provides a Restaurant or Eatogether toggle. The interface defaults to Restaurant and leaves the preference and location inputs empty. In Eatogether mode, ranking applies to eligible open parties, connecting the discovery tool to the social dining feature. Saving a result expresses interest; booking or joining is a separate explicit action.
+For you accepts a typed dining preference, optional cuisine and optional location/radius. The visible feature recommends restaurants only. Backend support for Event ranking remains for compatibility and tests, but no Restaurant versus EatTogether choice is exposed in the popup. Save records interest; it does not reserve a table or Join an Event.
 
-The retrieval approach uses sentence embeddings to compare meaning rather than requiring identical words. Reimers and Gurevych (2019) established sentence embeddings and cosine similarity as a practical basis for semantic comparison. In this prototype, the chosen model is the ONNX version of all-MiniLM-L6-v2 distributed by Xenova, run through Transformers.js. It produces a 384-dimensional representation with mean pooling and normalisation. The implementation uses quantised CPU inference and a pinned model revision, without task-specific fine-tuning (Sentence Transformers, n.d.; Xenova, n.d.).
+The model is Xenova/all-MiniLM-L6-v2 at pinned revision 751bff37182d3f1213fa05d7196b954e230abad9, using quantised CPU inference, mean pooling and normalisation. It produces 384-dimensional sentence vectors, consistent with the MiniLM model card (Sentence Transformers, n.d.). Transformers.js supports local model paths and disabling remote loading (Hugging Face, n.d.).
 
-Restaurant embedding text combines the venue name, cuisine, area, description, tags and signature dishes. Group embedding text adds the party title and description to its restaurant context. A content hash includes the model version and text. On a search request, changed records are embedded again, while unchanged records retain their stored vectors. Concurrent search requests share the indexing pass within the backend process. The query is then embedded using the same model.
+@figure semantic-search | Figure 5.4 Restaurant semantic retrieval and shortlisting
 
-@figure semantic-search | Figure 5.4 Semantic retrieval with eligibility checks and explicit user decisions
+Changed descriptions are detected through a hash containing both description and model version and re-embedded during discovery. The query is embedded locally. Eligible vectors are ranked using PostgreSQL cosine distance; pgvector supplies the vector type and distance operator (pgvector contributors, n.d.). At most 30 results are returned.
 
-Before vector ranking, the service builds the eligible candidate set. Restaurant mode requires an active venue with an unallocated future slot. Eatogether mode requires an OPEN group at an active venue, a future slot, a remaining seat and no existing membership for the current user. Saved and skipped targets are excluded for that account. A requested radius further restricts candidates before SQL ranking.
+Explicit cuisine is a hard constraint, applied before ranking. A Western selection therefore cannot return Chinese venues merely because their descriptions are semantically similar. If no venue satisfies the filters, the result is empty rather than falling back to another cuisine. Typed locations resolve against local metadata; unknown locations produce an input error. Radius uses approximate straight-line distance rather than a travel route.
 
-Location entry uses local lookup rather than unrestricted geocoding. Recognised neighbourhood names map to predefined centres, and a listed restaurant name or area can resolve to stored venue coordinates. Blank location leaves the search unrestricted. Unknown locations produce a validation message. Distances use a great-circle calculation and represent approximate straight-line distance from the resolved centre, not a route from the diner's device.
+Users review ranked cards and save or skip using buttons, keyboard or swipe interaction. Decisions persist per account and can be undone. Booking and Join actions remain separate and recheck current inventory. Ranking is descriptive retrieval, not learned personal preference, a guaranteed dietary filter or a compatibility score between diners.
 
-The database ranks eligible IDs by pgvector cosine distance using the <=> operator and returns at most 30 results. The score returned by the API is one minus cosine distance. The schema contains no approximate nearest-neighbour index, so this is exact vector ranking over the eligible records, appropriate to the small catalogue. pgvector supports this cosine-distance operation directly inside PostgreSQL (pgvector contributors, n.d.).
+### 5.6.4 Communication Notifications and Private Safeguards
 
-Users can save or skip a card through buttons, keyboard arrows or swiping, and undo the preceding decision. DiscoveryDecision stores the result against the authenticated user and a target key identifying the restaurant or group. The shortlist survives refresh and login sessions. These decisions do not retrain the model or build a learned user profile; they control saved content and exclusion from subsequent results.
+Notifications are stored per account with deduplication keys. The bell shows unread records, while Profile retains notification history including read notices; both use three-item pagination. Confirmation, Cutoff decisions and Last Call are communicated in-app. Five-second polling refreshes notices while the application is open; there is no email, SMS or mobile push service.
 
-Raw preference text is processed in memory and is not intentionally persisted by the application or sent to a hosted model provider. Runtime model loading is local-only, consistent with the library's supported configuration (Hugging Face, n.d.). Nevertheless, a vector score reflects similarity between descriptions. It does not establish interpersonal compatibility, dietary suitability or a probability that the user will enjoy a meal. A shortlisted party can also become unavailable; the join operation rechecks its current state.
+Event chat opens after confirmation, including accepted full-price continuation, and is restricted to current members. Messages are plain text, blocked authors are hidden, and cancelled or expired Event conversations are read-only. Leaving removes current-member chat access. Private feedback is available after dining time and requires a self-attendance declaration. It stores feedback on the experience rather than publishing a star rating on diner profiles.
+
+Safety controls allow members to report or block another diner. Blocks affect eligibility in either direction, and a protective Leave can avoid the normal penalty. Reports are persisted privately, but a moderation console and operational response process have not been implemented.
+
+The Profile reliability display shows the account's own rolling strike count and explains the policy through an information tooltip. A penalised late Leave from a confirmed Event after Cutoff records a deduplicated strike. Three strikes within 90 days cause a seven-day EatTogether suspension; ordinary reservations remain available. Restaurant attendance signals and no-show penalties are deferred, so reliability is not a measured attendance rate or a public reputation score.
 
 ## 5.7 Requirement to Implementation Traceability
 
-Table 5.4 connects the implemented user requirements to concrete design decisions and verification evidence. The identifiers organise this technical section and can later be reconciled with the group's final PRD. They do not imply that a formal prioritisation exercise or user acceptance study has already been completed.
+Table 5.4 connects the agreed consumer-side requirements to implementation and engineering evidence. Passing checks establishes behaviour in the tested conditions, not commercial effectiveness or user acceptance.
 
-@table Table 5.4 Technical traceability matrix
-| Requirement | Design and implementation | Verification evidence |
+@table Table 5.4 Requirement design and verification traceability
+| Requirement | Implementation decision | Verification evidence |
 |---|---|---|
-| R1 Browse restaurants in list and map views | RestaurantPages and RestaurantMap share venue filtering; map selects a venue before its parties. | Recorded desktop and phone-width browser checks. |
-| R2 Preserve ordinary reservations | Book is the default; POST /bookings creates a booking and exclusive allocation. | Ordinary booking versus group-creation concurrency test. |
-| R3 Let a solo diner assemble a party | Group creation adds the host as a member and holds a slot; other accounts can join. | Minimum-size, duplicate-join and membership tests. |
-| R4 Give confirmation control to the host | Group host relationship is checked; minimum size permits confirmation before capacity. | Non-host rejection and below-capacity confirmation test. |
-| R5 Prevent overbooking | Slot row locks, transactional checks and unique SlotAllocation ownership. | Concurrent last-seat joins and competing allocation tests. |
-| R6 Find relevant available options | MiniLM embeddings, availability filters, local radius lookup and pgvector ranking. | Discovery integration test with semantic and geographical cases. |
-| R7 Keep saved choices personal | Composite account and target key stores SAVE or SKIP; undo removes or restores a decision. | Account isolation, save, skip and undo assertions. |
-| R8 Manage plans without erasing other users' history | Personal booking views, cancellation and deletedFor filtering. | Ownership, active-booking rejection and personal deletion tests. |
-| R9 Run the demonstration locally | Three Compose services, local assets and model, persistent database volume. | Recorded Docker builds, HTTP checks and isolated model invocation. |
+| Preserve ordinary booking | Book remains default within restaurant details. | Reservation and shared-pool integration scenarios; browser checks. |
+| Integrate EatTogether into Eatigo | One venue collection with counts and expandable Events in grid and map. | Unified discovery unit cases and desktop/phone checks. |
+| One verified diner per seat | Session identity, verification and single-seat membership checks. | Multi-seat rejection, duplicate Join and eligibility scenarios. |
+| Qualify without host confirmation | Transactional automatic confirmation and stable shared booking. | Leave/rejoin requalification and booking-reference assertions. |
+| Prevent over-allocation | Shared seat pool, owner constraints and slot row locking. | Concurrent Join and ordinary/Event competition scenarios. |
+| Handle short Events fairly | Cutoff, individual full-price decisions and Last Call. | Time-transition and inventory-release scenarios. |
+| Preserve participation after Handover | Earliest remaining member becomes host. | Ownership, immutable preferences and Handover checks. |
+| Support descriptive discovery | Local vectors plus strict cuisine, radius and availability constraints. | Real-model retrieval and conflicting-cuisine regression assertions. |
+| Retain account-specific history | Personal booking removal, shortlist and notification read state. | Ownership and isolation tests; notification browser checks. |
+| Provide basic social safeguards | Private strikes, blocks, reports, feedback and member chat. | Privacy, membership, blocking and penalty scenarios. |
+| Deliver a reproducible local MVP | Three containers, migrations and tested source artifact. | Isolated integration stack and delivery/deployment scripts. |
 
-The most important cross-cutting requirement is that discovery and reservation state agree at the point of action. Search filters reduce unsuitable options, but they cannot reserve a seat for the duration of a user's decision. The transaction-backed join and booking endpoints provide the final decision. This keeps the recommendation component replaceable without weakening the inventory rules.
+Discovery does not allocate inventory. The final booking or Join transaction decides whether an option remains available. This boundary allows ranking and presentation to evolve without weakening the shared reservation rules.
 
 ## 5.8 Testing and Quality Assurance
 
-Verification concentrates on the failures most likely to invalidate the demonstration: unauthorised actions, duplicate reservations, overfilled parties, stale availability and recommendations that ignore eligibility. TypeScript checks and formatting checks support maintainability, while HTTP and database-backed tests exercise the behaviour beyond the interface.
-
-The repository's testing record dated 25 September 2026 reports successful frontend and backend builds, two credential unit tests, HTTP authentication checks, six dining integration tests and one discovery integration test containing multiple assertions. It also records a model invocation with Docker networking disabled that returned a 384-dimensional embedding. Frontend and backend TypeScript checks and both credential unit tests passed again on 26 September 2026 after regenerating the local Prisma client. These are engineering checks on the demonstration system, not measurements of user adoption, satisfaction or commercial impact.
+Verification focuses on account isolation, incorrect lifecycle transitions, over-allocation, privacy leaks and recommendation constraint failures. The recorded local checks on 11 October 2026 passed formatting, TypeScript checks and all 33 unit tests: seven backend and 26 frontend. Fresh isolated Docker integration passed HTTP authentication, 21 dining scenarios and a real-model discovery test containing multiple assertions. These results are documented in docs/TESTING.md; they are local engineering evidence, not a claim about the status of a later GitHub run.
 
 @table Table 5.5 Verification coverage and interpretation
-| Check | Behaviour exercised | What the evidence supports |
+| Check | Behaviour exercised | Interpretation |
 |---|---|---|
-| Credential unit tests | Normalisation and malformed or missing inputs | Predictable parsing before account lookup. |
-| HTTP authentication script | Readiness, login, safe account fields, separate sessions and logout revocation | Authentication works across the public Nginx API route. |
-| Dining integration tests | Permissions, lifecycle, minimum size, concurrency, expiry and personal deletion | Core booking rules hold for the tested database-backed scenarios. |
-| Discovery integration test | Real-model ranking, radius, available seats, saved decisions and undo | Retrieval and shortlist operations work together on the seeded dataset. |
-| Build and static checks | TypeScript compilation and production packaging | The checked source can compile into the demonstration services. |
-| Browser review | Navigation, map, phone layouts, pagination, shortlist and overflow | The reviewed screens and interactions display correctly at checked widths. |
-| Offline model check | Local model invocation with container networking disabled | Inference can execute from bundled files without a model-provider connection. |
+| Unit tests | Credentials, identity calculations, status handling, paging and discovery filters | Small decision functions behave as asserted. |
+| HTTP authentication | Health, login, separate sessions, safe fields and logout | Session behaviour works through the Nginx API boundary. |
+| Dining integration | Shared inventory, eligibility, concurrency, lifecycle, safeguards and ownership | Database-backed business rules hold in the tested scenarios. |
+| Real-model discovery | Ranking, hard cuisine, radius, malformed input, save/skip and undo | Local inference and retrieval cooperate on the seeded catalogue. |
+| Static and build checks | Formatting, TypeScript compilation and production builds | The checked source compiles and packages successfully. |
+| Browser review | Desktop and 390px phone layouts, grid/map, popup, notifications and booking flow | Reviewed screens and interactions work at those viewport sizes. |
+| Recorded offline inference | A 384-dimensional result with Docker networking disabled on 25 September | The bundled model can run without a hosted inference connection. |
 
-### High-risk functional scenarios
+Concurrency tests inspect final memberships, allocations and booking references as well as response codes. Eligibility cases reject unverified, underage, blocked or unsuitable diners, and test that inaccessible Events do not leak through direct identifiers. Lifecycle scenarios cover requalification, Cutoff decisions, released held seats, Last Call, Handover and reliable cancellation. Discovery asserts that an explicit cuisine survives a conflicting mood and returns no unsuitable fallback.
 
-The concurrency tests verify resulting data as well as response codes. A last-seat test sends three join requests for one remaining place and expects exactly one success. A second test races an ordinary reservation against group creation for the same slot and expects one created response and one conflict, followed by exactly one allocation. This targets the shared inventory rule directly instead of relying on a button being disabled in one browser.
-
-Lifecycle tests cover confirmation below capacity after the minimum is reached, rejection of non-host confirmation and cancellation, repeated confirmation returning the same booking, and frozen membership after confirmation. Another test moves an unconfirmed group's slot into the past, triggers an API request and verifies EXPIRED status and allocation release. Personal deletion tests verify that a cancelled shared booking disappears for one participant while remaining visible to another.
-
-The discovery test checks selected semantic examples using the real local model. A Korean grilled-meat query is expected to rank Seorae first, a frozen-dessert query to rank 2SCOOPS first, and an Italian pasta query in restaurant mode to rank il Cielo first. It also verifies radius filtering, typed-location normalisation, invalid-location handling, account-isolated shortlists and undo. These are targeted regression cases; they do not constitute a held-out recommendation benchmark or establish superiority over keyword search.
-
-Integration tests create identifiable fixtures and remove the records they create. Dining tests use dedicated future slots, and discovery tests create temporary users. They should run on the demonstration database rather than a production database. The discovery cases still depend on the seeded catalogue and suitable open parties, so changing or exhausting that data can affect their results.
+The ci:integration command creates a uniquely named Compose project on a separate port with a fresh database volume. It builds services, applies migrations, seeds fixtures and exercises the public HTTP route. Cleanup removes that test stack and its own volumes. It does not use the laptop demonstration database. Local browser verification used specifically named temporary records, then removed them; recorded fingerprints preserved the original 16 bookings, 117 memberships and 14 notifications/read states.
 
 ### Evaluation still required
 
-Participant usability testing, recommendation relevance evaluation and physical second-device connectivity testing remain separate work. A useful next evaluation would ask participants to find a meal, join a party and distinguish a saved option from a confirmed booking. The study should record completion, errors and time to complete each task. A held-out set of dining requests could compare semantic ranking with a keyword baseline using independently judged relevant results. Neither study has been completed as part of the recorded engineering checks.
+Automated browser regression, load testing, systematic accessibility auditing and security testing are not established by the current evidence. A phone-width viewport review is not a physical second-device connectivity test. No latency percentile, throughput target, uptime or accessibility-compliance claim is made.
 
-Automated browser regression coverage, load testing, systematic accessibility auditing and security testing are also absent from the current evidence. Labels, keyboard controls and status messages exist in the interface, but their presence alone does not establish accessibility compliance. No latency percentile, maximum concurrent-user capacity or uptime guarantee is claimed.
+Product evaluation remains separate. Participants should be asked to find a restaurant, distinguish saving from booking, Join an Event and understand Cutoff/full-price choices. Recommendation relevance should be evaluated on independently judged requests and compared with a keyword baseline. Existing targeted retrieval assertions are regression tests, not a held-out relevance benchmark. Adoption, satisfaction, attendance and restaurant revenue have not been measured.
 
-## 5.9 Deployment and Reproducibility
+## 5.9 Deployment and Continuous Delivery
 
-Docker Compose defines the database, backend and frontend services. Database readiness is checked with pg_isready. The backend starts after the database becomes healthy, applies Prisma migrations, runs the seed routine and starts Express. The frontend starts after the backend health check succeeds. Backend health checks query the database; they do not establish that the first semantic search has already loaded and warmed the model.
+### Local service startup and persistence
 
-From the repository root, docker compose up --build -d builds and starts the application. The frontend is then available at http://localhost:3000 on the host. When the images are already available and no rebuild is needed, docker compose up -d starts the existing services. docker compose down stops and removes the containers and network while preserving the named database volume. Removing that volume would erase the persisted application data.
+Docker Compose checks PostgreSQL readiness with pg_isready before starting the backend. The backend applies migrations, runs the seed routine and starts Express. The frontend waits for backend health. Compose supports this service-health startup ordering (Docker, n.d.). Health checks query the database but do not warm the embedding model.
 
-The first build downloads base images, packages and the pinned embedding model. After setup, the application serves its own photos, map geometry and model files. A client still needs access to the running host: this is a locally hosted web application, not an installed offline application with an independent database on each phone. Source attribution links require internet access when opened.
+From the repository root, docker compose up --build -d builds and starts the application at http://localhost:3000. When no rebuild is needed, docker compose up -d starts existing services. docker compose down removes containers and the network while retaining the named postgres_data volume. Removing that volume would erase application data.
 
-A phone on a network that allows access to the laptop can use http://<host-LAN-IP>:3000. The address depends on the laptop's current network assignment; it is not permanently fixed to a particular private IP. A firewall or Wi-Fi client-isolation policy can prevent access even when both devices use the same Wi-Fi name. The current configuration provides HTTP for the demonstration, without a public domain or TLS deployment.
+Stable fixture identifiers and upserts preserve existing records while creating missing demo data. Startup seeding creates a seven-day window of future slots; it does not continuously advance that window while the backend remains running. Seorae and Yan Lai Ju fixtures use a four-diner minimum, a six-diner table limit and a 12-seat pool; other venues use two, four and eight respectively. These are synthetic demonstration conditions, not current restaurant offers.
 
-PostgreSQL data persists in the postgres_data named volume. Startup seeding uses stable identifiers and upserts to create missing demonstration data while preserving existing groups and bookings. It does not continually roll the seven-day inventory forward while the service runs; restarting the backend reruns the seed routine. Git tracks the code, migrations, import scripts and asset provenance. The implementation described here corresponds to commit 524de60, with test procedures and source records retained in the repository documentation.
+After initial image, package and model downloads, photos, map geometry and inference are local. A phone must still reach the running host using http://<host-LAN-IP>:3000. The IP can change across networks, and firewall or Wi-Fi client isolation may prevent access. The current deployment uses HTTP on the laptop, without a public domain or TLS configuration.
 
-This setup makes the classroom demonstration repeatable on the host, but it does not provide backups, failover or a production operations process. Availability depends on the laptop, Docker Desktop and the local network remaining available. A public pilot would require additional deployment controls and a separate data-protection plan.
+### CI checks and delivery package
+
+GitHub Actions runs on pushes to main, pull requests targeting main, and manual workflow dispatch. Local commits alone do not trigger it. The workflow has three dependent jobs: Code checks, Docker integration and Prepare release. GitHub's needs dependencies require preceding jobs to succeed before the delivery job proceeds (GitHub, n.d.).
+
+@figure ci-delivery | Figure 5.5 CI and continuous delivery with manual local deployment
+
+Code checks installs locked npm dependencies, generates the Prisma client, checks formatting and types, runs unit tests and builds the application. Docker integration then executes the isolated stack described in Section 5.8. For successful main runs, Prepare release packages the tested source commit with its SHA, a SHA-256 archive checksum, integration evidence, instructions and deploy.ps1. Pull requests validate changes without producing that delivery package. Integration artifacts are retained for one day and delivery artifacts for three days in the current workflow.
+
+This is continuous integration and continuous delivery with manual deployment. It does not update the running laptop application on every push, publish a GitHub Release or push container images to a registry. A green workflow means the configured checks passed for that commit, not that all possible defects have been excluded.
+
+### Manual deployment and rollback boundaries
+
+The operator downloads and extracts a chosen delivery artifact and runs ./deploy.ps1 -ValidateOnly to inspect its package integrity, followed by ./deploy.ps1 to deploy. The script checks package metadata and evidence, rebuilds the services, starts the existing Compose project and checks readiness and the served version identifier. It retains the existing database volume, so real demonstration bookings are separate from the disposable CI database.
+
+The artifact contains tested source rather than prebuilt immutable service images. Deployment rebuilds from that source, and unpinned operating-system or base-image components can still change. Selecting an older source artifact can restore application code, but does not automatically reverse database migrations. Backups and migration compatibility would be required for a dependable operational rollback process.
 
 ## 5.10 Technical Limitations and Next Steps
 
-### Demonstration data and inventory model
+### Prototype inventory and identity
 
-The MVP reproduces the reservation workflow using eight venue examples and locally generated inventory. It cannot confirm a real restaurant reservation, check current offers or synchronise cancellations with Eatigo. Each restaurant and start time has one exclusive allocation, even when the party uses fewer seats than the slot capacity. Production restaurant inventory would need a richer model for table counts, capacity combinations, merchant updates and reconciliation with the booking provider.
+The shared-pool model demonstrates competition between ordinary reservations and Events, but it does not model physical table assignment, table combinations or live restaurant updates. Full-price continuation changes the prototype booking discount; it does not charge a card or obtain restaurant approval. The eight imported venues and synthetic inventory cannot confirm an actual Eatigo reservation. Older multi-diner memberships are preserved until explicitly reduced to one seat; the single-diner rule governs new participation.
 
-An Eatogether party holds its complete slot from creation until cancellation, expiry or the continuation of its confirmed booking. There is no shorter hold timeout, per-account creation quota or waitlist. This is adequate for demonstrating group formation but could block inventory if users create parties and abandon them. A pilot should investigate hold duration and cancellation policy alongside the product team rather than choosing those rules solely for implementation convenience.
+Verification flags, ages and genders represent preverified fictional identities. They are not returned by Singpass. Demo passwords are stored in plaintext and shared across accounts. The local HTTP cookie is not Secure; production password hashing, rate limiting, secret management and an explicit CSRF strategy are not implemented. The session and ownership checks support the classroom workflow, not a public authentication deployment.
 
-### Authentication and social safeguards
+### Deferred restaurant operations and safety
 
-Demonstration passwords are stored in plaintext, exposed as example credentials in the interface and shared across the seeded accounts. The session cookie is not configured as Secure because the local deployment uses HTTP. Password hashing, login rate limiting, production secret management and an explicit CSRF protection strategy have not been implemented. Basic session and ownership checks make account-specific workflows demonstrable, but the authentication design is not suitable for public deployment.
+Restaurant accounts, a merchant application, Restaurant Events, merchant slot exclusions and Corppass verification are deferred pending the team's product decision. There is no restaurant attendance recorder or trustworthy no-show signal, so no-show strike enforcement is also deferred. Past bookings and self-declared feedback cannot establish actual attendance.
 
-Eatogether also lacks reporting, blocking, moderation, verified identities and in-app communication. The prototype can show a host, member list and participation state, but it cannot establish trust or safety between strangers. These are product and governance requirements for a real social dining pilot, with corresponding technical work still to be defined. Restaurant-hosted events and restaurant account types are intentionally outside the current application.
+Member chat, private reports and blocks provide basic controls, but the application lacks an operational moderation console, investigation process and appeals workflow. The reliability display is an individual's strike count, not a public rating or verified attendance score. These distinctions should remain clear in the demonstration and later measurement plan.
 
-### Recommendation quality and scale
+### Recommendation and operational limits
 
-The ranking model is general-purpose and has not been trained on local dining outcomes. Descriptions and seeded party titles strongly influence its results. Negation, mixed-language preferences, dietary restrictions and unusual requests may not be handled reliably. The feature provides descriptive retrieval, not a verified dietary filter or a compatibility assessment between people.
+MiniLM is a general sentence model and has not been trained on local dining outcomes. Hard cuisine filters correct explicit category mismatch, but semantic ranking can still mishandle negation, mixed-language requests and dietary needs. Local location matching covers only the bundled catalogue and neighbourhood data; radius is not travel time. No fairness or relevance benchmark has been completed.
 
-Indexing changed descriptions happens within search requests, which can make first searches slower. Eligibility processing loads candidates into application memory, and exact vector ranking is sufficient only for the present scale without further measurement. Five-second polling also increases API and expiry-check traffic as more clients connect. Larger-scale work should first measure these costs, then consider background indexing, a scheduled expiry worker, query optimisation and event-driven updates where justified.
+Inference and lifecycle work share one backend process. Changed descriptions are indexed during search; a first request can be slower. Exact vector ranking and application-side eligibility checks suit the current small dataset without proving larger-scale performance. Five-second polling is simple for a demo but adds traffic as more clients connect. Background indexing, separate inference or event-driven updates should follow measured need rather than be assumed necessary now.
 
-### Validation and operational readiness
-
-The prototype has no restaurant attendance signal, payment event or confirmed meal-completion event. A past confirmed booking is therefore not evidence that diners attended or that restaurant revenue increased. There is no product analytics pipeline or tested retention measurement. These gaps should inform the later measurement plan rather than being filled with assumed results.
-
-The next technical phase should begin with observed usability and retrieval issues, while preparing security and social safeguards before any public pilot. The current implementation supplies a functional basis for those evaluations: it supports multi-account party formation, host-controlled confirmation, consistent reservations and local semantic discovery. Evidence of desirability and business impact must come from the subsequent research and validation work.
+The system depends on the host laptop, Docker Desktop and network availability. CI provides repeatable checks and a delivery package, while manual deployment preserves operator control; it does not supply backups, monitoring, failover or disaster recovery. The next phase should validate the consumer journey with users and confirm the deferred merchant rules before extending the application or making business-impact claims.
 
 ## Technical References
 
+Docker. (n.d.). Control startup and shutdown order in Compose. https://docs.docker.com/compose/how-tos/startup-order/
+
+GitHub. (n.d.). Workflow syntax for GitHub Actions. https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+
 Hugging Face. (n.d.). Use custom models. Transformers.js documentation. https://huggingface.co/docs/transformers.js/custom_usage
 
-pgvector contributors. (n.d.). pgvector: Open-source vector similarity search for Postgres. https://github.com/pgvector/pgvector
+pgvector contributors. (n.d.). pgvector vector similarity search for Postgres. https://github.com/pgvector/pgvector
 
 PostgreSQL Global Development Group. (n.d.). Explicit locking. PostgreSQL 16 documentation. https://www.postgresql.org/docs/16/explicit-locking.html
 
-Reimers, N., & Gurevych, I. (2019). Sentence-BERT: Sentence embeddings using siamese BERT-networks. Proceedings of EMNLP-IJCNLP, 3982–3992. https://doi.org/10.18653/v1/D19-1410
-
 Sentence Transformers. (n.d.). all-MiniLM-L6-v2 model card. https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
 
-Xenova. (n.d.). all-MiniLM-L6-v2 ONNX model. Revision 751bff37182d3f1213fa05d7196b954e230abad9 used by the prototype. https://huggingface.co/Xenova/all-MiniLM-L6-v2
-
-Implementation evidence: backend/src/dining.ts, discovery.ts, embeddings.ts and server.ts; backend/prisma/schema.prisma and migrations; frontend/src; docker-compose.yml; docs/TESTING.md; docs/DISCOVERY.md; and docs/SOURCES.md. Source snapshot: commit 524de60. Restaurant and asset provenance is recorded in docs/SOURCES.md, including the eight Eatigo branch pages and the OpenStreetMap attribution notice.
+Implementation evidence: backend/src/dining.ts, event-lifecycle.ts, inventory.ts, social.ts, reliability.ts, discovery.ts, embeddings.ts, server.ts and seed.ts; backend/prisma/schema.prisma and migrations; frontend/src; docker-compose.yml; .github/workflows/ci.yml; scripts/ci-integration.mjs; scripts/package-release.mjs; scripts/deploy.ps1; docs/TESTING.md; docs/DISCOVERY.md; and docs/SOURCES.md. Application source snapshot dc360ad, reviewed 11 October 2026. Engineering evidence is distinguished from later product research and deferred restaurant functionality throughout this section.
