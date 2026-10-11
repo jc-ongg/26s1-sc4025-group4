@@ -10,7 +10,9 @@ Slots have a minimum, a maximum table size and a shared seat pool (`discountedSe
 
 Creation holds the minimum seats. Additional Joins draw from free pool inventory. Displayed Event Capacity is bounded by the table limit and its own hold plus free seats. New Events close at Cutoff, two hours before dining. A diner must Join an eligible existing Event with room before creating another at that slot. An account cannot hold two active Event seats at the same slot.
 
-Hidden Events expose no identifiers or participant data, while free seats at that slot remain bookable. Public participants expose names and age bands; birth dates, reliability records, reports, blocks, individual price choices and feedback are private. Own memberships/history remain accessible.
+Hidden Events expose no identifiers or participant data, while free seats at that slot remain bookable. Public participants expose names and exact ages; birth dates, reliability records, reports, blocks, individual price choices and feedback are private. Own memberships/history remain accessible. The six verified demo identities are aged 21–26 in October 2026. These fictional birth dates represent preverified identity data; the MVP does not retrieve data from Singpass.
+
+Restaurant and Event discovery both show at most three cards per page. Both collections support the offline map, which keeps one pin per restaurant and presents its matching upcoming Events one at a time with Previous/Next navigation. For you remains a restaurant-only discovery popup. Profile shows Upcoming/Past confirmed reservations, two at a time; the reliability policy is available through an information tooltip.
 
 ## Timing and reservations
 
