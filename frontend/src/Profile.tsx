@@ -1,23 +1,8 @@
 import { useState } from "react";
-import type { PersonalBooking, User } from "./types";
-import {
-  isPastBooking,
-  isUpcomingBooking,
-  byDiningTime,
-  bookingDisplayStatus,
-} from "./booking-history";
+import type { User } from "./types";
 import { InfoTip } from "./InfoTip";
-import { Pagination } from "./Pagination";
-import {
-  Art,
-  State,
-  Status,
-  date,
-  time,
-  useResource,
-  Empty,
-  type Actions,
-} from "./dining-ui";
+import { NotificationHistory } from "./Notifications";
+import { State, date, time, useResource, type Actions } from "./dining-ui";
 
 export function Profile({ user, revision, act, busy }: Actions & { user: User }) {
   const [diningArea, setDiningArea] = useState("");
@@ -25,7 +10,6 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
     "/me/blocks",
     revision,
   );
-  const resource = useResource<{ bookings: PersonalBooking[] }>("/me/bookings", revision);
   const reliability = useResource<{
     profile: User & {
       reliabilityStrikes: number;
@@ -35,17 +19,6 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
     };
   }>("/me/profile", revision);
   const now = Date.now();
-  const bookings = resource.data?.bookings ?? [];
-  const past = bookings
-    .filter((b) => isPastBooking(b, now))
-    .sort(byDiningTime("history"));
-  const upcoming = bookings
-    .filter((b) => isUpcomingBooking(b, now))
-    .sort(byDiningTime("upcoming"));
-  const [view, setView] = useState<"upcoming" | "past">("upcoming");
-  const shown = view === "upcoming" ? upcoming : past;
-  const [page, setPage] = useState(0);
-  const current = Math.min(page, Math.max(0, Math.ceil(shown.length / 2) - 1));
   return (
     <>
       <section className="page-intro">
@@ -69,20 +42,6 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
               {user.gender && ` · ${user.gender === "FEMALE" ? "Female" : "Male"}`}
             </p>
           )}
-          <dl>
-            <div>
-              <dt>Upcoming reservations</dt>
-              <dd>
-                {resource.data
-                  ? bookings.filter((b) => isUpcomingBooking(b, now)).length
-                  : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt>Past bookings</dt>
-              <dd>{resource.data ? past.length : "—"}</dd>
-            </div>
-          </dl>
           <div className="profile-reliability">
             <h3>
               <span className="row start">
@@ -187,92 +146,7 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
             </details>
           )}
         </aside>
-        <section className="panel profile-history" aria-label="Your bookings">
-          <div className="section-heading profile-booking-heading">
-            <h2>Your bookings</h2>
-            <div className="mode-tabs" role="group" aria-label="Profile bookings">
-              {(["upcoming", "past"] as const).map((option) => (
-                <button
-                  key={option}
-                  className={view === option ? "selected" : ""}
-                  aria-pressed={view === option}
-                  onClick={() => {
-                    setView(option);
-                    setPage(0);
-                  }}
-                >
-                  {option === "upcoming" ? "Upcoming" : "Past"}
-                </button>
-              ))}
-            </div>
-          </div>
-          <State data={resource.data} error={resource.error}>
-            {shown.length ? (
-              <>
-                <ul className="plan-list">
-                  {shown.slice(current * 2, current * 2 + 2).map((booking) => (
-                    <li
-                      className="plan-row"
-                      data-status={bookingDisplayStatus(booking, now).toLowerCase()}
-                      key={booking.id}
-                    >
-                      <Art restaurant={booking.slot.restaurant} />
-                      <div className="plan-content">
-                        <div className="row">
-                          <span className="small muted">
-                            {booking.group ? "EatTogether" : "Reservation"}
-                          </span>
-                          <Status value={bookingDisplayStatus(booking, now)} />
-                        </div>
-                        <h3>{booking.slot.restaurant.name}</h3>
-                        <p className="small">
-                          {date(booking.slot.startsAt)} · {time(booking.slot.startsAt)}
-                        </p>
-                        <p className="small">
-                          {booking.group ? (
-                            <>
-                              {booking.yourPartySize !== null && (
-                                <>Your Party: {booking.yourPartySize} · </>
-                              )}
-                              Event total:{" "}
-                            </>
-                          ) : null}
-                          {booking.partySize} diners
-                        </p>
-                        <p className="small">
-                          {booking.discount === 0
-                            ? "Full price"
-                            : `${booking.discount ?? booking.slot.discount}% off`}
-                        </p>
-                        <p className="small muted">
-                          #{booking.id.slice(0, 8).toUpperCase()}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <Pagination
-                  total={shown.length}
-                  page={current}
-                  pageSize={2}
-                  onPageChange={setPage}
-                  label="bookings"
-                />
-              </>
-            ) : (
-              <Empty
-                title={
-                  view === "upcoming" ? "No upcoming reservations" : "No past bookings"
-                }
-                text={
-                  view === "upcoming"
-                    ? "Your confirmed upcoming reservations appear here."
-                    : "Your past confirmed reservations appear here."
-                }
-              />
-            )}
-          </State>
-        </section>
+        <NotificationHistory revision={revision} act={act} busy={busy} />
       </div>
     </>
   );

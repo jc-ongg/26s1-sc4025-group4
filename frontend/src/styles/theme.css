@@ -964,25 +964,6 @@ select {
   font-size: 13px;
   font-weight: 600;
 }
-.profile-identity dl {
-  text-align: left;
-  margin: 28px 0;
-}
-.profile-identity dl div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid #ddd9d2;
-}
-.profile-identity dt {
-  font-size: 13px;
-  color: #59616a;
-}
-.profile-identity dd {
-  margin: 0;
-  font-weight: 600;
-}
 .profile-reliability {
   text-align: left;
 }
@@ -996,9 +977,6 @@ select {
 .profile-reliability .badge {
   font-size: 10px;
   padding: 4px 8px;
-}
-.profile-history .plan-row {
-  min-height: 170px;
 }
 .status.past {
   background: #e7f2ea;

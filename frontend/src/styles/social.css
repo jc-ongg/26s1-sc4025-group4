@@ -76,6 +76,56 @@
 .notification-list p {
   margin: 8px 0 12px;
 }
+.notification-history .section-heading {
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.notification-history .section-heading h2 {
+  font-size: 20px;
+}
+.notification-heading {
+  gap: 12px;
+  align-items: flex-start;
+}
+.notification-heading strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.notice-state {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: #f0eeea;
+  color: #59616a;
+}
+.notice-state.unread {
+  background: #f4e1e5;
+  color: #a32035;
+}
+.notification-actions {
+  gap: 12px;
+}
+.notification-actions > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.notification-actions .text-button {
+  min-height: 32px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.notification-history-link {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #b9233a;
+}
 .notification-list .row {
   flex-wrap: wrap;
 }

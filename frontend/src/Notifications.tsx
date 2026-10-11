@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { State, useResource, type Actions } from "./dining-ui";
+import { Empty, State, useResource, type Actions } from "./dining-ui";
 import { CloseIcon } from "./icons";
+import { Pagination } from "./Pagination";
 
 type Notice = {
   id: string;
@@ -10,13 +11,111 @@ type Notice = {
   createdAt: string;
   readAt: string | null;
 };
-export function Notifications({ revision, act, busy }: Actions) {
-  const { data, error } = useResource<{ notifications: Notice[]; unread: number }>(
-    "/me/notifications",
-    revision,
+type NoticeResponse = { notifications: Notice[]; unread: number };
+
+function NotificationFeed({
+  notices,
+  act,
+  busy,
+  onOpenEvent,
+}: Pick<Actions, "act" | "busy"> & {
+  notices: Notice[];
+  onOpenEvent?: () => void;
+}) {
+  const [page, setPage] = useState(0),
+    pageSize = 3;
+  const current = Math.min(page, Math.max(0, Math.ceil(notices.length / pageSize) - 1));
+  return (
+    <>
+      <ul className="notification-list">
+        {notices.slice(current * pageSize, (current + 1) * pageSize).map((n) => (
+          <li key={n.id} className={n.readAt ? "" : "unread"}>
+            <div className="row notification-heading">
+              <strong>{n.title}</strong>
+              <span className={`notice-state ${n.readAt ? "read" : "unread"}`}>
+                {n.readAt ? "Read" : "Unread"}
+              </span>
+            </div>
+            <p className="small">{n.body}</p>
+            <div className="row notification-actions">
+              <time className="small muted" dateTime={n.createdAt}>
+                {new Date(n.createdAt).toLocaleString("en-SG", {
+                  timeZone: "Asia/Singapore",
+                  day: "numeric",
+                  month: "short",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </time>
+              <div>
+                {!n.readAt && (
+                  <button
+                    className="text-button"
+                    disabled={busy}
+                    aria-label={`Mark ${n.title} as read`}
+                    onClick={() => act("/me/notifications/read", { id: n.id }, "")}
+                  >
+                    Mark as read
+                  </button>
+                )}
+                {n.groupId && (
+                  <a
+                    href={`#/groups/${n.groupId}`}
+                    onClick={() => {
+                      if (!n.readAt) void act("/me/notifications/read", { id: n.id }, "");
+                      onOpenEvent?.();
+                    }}
+                  >
+                    View Event →
+                  </a>
+                )}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <Pagination
+        total={notices.length}
+        page={current}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        label="Notifications"
+      />
+    </>
   );
-  const [open, setOpen] = useState(false),
-    [page, setPage] = useState(0);
+}
+
+export function NotificationHistory({ revision, act, busy }: Actions) {
+  const resource = useResource<NoticeResponse>("/me/notifications", revision);
+  const notices = resource.data?.notifications ?? [];
+  return (
+    <section className="panel notification-history" aria-label="Notification history">
+      <div className="section-heading">
+        <h2>Notification history</h2>
+        <button
+          className="text-button"
+          disabled={busy || !resource.data?.unread}
+          onClick={() =>
+            act("/me/notifications/read", {}, "Notifications marked as read.")
+          }
+        >
+          Mark all as read
+        </button>
+      </div>
+      <State data={resource.data} error={resource.error}>
+        {notices.length ? (
+          <NotificationFeed notices={notices} act={act} busy={busy} />
+        ) : (
+          <Empty title="No notifications yet" text="" />
+        )}
+      </State>
+    </section>
+  );
+}
+
+export function Notifications({ revision, act, busy }: Actions) {
+  const { data, error } = useResource<NoticeResponse>("/me/notifications", revision);
+  const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     if (!open || !dialog.current) return;
@@ -28,9 +127,8 @@ export function Notifications({ revision, act, busy }: Actions) {
       document.body.style.overflow = previousOverflow;
     };
   }, [open]);
-  const notices = data?.notifications ?? [],
-    pages = Math.max(1, Math.ceil(notices.length / 5));
-  const current = Math.min(page, pages - 1);
+  // Reading never removes a record: the bell hides it, Profile retains it.
+  const unread = data?.notifications.filter((n) => !n.readAt) ?? [];
   return (
     <>
       <button
@@ -59,7 +157,7 @@ export function Notifications({ revision, act, busy }: Actions) {
         aria-labelledby="notifications-title"
       >
         <div className="row">
-          <h2 id="notifications-title">Notifications</h2>
+          <h2 id="notifications-title">Unread notifications</h2>
           <button
             className="icon-button dialog-close"
             aria-label="Close notifications"
@@ -69,75 +167,36 @@ export function Notifications({ revision, act, busy }: Actions) {
           </button>
         </div>
         <State data={data} error={error}>
-          {notices.length ? (
+          {unread.length ? (
             <>
               <button
                 className="text-button"
-                disabled={busy || !data?.unread}
+                disabled={busy}
                 onClick={() =>
                   act("/me/notifications/read", {}, "Notifications marked as read.")
                 }
               >
                 Mark all as read
               </button>
-              <ul className="notification-list">
-                {notices.slice(current * 5, current * 5 + 5).map((n) => (
-                  <li key={n.id} className={n.readAt ? "" : "unread"}>
-                    <strong>{n.title}</strong>
-                    <p className="small">{n.body}</p>
-                    <div className="row small">
-                      <span className="muted">
-                        {new Date(n.createdAt).toLocaleString("en-SG", {
-                          timeZone: "Asia/Singapore",
-                          day: "numeric",
-                          month: "short",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                      {n.groupId && (
-                        <a
-                          href={`#/groups/${n.groupId}`}
-                          onClick={() => {
-                            void act("/me/notifications/read", { id: n.id }, "");
-                            setOpen(false);
-                          }}
-                        >
-                          View Event →
-                        </a>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              {pages > 1 && (
-                <div className="list-pagination">
-                  <span>
-                    Page {current + 1} of {pages}
-                  </span>
-                  <div>
-                    <button
-                      className="text-button"
-                      disabled={current === 0}
-                      onClick={() => setPage(current - 1)}
-                    >
-                      Previous
-                    </button>
-                    <button
-                      className="text-button"
-                      disabled={current + 1 === pages}
-                      onClick={() => setPage(current + 1)}
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
+              <NotificationFeed
+                key={open ? "open" : "closed"}
+                notices={unread}
+                act={act}
+                busy={busy}
+                onOpenEvent={() => setOpen(false)}
+              />
             </>
           ) : (
-            <p className="muted">No notifications.</p>
+            <p className="muted">You’re all caught up.</p>
           )}
         </State>
+        <a
+          className="notification-history-link"
+          href="#/profile"
+          onClick={() => setOpen(false)}
+        >
+          Notification history →
+        </a>
       </dialog>
     </>
   );
