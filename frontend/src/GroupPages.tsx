@@ -7,6 +7,7 @@ import { eventJoinState } from "./booking-flow";
 import { currentGroupStatus, hasStarted, dinerCount } from "./availability";
 import { EventSocial, DinerSafety } from "./EventSocial";
 import { EventPreferences } from "./EventPreferences";
+import { InfoTip } from "./InfoTip";
 import { Art, State, Status, date, time, useResource, type Actions } from "./dining-ui";
 
 export function GroupDetail({
@@ -53,7 +54,9 @@ export function GroupDetail({
               <div>
                 <h1>{g.title}</h1>
                 <div className="row start">
-                  <Status value={eventDisplayStatus(g)} />
+                  <Status
+                    value={hasStarted(g.slot.startsAt) ? eventDisplayStatus(g) : status!}
+                  />
                   <span className="small muted">Hosted by {g.host.name}</span>
                 </div>
               </div>
@@ -83,17 +86,32 @@ export function GroupDetail({
                     <span>{time(g.slot.startsAt)} · Singapore time</span>
                   </div>
                   <div>
-                    <span className="eyebrow">THE TABLE</span>
+                    <span className="row start">
+                      <span className="eyebrow">EVENT CAPACITY</span>
+                      {mutable && (
+                        <InfoTip label="About Held Seats and Event Capacity">
+                          {g.heldSeats ?? count} seats are held for this Event. Further
+                          Joins share the restaurant’s remaining seats, up to its table
+                          limit. The discount is confirmed automatically at{" "}
+                          {g.slot.minimumPartySize} diners.
+                        </InfoTip>
+                      )}
+                    </span>
                     <strong>
-                      {count} of {g.capacity} seats filled
+                      {count} of {g.capacity} seats taken
                     </strong>
-                    <span>Minimum {g.slot.minimumPartySize} diners for the discount</span>
+                    <span>Minimum Party Size: {g.slot.minimumPartySize} diners</span>
                   </div>
                 </div>
                 <EventPreferences event={g} />
                 {g.cutoffAt && mutable && (
                   <p className="small muted">
-                    Cutoff: {date(g.cutoffAt)} · {time(g.cutoffAt)}
+                    Cutoff: {date(g.cutoffAt)} · {time(g.cutoffAt)}{" "}
+                    <InfoTip label="About Cutoff">
+                      Two hours before dining. If the minimum is not met, choose full
+                      price or decline without a penalty. A confirmed Event that drops
+                      below the minimum afterwards opens Last Call for replacement diners.
+                    </InfoTip>
                   </p>
                 )}
                 {g.description && (

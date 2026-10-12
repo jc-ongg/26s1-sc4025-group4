@@ -71,12 +71,10 @@ export function Restaurants({
   }
   return (
     <>
-      {data && (
-        <TopPicks
-          restaurants={data.restaurants}
-          eventCounts={groups && upcomingEventCounts(groups)}
-        />
-      )}
+      <TopPicks
+        restaurants={data?.restaurants}
+        eventCounts={groups && upcomingEventCounts(groups)}
+      />
       <section className="restaurant-browse">
         <div className="section-heading">
           <h2>Explore restaurants</h2>

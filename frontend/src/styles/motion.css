@@ -66,6 +66,10 @@ details[open] > :not(summary),
   font-size: 13px;
   font-weight: 600;
 }
+.pick-placeholder {
+  background: #e7e4de;
+  border: 1px solid #d4d0cb;
+}
 .account-links[hidden] {
   display: none;
 }

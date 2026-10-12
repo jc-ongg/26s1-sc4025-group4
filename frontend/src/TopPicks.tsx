@@ -7,14 +7,14 @@ export function TopPicks({
   restaurants,
   eventCounts,
 }: {
-  restaurants: Restaurant[];
+  restaurants: Restaurant[] | undefined;
   eventCounts: Map<string, number> | undefined;
 }) {
   const track = useRef<HTMLDivElement>(null);
-  const picks = restaurants
+  const picks = (restaurants ?? [])
     .map((restaurant) => ({ restaurant, slots: availableSlots(restaurant) }))
     .filter(({ slots }) => slots.length);
-  if (!picks.length) return null;
+  if (restaurants && !picks.length) return null;
 
   function scroll(direction: number) {
     const element = track.current;
@@ -34,6 +34,7 @@ export function TopPicks({
         <div className="carousel-controls">
           <button
             className="secondary"
+            disabled={!restaurants}
             aria-label="Previous top picks"
             onClick={() => scroll(-1)}
           >
@@ -41,6 +42,7 @@ export function TopPicks({
           </button>
           <button
             className="secondary"
+            disabled={!restaurants}
             aria-label="Next top picks"
             onClick={() => scroll(1)}
           >
@@ -49,6 +51,10 @@ export function TopPicks({
         </div>
       </div>
       <div className="picks-track" ref={track}>
+        {!restaurants &&
+          Array.from({ length: 4 }, (_, index) => (
+            <div key={index} className="pick-card pick-placeholder" aria-hidden="true" />
+          ))}
         {picks.map(({ restaurant, slots }) => (
           <a
             className="pick-card"

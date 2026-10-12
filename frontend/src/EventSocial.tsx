@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import type { Group, User } from "./types";
 import { hasStarted } from "./availability";
 import { State, useResource, time, type Actions } from "./dining-ui";
@@ -10,20 +10,76 @@ export function DinerSafety({
 }: Actions & { group: Group; target: { id: string; name: string } }) {
   const [open, setOpen] = useState(false),
     [report, setReport] = useState(false),
+    [block, setBlock] = useState(false),
     [reason, setReason] = useState("");
+  const optionsId = useId();
+  const trigger = useRef<HTMLButtonElement>(null);
+  function close() {
+    setOpen(false);
+    setReport(false);
+    setBlock(false);
+    trigger.current?.focus();
+  }
   return (
-    <div className="diner-safety">
+    <div
+      className="diner-safety"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && open) {
+          event.preventDefault();
+          event.stopPropagation();
+          close();
+        }
+      }}
+    >
       <button
         className="text-button"
+        ref={trigger}
         aria-label={`Safety options for ${target.name}`}
         aria-expanded={open}
+        aria-controls={optionsId}
         onClick={() => setOpen(!open)}
       >
         ···
       </button>
       {open && (
-        <div className="safety-options">
-          {report ? (
+        <div id={optionsId} className="safety-options">
+          <div className="row small">
+            <strong>{target.name}</strong>
+            <button type="button" className="text-button" onClick={close}>
+              Close
+            </button>
+          </div>
+          {block ? (
+            <>
+              <p className="small">
+                Blocking is private. You won’t see or Join each other’s future Events. You
+                can Leave this upcoming Event without a reliability penalty.
+              </p>
+              <button
+                className="danger"
+                disabled={actions.busy}
+                onClick={async () => {
+                  if (
+                    await actions.act(
+                      `/groups/${group.id}/safety`,
+                      { action: "BLOCK", targetId: target.id },
+                      "Diner blocked. You may Leave this Event without a penalty.",
+                    )
+                  )
+                    close();
+                }}
+              >
+                Block {target.name}
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => setBlock(false)}
+              >
+                Back
+              </button>
+            </>
+          ) : report ? (
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -31,11 +87,10 @@ export function DinerSafety({
                   await actions.act(
                     `/groups/${group.id}/safety`,
                     { action: "REPORT", targetId: target.id, reason },
-                    "Report submitted.",
+                    "Report submitted for review.",
                   )
                 ) {
-                  setOpen(false);
-                  setReport(false);
+                  close();
                   setReason("");
                 }
               }}
@@ -68,16 +123,7 @@ export function DinerSafety({
               <button
                 className="text-button danger-text"
                 disabled={actions.busy}
-                onClick={async () => {
-                  if (
-                    await actions.act(
-                      `/groups/${group.id}/safety`,
-                      { action: "BLOCK", targetId: target.id },
-                      "Diner blocked. You can manage blocked diners in Profile.",
-                    )
-                  )
-                    setOpen(false);
-                }}
+                onClick={() => setBlock(true)}
               >
                 Block diner
               </button>
@@ -125,7 +171,16 @@ function EventChat({ group, user, ...actions }: Actions & { group: Group; user: 
             >
               <div className="row small">
                 <strong>{m.user.name}</strong>
-                <span className="muted">{time(m.createdAt)}</span>
+                <div className="row start">
+                  <span className="muted">{time(m.createdAt)}</span>
+                  {m.userId !== user.id && (
+                    <DinerSafety
+                      group={group}
+                      target={{ id: m.userId, name: m.user.name }}
+                      {...actions}
+                    />
+                  )}
+                </div>
               </div>
               <p>{m.body}</p>
             </div>
@@ -205,17 +260,28 @@ function MealFeedback({
       setEditing(false);
   }
   const rating = (label: string, value: string, set: (value: string) => void) => (
-    <label>
-      {label}
-      <select required value={value} onChange={(e) => set(e.target.value)}>
-        <option value="">Select a rating</option>
+    <fieldset className="star-rating">
+      <legend>{label}</legend>
+      <div className="star-options">
         {[1, 2, 3, 4, 5].map((n) => (
-          <option key={n} value={n}>
-            {n} / 5
-          </option>
+          <label key={n} className={n <= Number(value) ? "filled" : ""}>
+            <input
+              className="sr-only"
+              type="radio"
+              required
+              name={label}
+              value={n}
+              checked={value === String(n)}
+              onChange={() => set(String(n))}
+            />
+            <span aria-hidden="true">{n <= Number(value) ? "★" : "☆"}</span>
+            <span className="sr-only">
+              {n} {n === 1 ? "star" : "stars"}
+            </span>
+          </label>
         ))}
-      </select>
-    </label>
+      </div>
+    </fieldset>
   );
   return (
     <State data={data} error={error}>

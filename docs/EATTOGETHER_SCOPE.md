@@ -1,6 +1,6 @@
 # EatTogether implementation scope
 
-Current diner scope: 11 October 2026. Restaurant management remains paused pending the team's decision. The technical report and editable diagrams now describe this consumer scope, including shared inventory, lifecycle rules, unified discovery and continuous delivery with manual deployment. Sections 5.1 and 5.2 remain reserved for later product work.
+Current diner scope: 12 October 2026. Restaurant management remains paused pending the team's decision. The technical report and editable diagrams describe shared inventory, lifecycle rules, unified discovery and continuous delivery with manual deployment. Sections 5.1 and 5.2 remain reserved for later product work. See CONCEPT_ALIGNMENT.md for the latest diner-side audit and subsequent interface/search changes.
 
 ## Seats and eligibility
 
@@ -35,11 +35,15 @@ A confirmed late Leave after Cutoff requires acknowledgement and records a priva
 
 The notification bell contains persisted confirmations, member changes, Handover, cancellation, Cutoff, Last Call and reliability updates. Waiting Events send at most one reminder per Singapore calendar day, including creation day. Nearby invitations require an optional Profile neighbourhood within 5 km, using a static local coordinate catalogue. There is no GPS lookup, email, SMS or delivery while the app is closed. Stale/ineligible Last Call invitations are hidden.
 
-Chat opens once confirmed, including an accepted full-price reservation. Only current members can read/send. Cancelled/expired Chat is read-only; leaving removes access. The latest 200 messages appear as plain text, with blocked authors hidden.
+Chat opens once confirmed, including an accepted full-price reservation. Only current members can read/send. Cancelled/expired Chat is read-only; leaving removes access. The latest 200 messages appear as plain text, with blocked authors hidden. Safety options are available on other diners' messages as well as participant cards and unsafe Feedback answers. Blocking requires a confirmation that explains future Event exclusion and penalty-free departure.
 
 Report and Block are inside Events. Reports are private pending records; no moderation console or automatic punishment exists. Blocking is silent, hides future Events containing either account, and can be undone in Profile. Existing shared reservations remain accessible for safe departure.
 
-Optional private Feedback opens after the scheduled start of a confirmed/full-price booking. It asks about overall experience, safety, social experience, meal, dining again and suggestions. A diner must attest attendance; this is self-report, not restaurant verification. Skipping has no reliability effect. Unsafe answers expose report/block. Only the submitting diner can read/edit a response.
+Optional private Feedback opens after the scheduled start of a confirmed/full-price booking. It asks about overall experience, safety, social experience, meal, dining again and suggestions, with three keyboard-accessible star scales. A diner must attest attendance; this is self-report, not restaurant verification. A once-per-Event in-app invitation arrives two hours after scheduled start. That delay is a reminder convention, not proof of completion. Skipping has no reliability effect. Unsafe answers expose report/block. Only the submitting diner can read/edit a response.
+
+For you uses dining mood and optional typed location (within 15 km), with no cuisine dropdown. Food spellings and menu synonyms are normalized; typed cuisines/menu items constrain semantic ranking. Weak semantic matches are rejected using an absolute score floor and relative band, with at most six results. Fresh searches do not hide previously saved/skipped restaurants. Saved venues are marked, and advancing past one does not remove it from the shortlist. Cosine similarity is not shown as a confidence percentage.
+
+Explicit navigation, filters, pagination, menus, modals and restaurant Event disclosures have short transitions. Background refreshes preserve focus/selection without repeated entrance effects. Reduced-motion preferences disable motion, including explicit mobile scroll assistance.
 
 ## Interface and deferred scope
 

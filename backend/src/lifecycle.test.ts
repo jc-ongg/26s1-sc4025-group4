@@ -239,6 +239,31 @@ test("Chat and private feedback require membership; feedback also requires elaps
     !JSON.stringify((await request(`/groups/${g.id}`, 1)).data).includes('"overall"'),
   );
 });
+test("feedback invitations arrive once after dining time without claiming attendance", async () => {
+  const g = await event();
+  await request(`/groups/${g.id}/join`, 1, {});
+  await db.reservationSlot.update({
+    where: { id: g.slotId },
+    data: { startsAt: new Date(Date.now() - 3 * 3600000) },
+  });
+  await request(`/groups/${g.id}`);
+  await request(`/groups/${g.id}`);
+  const invitations = await db.notification.findMany({
+    where: { groupId: g.id, key: { endsWith: ":feedback-invitation" } },
+  });
+  assert.equal(invitations.length, 2);
+  assert.ok(invitations.every((n) => n.body.includes("If you attended")));
+  assert.equal(await db.eventFeedback.count({ where: { groupId: g.id } }), 0);
+  const upcoming = await event(2);
+  await request(`/groups/${upcoming.id}/join`, 3, {});
+  assert.equal(
+    await db.notification.count({
+      where: { groupId: upcoming.id, key: { endsWith: ":feedback-invitation" } },
+    }),
+    0,
+  );
+});
+
 test("silent blocking hides future shared Events and allows a penalty-free departure", async () => {
   const g = await event(4);
   await request(`/groups/${g.id}/join`, 5, {});

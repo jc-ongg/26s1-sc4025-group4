@@ -45,12 +45,13 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
           <div className="profile-reliability">
             <h3>
               <span className="row start">
-                Reliability{" "}
+                Reliability Score{" "}
                 <InfoTip label="About reliability">
                   A strike is recorded when you Leave a confirmed Event after Cutoff (two
                   hours before the meal). Strikes expire after 90 days. Three strikes
                   within that period suspend new EatTogether participation for one week.
-                  Ordinary bookings stay available.
+                  Ordinary bookings stay available. Last Call and safety-related
+                  departures are penalty-free.
                 </InfoTip>
               </span>
               <span className="badge">Private</span>

@@ -263,6 +263,44 @@ export async function syncEvent(
 }
 
 let ticking: Promise<void> | undefined;
+async function inviteEventFeedback(now: Date) {
+  const events = await db.groupDiningSession.findMany({
+    where: {
+      status: { in: ["CONFIRMED", "FULL_PRICE"] },
+      booking: { status: "CONFIRMED" },
+      slot: { startsAt: { lte: new Date(now.getTime() - 2 * 3600000) } },
+      notifications: { none: { key: { endsWith: ":feedback-invitation" } } },
+    },
+    select: { id: true, slotId: true },
+  });
+  for (const event of events) {
+    await db.$transaction(async (tx) => {
+      await lockSlot(tx, event.slotId);
+      const current = await tx.groupDiningSession.findUnique({
+        where: { id: event.id },
+        include: { members: true, booking: true, slot: true },
+      });
+      if (
+        !current ||
+        !["CONFIRMED", "FULL_PRICE"].includes(current.status) ||
+        current.booking?.status !== "CONFIRMED" ||
+        current.slot.startsAt.getTime() > now.getTime() - 2 * 3600000
+      )
+        return;
+      // This is an invitation after dining time, not proof of attendance or a
+      // completed meal. The feedback form still requires the diner's attestation.
+      for (const member of current.members)
+        await notify(
+          tx,
+          member.userId,
+          event.id,
+          `${event.id}:feedback-invitation`,
+          "How was your EatTogether Event?",
+          "If you attended, share your optional private Event Feedback. Skipping it does not affect your Reliability Score.",
+        );
+    });
+  }
+}
 export function processLifecycle() {
   if (ticking) return ticking;
   ticking = (async () => {
@@ -297,6 +335,7 @@ export function processLifecycle() {
         throw error;
       }
     }
+    await inviteEventFeedback(new Date());
   })().finally(() => {
     ticking = undefined;
   });

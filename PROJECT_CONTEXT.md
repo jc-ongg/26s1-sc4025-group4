@@ -13,7 +13,7 @@ SC4025 academic MVP extending Eatigo with diner-created shared tables. The imple
 - Shared PostgreSQL state across browser sessions and LAN devices. Polling is sufficient.
 - Everything runs on the Windows host through Docker Compose. No runtime cloud services.
 - Restaurant-hosted events and restaurant dashboards are deferred outside the current scope.
-- Semantic restaurant/Event discovery uses local MiniLM embeddings and PostgreSQL pgvector. Geographic distance and availability remain explicit filters. Swipe saves/skips; joining is separate. The map and venue assets are bundled locally.
+- For you is restaurant-only with mood and optional typed location. Local MiniLM/pgvector ranking combines normalized menu/cuisine intent with relevance thresholds; weak searches are empty rather than padded. Geographic distance and availability remain explicit constraints. Saved venues are marked in fresh searches; skips dismiss a deck rather than permanently hiding restaurants. Joining is separate. The map and venue assets are bundled locally.
 
 ## Booking rules
 
@@ -39,7 +39,7 @@ SC4025 academic MVP extending Eatigo with diner-created shared tables. The imple
 
 ## Priorities
 
-Demo reliability, coherent user flows, understandable code, straightforward local startup, responsive visual quality. Microservices, native apps, payments and cloud deployment are outside the current scope. Restaurant-side work is paused. Report artifacts stay unchanged until final product scope is confirmed.
+Demo reliability, coherent user flows, understandable code, straightforward local startup, responsive visual quality. Microservices, native apps, payments and cloud deployment are outside the current scope. Restaurant-side work is paused. The technical report was refreshed on 11 October; later app refinements are recorded in docs/CONCEPT_ALIGNMENT.md until another report update is requested.
 
 ## References and reporting
 

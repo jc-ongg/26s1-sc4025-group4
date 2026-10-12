@@ -210,6 +210,51 @@
   margin-top: 8px;
   width: 100%;
 }
+.star-rating {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.star-rating legend {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.star-options {
+  display: flex;
+  gap: 3px;
+}
+.star-options label {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #d4d0cb;
+  border-radius: 4px;
+  color: #666;
+  cursor: pointer;
+  font-size: 27px;
+}
+.star-options label.filled {
+  color: #926000;
+  background: #fff7e6;
+  border-color: #cbad73;
+}
+.star-options label:focus-within {
+  outline: 2px solid #245b94;
+  outline-offset: 2px;
+}
+.event-message .diner-safety {
+  width: auto;
+  max-width: 260px;
+}
+.event-message > .row,
+.event-message > .row > .row {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  max-width: 100%;
+}
 .inline-check {
   display: flex;
   align-items: center;
