@@ -21,7 +21,7 @@ import {
   type DinerIdentity,
 } from "./event-eligibility.js";
 
-const userFields = { id: true, name: true, dateOfBirth: true } as const;
+const userFields = { id: true, name: true, dateOfBirth: true, gender: true } as const;
 export const groupInclude = {
   host: { select: userFields },
   slot: { include: { restaurant: true, allocations: true } },
@@ -37,12 +37,13 @@ type IncludedGroup = Prisma.GroupDiningSessionGetPayload<{
   include: typeof groupInclude;
 }>;
 
-// Verified demo ages are visible; birth dates and verification payloads stay private.
+// Participant cards show age and gender; birth dates and verification payloads stay private.
 export function presentGroup(group: IncludedGroup, viewer?: DinerIdentity) {
   const participant = (user: IncludedGroup["host"]) => ({
     id: user.id,
     name: user.name,
     age: ageAt(user.dateOfBirth),
+    gender: user.gender,
   });
   return {
     ...group,

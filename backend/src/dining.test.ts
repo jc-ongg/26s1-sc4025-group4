@@ -178,6 +178,19 @@ test("Event preferences hide details, slot identifiers and counts from ineligibl
   const joined = await request(`/groups/${g.id}/join`, "chongwei", {});
   assert.equal(joined.status, 200);
   assert.equal(joined.data.group.status, "CONFIRMED");
+  assert.equal(joined.data.group.host.gender, "MALE");
+  assert.ok(
+    joined.data.group.members.every(
+      (m: { user: { gender: string } }) => m.user.gender === "MALE",
+    ),
+  );
+  // Adding public gender must not expose the stored birth date or account credentials.
+  for (const participant of [
+    joined.data.group.host,
+    ...joined.data.group.members.map((m: { user: Record<string, unknown> }) => m.user),
+  ]) {
+    assert.deepEqual(Object.keys(participant).sort(), ["age", "gender", "id", "name"]);
+  }
   for (const endpoint of [
     `/groups/${g.id}`,
     "/groups",

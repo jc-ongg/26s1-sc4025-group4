@@ -8,7 +8,7 @@ const event = {
   id: "event",
   status: "CONFIRMED",
   hostId: "jacob",
-  host: { id: "jacob", name: "Jacob" },
+  host: { id: "jacob", name: "Jacob", age: null, gender: null },
   slot: { startsAt: "2026-10-05T04:00:00Z", minimumPartySize: 4 },
   members: [{ partySize: 2 }, { partySize: 2 }],
 } as Group;
@@ -47,7 +47,7 @@ test("one update explains lost confirmation and Handover to the current account"
     ...event,
     status: "OPEN",
     hostId: "alice",
-    host: { id: "alice", name: "Alice", age: null },
+    host: { id: "alice", name: "Alice", age: null, gender: null },
     members: [{ partySize: 2 }] as Group["members"],
   };
   const update = eventUpdateMessage(event, handed, "alice", now);

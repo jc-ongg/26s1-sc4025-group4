@@ -78,7 +78,7 @@ test("Event availability counts diners across Parties and includes confirmed Eve
     title: "",
     description: "",
     hostId: "u1",
-    host: { id: "u1", name: "Host", age: null },
+    host: { id: "u1", name: "Host", age: null, gender: null },
     genderFilter: null,
     minAge: null,
     maxAge: null,
@@ -87,8 +87,16 @@ test("Event availability counts diners across Parties and includes confirmed Eve
     booking: null,
     slot: slot("future", "2026-09-29T04:00:00Z"),
     members: [
-      { userId: "u1", partySize: 2, user: { id: "u1", name: "Host", age: null } },
-      { userId: "u2", partySize: 2, user: { id: "u2", name: "Joiner", age: null } },
+      {
+        userId: "u1",
+        partySize: 2,
+        user: { id: "u1", name: "Host", age: null, gender: null },
+      },
+      {
+        userId: "u2",
+        partySize: 2,
+        user: { id: "u2", name: "Joiner", age: null, gender: null },
+      },
     ],
   };
   assert.equal(dinerCount(event), 4);
@@ -107,7 +115,7 @@ test("restaurant Event counts include full future tables but exclude closed, sta
     title: "",
     description: "",
     hostId: "host",
-    host: { id: "host", name: "Host", age: null },
+    host: { id: "host", name: "Host", age: null, gender: null },
     genderFilter: null,
     minAge: null,
     maxAge: null,
@@ -116,7 +124,11 @@ test("restaurant Event counts include full future tables but exclude closed, sta
     booking: null,
     slot: slot("future", "2026-09-29T04:00:00Z"),
     members: [
-      { userId: "host", partySize: 2, user: { id: "host", name: "Host", age: null } },
+      {
+        userId: "host",
+        partySize: 2,
+        user: { id: "host", name: "Host", age: null, gender: null },
+      },
     ],
   };
   assert.equal(isUpcomingEvent(event, now), true);

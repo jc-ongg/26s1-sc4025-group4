@@ -42,7 +42,7 @@ export type Group = {
   title: string;
   description: string;
   hostId: string;
-  host: { id: string; name: string; age: number | null };
+  host: { id: string; name: string; age: number | null; gender: Gender | null };
   genderFilter: Gender | null;
   minAge: number | null;
   maxAge: number | null;
@@ -66,7 +66,7 @@ export type Group = {
     userId: string;
     partySize: number;
     priceAccepted?: boolean;
-    user: { id: string; name: string; age: number | null };
+    user: { id: string; name: string; age: number | null; gender: Gender | null };
   }[];
   booking: Booking | null;
 };

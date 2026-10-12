@@ -10,14 +10,14 @@ hansen@gmail.com
 Password for every account: password123
 
 Fictional identity fixtures (not the students' personal details):
-Jacob    | Male   | 2002-03-15
-Chongwei | Male   | 2001-06-20
+Jacob    | Male   | 2005-03-15
+Chongwei | Male   | 2004-06-20
 Yojin    | Female | 2003-08-10
-Wallace  | Male   | 2000-11-05
-Harsh    | Male   | 1995-02-12
-Hansen   | Female | 1991-07-18
+Wallace  | Male   | 2001-11-05
+Harsh    | Male   | 2001-02-12
+Hansen   | Female | 2000-07-18
 
 All six are preverified fixtures; no real Singpass connection exists.
-For an eligibility demo, Jacob can create a Men only Event with ages 18-26.
+For an eligibility demo, Jacob can create a Men only Event with ages 21-22.
 Chongwei can see and Join it; Yojin (gender) and Harsh (age) cannot.
 The age example assumes the October 2026 presentation period.

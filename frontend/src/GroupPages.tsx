@@ -118,8 +118,9 @@ export function GroupDetail({
                       </strong>
                       <span className="small muted">
                         {m.userId === g.hostId ? "Host" : "Diner"}
-                        {m.user.age && ` · Age ${m.user.age}`} · {m.partySize}{" "}
-                        {m.partySize === 1 ? "diner" : "diners"}
+                        {m.user.age != null && ` · Age ${m.user.age}`}
+                        {m.user.gender &&
+                          ` · ${m.user.gender === "MALE" ? "Male" : "Female"}`}
                       </span>
                       {party && m.userId !== user.id && (
                         <DinerSafety
