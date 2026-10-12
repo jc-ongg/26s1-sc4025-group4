@@ -10,6 +10,7 @@ import {
   type BookingFilter,
 } from "./booking-history";
 import { reservationProgress } from "./event-feedback";
+import { useContentMotion } from "./motion";
 import {
   Art,
   Empty,
@@ -109,6 +110,12 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
       bookingPage,
       Math.max(0, Math.ceil(bookings.length / PAGE_SIZE) - 1),
     );
+  const reservations = useContentMotion<HTMLUListElement>(
+    `${filter}:${reservationPage}:${!!data}`,
+  );
+  const events = useContentMotion<HTMLUListElement>(
+    `${filter}:${groupPage}:${!!parties.data}`,
+  );
   return (
     <>
       <section className="page-intro plans-intro">
@@ -144,7 +151,7 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
             </h2>
           </div>
           <State data={data} error={error}>
-            <ul className="plan-list">
+            <ul ref={reservations} className="plan-list">
               {bookings
                 .slice(reservationPage * PAGE_SIZE, (reservationPage + 1) * PAGE_SIZE)
                 .map((b) => (
@@ -255,7 +262,7 @@ export function Bookings({ revision, act, busy, user }: Actions & { user: User }
             </h2>
           </div>
           <State data={parties.data} error={parties.error}>
-            <ul className="plan-list">
+            <ul ref={events} className="plan-list">
               {groups
                 .slice(groupPage * PAGE_SIZE, (groupPage + 1) * PAGE_SIZE)
                 .map((g) => (

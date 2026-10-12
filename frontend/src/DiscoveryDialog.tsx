@@ -1,33 +1,17 @@
-import { useEffect, useRef } from "react";
+import { useModalMotion } from "./motion";
 import { Discover } from "./Discover";
 import { CloseIcon } from "./icons";
 
 export function DiscoveryDialog({
   open,
   onClose,
-  cuisines,
-  initialCuisine,
   eventCounts,
 }: {
   open: boolean;
   onClose: () => void;
-  cuisines: string[];
-  initialCuisine: string;
   eventCounts: Map<string, number> | undefined;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const element = dialog.current;
-    if (!element || !open) return;
-    // Native modal behaviour provides focus trapping, Escape and background isolation.
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    element.showModal();
-    return () => {
-      element.close();
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open]);
+  const dialog = useModalMotion(open);
 
   return (
     <dialog
@@ -80,11 +64,7 @@ export function DiscoveryDialog({
         </button>
       </header>
       <div className="discovery-dialog-body">
-        <Discover
-          cuisines={cuisines}
-          initialCuisine={initialCuisine}
-          eventCounts={eventCounts}
-        />
+        <Discover eventCounts={eventCounts} />
       </div>
     </dialog>
   );

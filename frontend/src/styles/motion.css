@@ -1,0 +1,97 @@
+:root {
+  --motion-fast: 160ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+button,
+.button,
+a,
+input,
+textarea,
+select,
+.status,
+.notice-state,
+.card {
+  transition:
+    color var(--motion-fast) ease,
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease,
+    opacity var(--motion-fast) ease;
+}
+/* Only newly mounted content enters; background refreshes reuse the same nodes. */
+.account-links,
+.toast,
+.event-update,
+.safety-options,
+.info-tooltip,
+.swipe-card,
+.restaurant-banner,
+.group-top,
+.profile-layout,
+details[open] > :not(summary),
+.login-main > .panel {
+  animation: content-enter 190ms var(--motion-ease);
+}
+@keyframes content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.venue-events-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 190ms var(--motion-ease),
+    opacity 190ms ease,
+    visibility 190ms;
+}
+.venue-events-content.expanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+}
+.venue-events-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.match-reason {
+  color: #245b60;
+  font-size: 13px;
+  font-weight: 600;
+}
+.account-links[hidden] {
+  display: none;
+}
+@supports (transition-behavior: allow-discrete) {
+  .account-links {
+    animation: none;
+    transition:
+      opacity var(--motion-fast),
+      display var(--motion-fast) allow-discrete;
+    opacity: 1;
+  }
+  .account-links[hidden] {
+    opacity: 0;
+  }
+  @starting-style {
+    .account-links {
+      opacity: 0;
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

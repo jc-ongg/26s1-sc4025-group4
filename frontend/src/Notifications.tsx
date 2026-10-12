@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { useContentMotion, useModalMotion } from "./motion";
 import { Empty, State, useResource, type Actions } from "./dining-ui";
 import { CloseIcon } from "./icons";
 import { Pagination } from "./Pagination";
@@ -25,9 +26,10 @@ function NotificationFeed({
   const [page, setPage] = useState(0),
     pageSize = 3;
   const current = Math.min(page, Math.max(0, Math.ceil(notices.length / pageSize) - 1));
+  const feed = useContentMotion<HTMLUListElement>(String(current));
   return (
     <>
-      <ul className="notification-list">
+      <ul ref={feed} className="notification-list">
         {notices.slice(current * pageSize, (current + 1) * pageSize).map((n) => (
           <li key={n.id} className={n.readAt ? "" : "unread"}>
             <div className="row notification-heading">
@@ -116,17 +118,7 @@ export function NotificationHistory({ revision, act, busy }: Actions) {
 export function Notifications({ revision, act, busy }: Actions) {
   const { data, error } = useResource<NoticeResponse>("/me/notifications", revision);
   const [open, setOpen] = useState(false);
-  const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    if (!open || !dialog.current) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    dialog.current.showModal();
-    return () => {
-      dialog.current?.close();
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open]);
+  const dialog = useModalMotion(open);
   // Reading never removes a record: the bell hides it, Profile retains it.
   const unread = data?.notifications.filter((n) => !n.readAt) ?? [];
   return (
@@ -153,7 +145,10 @@ export function Notifications({ revision, act, busy }: Actions) {
       <dialog
         ref={dialog}
         className="compact-dialog"
-        onCancel={() => setOpen(false)}
+        onCancel={(event) => {
+          event.preventDefault();
+          setOpen(false);
+        }}
         aria-labelledby="notifications-title"
       >
         <div className="row">

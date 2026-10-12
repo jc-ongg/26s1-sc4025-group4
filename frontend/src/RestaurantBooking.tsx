@@ -1,10 +1,10 @@
 import { useRef, useState, type FormEvent } from "react";
 import type { Gender, Group, Restaurant, User } from "./types";
 import { EventPreferences } from "./EventPreferences";
-import { dinerCount, hasStarted } from "./availability";
+import { currentGroupStatus, dinerCount, hasStarted } from "./availability";
 import { slotState, eventJoinState } from "./booking-flow";
-import { eventDisplayStatus } from "./booking-history";
 import { Status, date, time, type Actions } from "./dining-ui";
+import { reducedMotion, useContentMotion } from "./motion";
 
 export function RestaurantBooking({
   restaurant: r,
@@ -25,6 +25,9 @@ export function RestaurantBooking({
   const [maxAge, setMaxAge] = useState("");
   const [selectedEvent, setSelectedEvent] = useState("");
   const panel = useRef<HTMLElement>(null);
+  const form = useContentMotion<HTMLFormElement>(
+    `${mode}:${selected}:${creating}:${selectedEvent}`,
+  );
   const now = Date.now();
   const slots = r.slots.filter((s) => !hasStarted(s.startsAt, now));
   const days = [...new Set(slots.map((s) => date(s.startsAt)))];
@@ -39,6 +42,10 @@ export function RestaurantBooking({
     slotEvents.find((g) => g.members.some((m) => m.userId === user.id)) ??
     slotEvents[0];
   const yourParty = existing?.members.find((party) => party.userId === user.id);
+  const effectiveDiscount =
+    mode === "group" && existing && !creating
+      ? (existing.discount ?? slot?.discount)
+      : slot?.discount;
   const dayEvents = groups.filter((g) => daySlots.some((s) => s.id === g.slot.id));
   const state = slot && slotState(slot, r.active, now);
   const joinState = existing && eventJoinState(existing, 1, user.id, now);
@@ -73,7 +80,10 @@ export function RestaurantBooking({
     // explicit selection, never during polling or a background availability update.
     if (window.matchMedia("(max-width: 800px)").matches) {
       requestAnimationFrame(() =>
-        panel.current?.scrollIntoView({ block: "start", behavior: "smooth" }),
+        panel.current?.scrollIntoView({
+          block: "start",
+          behavior: reducedMotion() ? "instant" : "smooth",
+        }),
       );
     }
   }
@@ -185,11 +195,14 @@ export function RestaurantBooking({
                         >
                           <div className="row">
                             <strong>{g.title}</strong>
-                            <Status value={eventDisplayStatus(g, now)} />
+                            <Status value={currentGroupStatus(g, now)} />
                           </div>
                           <span>
-                            {time(g.slot.startsAt)} · {g.slot.discount}% off · Hosted by{" "}
-                            {g.host.name}
+                            {time(g.slot.startsAt)} ·{" "}
+                            {g.discount === 0
+                              ? "Full price"
+                              : `${g.discount ?? g.slot.discount}% off`}{" "}
+                            · Hosted by {g.host.name}
                           </span>
                           <span>
                             {dinerCount(g)} / {g.capacity} diners ·{" "}
@@ -230,10 +243,11 @@ export function RestaurantBooking({
                 {date(slot.startsAt)} · {time(slot.startsAt)}
               </strong>
               <span>
-                {slot.discount}% off · minimum {slot.minimumPartySize} diners
+                {effectiveDiscount === 0 ? "Full price" : `${effectiveDiscount}% off`} ·
+                minimum {slot.minimumPartySize} diners
               </span>
             </div>
-            <form onSubmit={submit}>
+            <form ref={form} onSubmit={submit}>
               <label htmlFor="party-size">
                 {mode === "group" ? "Your seat" : "Your party size"}
               </label>
@@ -350,7 +364,7 @@ export function RestaurantBooking({
                   )}
                   <div className="row">
                     <h3>{existing.title}</h3>
-                    <Status value={eventDisplayStatus(existing, now)} />
+                    <Status value={currentGroupStatus(existing, now)} />
                   </div>
                   <p className="small">
                     Hosted by {existing.host.name} · {dinerCount(existing)} /{" "}
@@ -460,13 +474,13 @@ export function RestaurantBooking({
                   />
                   <details className="event-preferences">
                     <summary>
-                      Diner preferences <span className="muted">(optional)</span>
+                      Event Filters <span className="muted">(optional)</span>
                     </summary>
                     <p className="small muted">
                       Fixed once created. Age is checked at dining time.
                     </p>
                     <fieldset disabled={busy}>
-                      <legend className="sr-only">Diner preferences</legend>
+                      <legend className="sr-only">Event Filters</legend>
                       <label htmlFor="event-gender">Gender</label>
                       <select
                         id="event-gender"

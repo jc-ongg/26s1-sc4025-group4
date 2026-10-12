@@ -2,26 +2,23 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api } from "./api";
 import type { Restaurant } from "./types";
 import { Art, Empty, RestaurantEventCount } from "./dining-ui";
+import { reducedMotion, useContentMotion } from "./motion";
 type Result = {
   key: string;
   restaurant: Restaurant;
   distanceKm?: number | null;
   similarity?: number;
+  matchReason?: string;
+  shortlisted?: boolean;
 };
 type Undo = { item: Result; previous: string | null };
 export function Discover({
-  cuisines,
-  initialCuisine,
   eventCounts,
 }: {
-  cuisines: string[];
-  initialCuisine: string;
   eventCounts: Map<string, number> | undefined;
 }) {
   const [mood, setMood] = useState(""),
-    [cuisine, setCuisine] = useState(initialCuisine),
-    [area, setArea] = useState(""),
-    [radius, setRadius] = useState(15);
+    [area, setArea] = useState("");
   const [savedLoading, setSavedLoading] = useState(false);
   const [savedLoaded, setSavedLoaded] = useState(false);
   function switchTab(next: string) {
@@ -38,9 +35,6 @@ export function Discover({
   const searchRequest = useRef<AbortController | null>(null);
   const preferenceVersion = useRef(0);
   useEffect(() => () => searchRequest.current?.abort(), []);
-  useEffect(() => {
-    updatePreferences(() => setCuisine(initialCuisine));
-  }, [initialCuisine]);
   function updatePreferences(change: () => void) {
     preferenceVersion.current += 1;
     if (searchRequest.current) {
@@ -67,10 +61,28 @@ export function Discover({
     try {
       const data = await api<{ results: Result[] }>(
         "/discovery/search",
-        { mood, mode: "restaurants", cuisine, area: area.trim(), radius },
+        { mood, mode: "restaurants", area: area.trim(), radius: 15 },
         { timeoutMs: 120_000, signal: controller.signal },
       );
-      if (!controller.signal.aborted) setResults(data.results);
+      if (!controller.signal.aborted) {
+        setResults(data.results);
+        if (window.matchMedia("(max-width: 800px)").matches)
+          requestAnimationFrame(() => {
+            const element = recommendation.current;
+            const body = element?.closest<HTMLElement>(".discovery-dialog-body");
+            if (!element || !body || controller.signal.aborted) return;
+            // Reveal the answer after an explicit search, without scrolling the
+            // page behind the modal or changing the keyboard user's focus.
+            body.scrollTo({
+              top:
+                body.scrollTop +
+                element.getBoundingClientRect().top -
+                body.getBoundingClientRect().top -
+                12,
+              behavior: reducedMotion() ? "instant" : "smooth",
+            });
+          });
+      }
     } catch (e) {
       if (!controller.signal.aborted) setError((e as Error).message);
     } finally {
@@ -103,15 +115,24 @@ export function Discover({
     setBusy(true);
     setError("");
     try {
-      const response = await api<{ previous: string | null }>("/discovery/decision", {
-        key: item.key,
-        decision,
-      });
+      const response =
+        item.shortlisted && decision === "SKIP"
+          ? { previous: "SAVE" }
+          : await api<{ previous: string | null }>("/discovery/decision", {
+              key: item.key,
+              decision,
+            });
       // A completed write remains saved, but cannot restore cards from older preferences.
       if (version !== preferenceVersion.current) return;
       setUndo({ item, previous: response.previous });
       setResults((old) => old?.filter((r) => r.key !== item.key) ?? []);
-      setNotice(decision === "SAVE" ? "Saved to shortlist." : "Skipped.");
+      setNotice(
+        decision === "SAVE"
+          ? "Saved to shortlist."
+          : item.shortlisted
+            ? "Next recommendation."
+            : "Skipped.",
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -154,6 +175,10 @@ export function Discover({
   }
   const item = results?.[0],
     r = item?.restaurant;
+  const content = useContentMotion<HTMLDivElement>(tab);
+  const recommendation = useContentMotion<HTMLElement>(
+    item?.key ?? (results ? "empty" : "initial"),
+  );
   return (
     <>
       <div className="mode-tabs discovery-tabs">
@@ -179,7 +204,7 @@ export function Discover({
           {error}
         </p>
       )}
-      <div className="discovery-content">
+      <div ref={content} className="discovery-content">
         {tab === "saved" ? (
           <>
             <div className="shortlist-status" role="status">
@@ -231,7 +256,7 @@ export function Discover({
         ) : (
           <div className="discovery-layout">
             <aside className="panel mood-panel">
-              <h2>Preferences</h2>
+              <h2>Find a restaurant</h2>
               <form onSubmit={search}>
                 <label htmlFor="mood">Your dining mood</label>
                 <textarea
@@ -244,20 +269,6 @@ export function Discover({
                   onChange={(e) => updatePreferences(() => setMood(e.target.value))}
                   placeholder="Cuisine, dishes or dining atmosphere"
                 />
-                <label htmlFor="discovery-cuisine">Cuisine</label>
-                <select
-                  id="discovery-cuisine"
-                  value={cuisine}
-                  disabled={busy}
-                  onChange={(e) => updatePreferences(() => setCuisine(e.target.value))}
-                >
-                  <option value="">All cuisines</option>
-                  {cuisines.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
                 <label htmlFor="discovery-area">
                   Location <span className="muted">(optional)</span>
                 </label>
@@ -270,34 +281,25 @@ export function Discover({
                   placeholder="Neighbourhood or restaurant name"
                 />
                 {area.trim() && (
-                  <>
-                    <label htmlFor="radius">Within {radius} km</label>
-                    <input
-                      id="radius"
-                      type="range"
-                      min="1"
-                      max="30"
-                      value={radius}
-                      disabled={busy}
-                      onChange={(e) =>
-                        updatePreferences(() => setRadius(Number(e.target.value)))
-                      }
-                    />
-                  </>
+                  <p className="small muted">Within 15 km of this location.</p>
                 )}
                 <button disabled={busy || !mood.trim()}>
                   {busy ? "Searching…" : "Find matches"}
                 </button>
               </form>
             </aside>
-            <section className="swipe-column" aria-label="Dining recommendations">
+            <section
+              ref={recommendation}
+              className="swipe-column"
+              aria-label="Dining recommendations"
+            >
               {busy && !item ? (
                 <div className="empty" role="status">
                   <h3>Finding matches…</h3>
                 </div>
               ) : item && r ? (
                 <>
-                  <div className="row small muted">
+                  <div className="row small muted" role="status">
                     <span>
                       {results?.length} {results?.length === 1 ? "match" : "matches"}
                     </span>
@@ -348,6 +350,9 @@ export function Discover({
                           : ""}
                       </p>
                       <h2>{r.name}</h2>
+                      {item.matchReason && (
+                        <p className="match-reason">{item.matchReason}</p>
+                      )}
                       <p>{r.description}</p>
                       <div className="chips">
                         {r.tags.map((tag) => (
@@ -370,22 +375,28 @@ export function Discover({
                       disabled={busy}
                       onClick={() => void decide("SKIP")}
                     >
-                      ← Skip
+                      {item.shortlisted ? "Next →" : "← Skip"}
                     </button>
                     <button
                       className="dark"
-                      disabled={busy}
+                      disabled={busy || item.shortlisted}
                       onClick={() => void decide("SAVE")}
                     >
-                      ♡ Save →
+                      {item.shortlisted ? "✓ Shortlisted" : "♡ Save →"}
                     </button>
                   </div>
                 </>
               ) : results ? (
-                <Empty
-                  title="No more matches"
-                  text="Try another search, change the cuisine or widen the location radius."
-                />
+                <div role="status">
+                  <Empty
+                    title={undo ? "End of matches" : "No matching restaurants"}
+                    text={
+                      undo
+                        ? "You’ve viewed these recommendations. Search again or undo your last swipe."
+                        : "Try a different dining mood or location. No suitable restaurant was found in the available list."
+                    }
+                  />
+                </div>
               ) : (
                 <div className="empty discovery-welcome">
                   <h2>Your matches</h2>

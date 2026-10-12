@@ -5,6 +5,7 @@ import { Footer } from "./Footer";
 import { DiningApp } from "./DiningApp";
 import type { User } from "./types";
 import { EyeIcon } from "./icons";
+import { useContentMotion } from "./motion";
 import "./style.css";
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const account = useContentMotion<HTMLElement>(`${mode}:${loading}:${!!user}`);
   useEffect(() => {
     api<{ user: User }>("/auth/me")
       .then((data) => setUser(data.user))
@@ -71,7 +73,7 @@ function App() {
             alt="Japanese dishes at Joya Onsen Cafe"
           />
         </section>
-        <section className="panel" aria-label="Account">
+        <section ref={account} className="panel" aria-label="Account">
           {loading ? (
             <p role="status">Checking your session…</p>
           ) : (

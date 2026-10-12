@@ -5,6 +5,7 @@ import { TopPicks } from "./TopPicks";
 import { RestaurantMap } from "./RestaurantMap";
 import { DiscoveryDialog } from "./DiscoveryDialog";
 import { VenueEvents } from "./VenueEvents";
+import { useContentMotion } from "./motion";
 import {
   defaultRestaurantFilters,
   discoverRestaurants,
@@ -45,6 +46,17 @@ export function Restaurants({
     Math.max(0, Math.ceil(results.length / pageSize) - 1),
   );
   const readyData = filters.eatTogether === "any" ? data : data && groupResource.data;
+  const browse = useContentMotion<HTMLDivElement>(
+    [
+      view,
+      currentPage,
+      filters.cuisine,
+      filters.price,
+      filters.minimumDiscount,
+      filters.eatTogether,
+      !!readyData,
+    ].join(":"),
+  );
   const hasFilters = Object.keys(defaultRestaurantFilters).some(
     (key) =>
       filters[key as keyof RestaurantFilters] !==
@@ -183,77 +195,77 @@ export function Restaurants({
         {groupResource.error && filters.eatTogether === "any" && (
           <p className="error">EatTogether availability is temporarily unavailable.</p>
         )}
-        <State
-          data={readyData}
-          error={error || (filters.eatTogether !== "any" ? groupResource.error : "")}
-        >
-          {!results.length ? (
-            <Empty
-              title="No restaurants found"
-              text="Try another search or clear your filters."
-            />
-          ) : view === "map" ? (
-            <RestaurantMap
-              restaurants={results.map((result) => result.restaurant)}
-              groups={groups ? matchingEvents : undefined}
-            />
-          ) : (
-            <div className="browse-results">
-              <div className="grid">
-                {results
-                  .slice(currentPage * pageSize, (currentPage + 1) * pageSize)
-                  .map(({ restaurant: r, events, slots }) => (
-                    <article className="card restaurant-card" key={r.id}>
-                      <a
-                        className="restaurant-photo-link"
-                        href={`#/restaurants/${r.id}`}
-                        aria-label={`View ${r.name}`}
-                      >
-                        <Art restaurant={r} />
-                      </a>
-                      <div className="card-body">
-                        <div className="row">
-                          <span className="eyebrow">{r.cuisine}</span>
-                          <span className="small muted">{r.price}</span>
-                        </div>
-                        <h3>
-                          <a href={`#/restaurants/${r.id}`}>{r.name}</a>
-                        </h3>
-                        <p className="small">{r.area}</p>
-                        <div className="row restaurant-booking-action">
-                          <span className="discount">
-                            {slots.length
-                              ? `Up to ${Math.max(...slots.map((s) => s.discount))}% off`
-                              : filters.minimumDiscount > 0
-                                ? "No matching times"
-                                : "No available times"}
-                          </span>
-                          <a href={`#/restaurants/${r.id}`}>Book a table →</a>
-                        </div>
-                        <VenueEvents
-                          events={groups ? events : undefined}
-                          restaurantName={r.name}
-                        />
-                      </div>
-                    </article>
-                  ))}
-              </div>
-              <Pagination
-                total={results.length}
-                page={currentPage}
-                pageSize={pageSize}
-                onPageChange={setPage}
-                label="Restaurants"
+        <div ref={browse}>
+          <State
+            data={readyData}
+            error={error || (filters.eatTogether !== "any" ? groupResource.error : "")}
+          >
+            {!results.length ? (
+              <Empty
+                title="No restaurants found"
+                text="Try another search or clear your filters."
               />
-            </div>
-          )}
-        </State>
+            ) : view === "map" ? (
+              <RestaurantMap
+                restaurants={results.map((result) => result.restaurant)}
+                groups={groups ? matchingEvents : undefined}
+              />
+            ) : (
+              <div className="browse-results">
+                <div className="grid">
+                  {results
+                    .slice(currentPage * pageSize, (currentPage + 1) * pageSize)
+                    .map(({ restaurant: r, events, slots }) => (
+                      <article className="card restaurant-card" key={r.id}>
+                        <a
+                          className="restaurant-photo-link"
+                          href={`#/restaurants/${r.id}`}
+                          aria-label={`View ${r.name}`}
+                        >
+                          <Art restaurant={r} />
+                        </a>
+                        <div className="card-body">
+                          <div className="row">
+                            <span className="eyebrow">{r.cuisine}</span>
+                            <span className="small muted">{r.price}</span>
+                          </div>
+                          <h3>
+                            <a href={`#/restaurants/${r.id}`}>{r.name}</a>
+                          </h3>
+                          <p className="small">{r.area}</p>
+                          <div className="row restaurant-booking-action">
+                            <span className="discount">
+                              {slots.length
+                                ? `Up to ${Math.max(...slots.map((s) => s.discount))}% off`
+                                : filters.minimumDiscount > 0
+                                  ? "No matching times"
+                                  : "No available times"}
+                            </span>
+                            <a href={`#/restaurants/${r.id}`}>Book a table →</a>
+                          </div>
+                          <VenueEvents
+                            events={groups ? events : undefined}
+                            restaurantName={r.name}
+                          />
+                        </div>
+                      </article>
+                    ))}
+                </div>
+                <Pagination
+                  total={results.length}
+                  page={currentPage}
+                  pageSize={pageSize}
+                  onPageChange={setPage}
+                  label="Restaurants"
+                />
+              </div>
+            )}
+          </State>
+        </div>
       </section>
       <DiscoveryDialog
         open={discoveryOpen}
         onClose={() => setDiscoveryOpen(false)}
-        cuisines={cuisines}
-        initialCuisine={filters.cuisine === "All" ? "" : filters.cuisine}
         eventCounts={groups && upcomingEventCounts(groups)}
       />
     </>

@@ -46,25 +46,29 @@ export function AccountMenu({
         <span>{user.name}</span>
         <span aria-hidden="true">⌄</span>
       </button>
-      {open && (
-        <nav id="account-links" className="account-links" aria-label="Account">
-          <a href="#/profile" onClick={() => setOpen(false)}>
-            Profile
-          </a>
-          <a href="#/bookings" onClick={() => setOpen(false)}>
-            Bookings
-          </a>
-          <button
-            disabled={busy}
-            onClick={async () => {
-              setOpen(false);
-              await onLogout();
-            }}
-          >
-            Logout
-          </button>
-        </nav>
-      )}
+      <nav
+        hidden={!open}
+        inert={!open}
+        id="account-links"
+        className="account-links"
+        aria-label="Account"
+      >
+        <a href="#/profile" onClick={() => setOpen(false)}>
+          Profile
+        </a>
+        <a href="#/bookings" onClick={() => setOpen(false)}>
+          Bookings
+        </a>
+        <button
+          disabled={busy}
+          onClick={async () => {
+            setOpen(false);
+            await onLogout();
+          }}
+        >
+          Logout
+        </button>
+      </nav>
     </div>
   );
 }

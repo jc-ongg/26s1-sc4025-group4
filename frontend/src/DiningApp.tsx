@@ -9,6 +9,7 @@ import { Profile } from "./Profile";
 import { Bookings } from "./Bookings";
 import { GroupDetail } from "./GroupPages";
 import { Notifications } from "./Notifications";
+import { useContentMotion } from "./motion";
 
 export function DiningApp({
   user,
@@ -18,6 +19,7 @@ export function DiningApp({
   onLogout: () => Promise<void>;
 }) {
   const [route, setRoute] = useState(window.location.hash.slice(1) || "/restaurants");
+  const content = useContentMotion<HTMLDivElement>(route);
   const [revision, setRevision] = useState(0),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
@@ -106,28 +108,30 @@ export function DiningApp({
             {error}
           </div>
         )}
-        {page === "discover" ? (
-          <Restaurants key={page} {...actions} initialDiscoveryOpen />
-        ) : page === "restaurants" && id ? (
-          <RestaurantDetail key={id} id={id} user={user} {...actions} />
-        ) : page === "restaurants" ? (
-          <Restaurants key={page} {...actions} />
-        ) : page === "groups" && id ? (
-          <GroupDetail key={id} id={id} user={user} {...actions} />
-        ) : page === "groups" ? (
-          <Restaurants key={page} {...actions} initialEatTogether />
-        ) : page === "my-groups" ? (
-          <Bookings {...actions} user={user} />
-        ) : page === "profile" ? (
-          <Profile user={user} {...actions} />
-        ) : page === "bookings" ? (
-          <Bookings {...actions} user={user} />
-        ) : (
-          <Empty
-            title="Page not found"
-            text="Select the Eatigo logo to return to restaurants."
-          />
-        )}
+        <div ref={content} className="page-content">
+          {page === "discover" ? (
+            <Restaurants key={page} {...actions} initialDiscoveryOpen />
+          ) : page === "restaurants" && id ? (
+            <RestaurantDetail key={id} id={id} user={user} {...actions} />
+          ) : page === "restaurants" ? (
+            <Restaurants key={page} {...actions} />
+          ) : page === "groups" && id ? (
+            <GroupDetail key={id} id={id} user={user} {...actions} />
+          ) : page === "groups" ? (
+            <Restaurants key={page} {...actions} initialEatTogether />
+          ) : page === "my-groups" ? (
+            <Bookings {...actions} user={user} />
+          ) : page === "profile" ? (
+            <Profile user={user} {...actions} />
+          ) : page === "bookings" ? (
+            <Bookings {...actions} user={user} />
+          ) : (
+            <Empty
+              title="Page not found"
+              text="Select the Eatigo logo to return to restaurants."
+            />
+          )}
+        </div>
       </main>
       <Footer />
     </>
