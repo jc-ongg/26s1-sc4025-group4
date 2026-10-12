@@ -109,6 +109,31 @@ test("local semantic ranking, availability, radius, shortlist isolation and undo
     });
     assert.equal(defaultMode.results[0].restaurant.id, "il-cielo");
     assert.ok(defaultMode.results.every((result: { group?: unknown }) => !result.group));
+    for (const mood of ["icecream", "ice cream", "gelato", "waffles"]) {
+      const result = await api("/discovery/search", { mood });
+      assert.deepEqual(
+        result.results.map((r: { restaurant: { id: string } }) => r.restaurant.id),
+        ["two-scoops"],
+      );
+      assert.ok(result.results[0].matchReason);
+    }
+    const typedWestern = await api("/discovery/search", {
+      mood: "western food with friends",
+    });
+    assert.deepEqual(
+      typedWestern.results.map(
+        (r: { restaurant: { cuisine: string } }) => r.restaurant.cuisine,
+      ),
+      ["Western"],
+    );
+    for (const mood of ["spaceship engine", "asdfghjkl", "Mexican tacos"]) {
+      assert.deepEqual((await api("/discovery/search", { mood })).results, [], mood);
+    }
+    assert.deepEqual(
+      (await api("/discovery/search", { mood: "icecream", area: "ntu", radius: 1 }))
+        .results,
+      [],
+    );
     const western = await api("/discovery/search", {
       mood: "Chinese dumplings and shared dishes",
       cuisine: "  wEsTeRn  ",
@@ -168,10 +193,11 @@ test("local semantic ranking, availability, radius, shortlist isolation and undo
       (await api("/discovery/saved", undefined, otherCookie)).results.length,
       0,
     );
-    assert.ok(
-      !(await search("Italian pasta", { mode: "restaurants" })).results.some(
+    assert.equal(
+      (await search("Italian pasta", { mode: "restaurants" })).results.find(
         (r: { key: string }) => r.key === key,
-      ),
+      ).shortlisted,
+      true,
     );
     await api("/discovery/decision", { key, decision: null });
     assert.ok(
@@ -181,6 +207,10 @@ test("local semantic ranking, availability, radius, shortlist isolation and undo
     );
     await api("/discovery/decision", { key, decision: "SKIP" });
     assert.equal((await api("/discovery/saved")).results.length, 0);
+    assert.equal(
+      (await search("Italian pasta", { mode: "restaurants" })).results[0].key,
+      key,
+    );
     const bad = await fetch("http://localhost:4000/api/discovery/search", {
       method: "POST",
       headers: { cookie, "Content-Type": "application/json" },

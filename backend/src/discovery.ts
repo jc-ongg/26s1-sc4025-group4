@@ -6,6 +6,12 @@ import { groupInclude, HttpError, presentGroup, presentRestaurants } from "./din
 import { centres, distance } from "./geography.js";
 import { dinerCount } from "./event-lifecycle.js";
 import { canViewEvent, matchesEvent } from "./event-eligibility.js";
+import {
+  diningIntent,
+  menuMatch,
+  relevantResults,
+  venueSearchText,
+} from "./discovery-ranking.js";
 
 export const discovery = Router();
 // Concurrent searches share one indexing pass; changed content is detected by its hash.
@@ -16,8 +22,7 @@ async function indexContent() {
     const restaurants = await db.restaurant.findMany({
       where: { active: true },
     });
-    const content = (r: (typeof restaurants)[number]) =>
-      `${r.name}. ${r.cuisine}. ${r.area}. ${r.description} ${r.tags.join(", ")}. ${r.signatureDishes.join(", ")}`;
+    const content = venueSearchText;
     for (const r of restaurants) {
       const text = content(r),
         hash = embeddingHash(text);
@@ -71,6 +76,9 @@ discovery.post("/discovery/search", async (req, res) => {
       "Describe your meal in 1–400 characters and choose valid filters.",
     );
   const location = area.trim().toLowerCase().replace(/\s+/g, " ");
+  const intent = diningIntent(mood, cuisine);
+  if (!intent.query)
+    throw new HttpError(400, "Describe a cuisine, dish or dining atmosphere.");
   let centre: [number, number] | undefined;
   if (location && location !== "any") {
     centre = Object.hasOwn(centres, location) ? centres[location] : undefined;
@@ -99,7 +107,7 @@ discovery.post("/discovery/search", async (req, res) => {
   let vector: string;
   try {
     await indexContent();
-    vector = JSON.stringify(await embed(mood.trim()));
+    vector = JSON.stringify(await embed(intent.query));
   } catch (error) {
     console.error("Local embedding unavailable", error);
     throw new HttpError(
@@ -110,7 +118,9 @@ discovery.post("/discovery/search", async (req, res) => {
   const saved = await db.discoveryDecision.findMany({
     where: { userId: res.locals.userId },
   });
-  const excluded = new Set(saved.map((d) => d.targetKey));
+  const shortlisted = new Set(
+    saved.filter((d) => d.decision === "SAVE").map((d) => d.targetKey),
+  );
   const groups =
     mode === "groups"
       ? await db.groupDiningSession.findMany({
@@ -163,13 +173,8 @@ discovery.post("/discovery/search", async (req, res) => {
             group: undefined,
           }));
   const eligible = candidates
-    // Explicit cuisine is a constraint; semantic similarity only ranks within it.
-    .filter(
-      (c) =>
-        !cuisine.trim() ||
-        c.restaurant.cuisine.toLowerCase() === cuisine.trim().toLowerCase(),
-    )
-    .filter((c) => !excluded.has(c.key))
+    .map((c) => ({ ...c, match: menuMatch(c.restaurant, intent) }))
+    .filter((c) => c.match !== null)
     .map((c) => ({
       ...c,
       distanceKm:
@@ -183,7 +188,8 @@ discovery.post("/discovery/search", async (req, res) => {
     return;
   }
   const ids = Prisma.join(eligible.map((c) => c.id));
-  // Only available, geographically eligible, unseen candidates enter vector ranking.
+  // Search is repeatable: a previous swipe must not hide the only matching venue.
+  // Skips dismiss the current deck; saved venues return with their shortlist state.
   const ranked =
     mode === "groups"
       ? await db.$queryRaw<
@@ -193,10 +199,19 @@ discovery.post("/discovery/search", async (req, res) => {
           { id: string; similarity: number }[]
         >`SELECT id, 1 - (embedding <=> ${vector}::vector) AS similarity FROM "Restaurant" WHERE id IN (${ids}) AND embedding IS NOT NULL ORDER BY embedding <=> ${vector}::vector LIMIT 30`;
   res.json({
-    results: ranked.map((row) => ({
-      ...eligible.find((c) => c.id === row.id),
-      similarity: row.similarity,
-    })),
+    results: relevantResults(
+      ranked.map((row) => {
+        const candidate = eligible.find((c) => c.id === row.id)!;
+        const { match, ...result } = candidate;
+        return {
+          ...result,
+          similarity: row.similarity,
+          exact: match!.exact,
+          matchReason: match!.reason,
+          shortlisted: shortlisted.has(result.key),
+        };
+      }),
+    ).map(({ exact: _exact, ...result }) => result),
     model: modelVersion,
   });
 });
