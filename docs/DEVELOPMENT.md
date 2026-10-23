@@ -64,6 +64,10 @@ GitHub Actions validates changes and prepares a source release for manual deploy
 
 See [TESTING.md](TESTING.md) for test coverage and [DISCOVERY.md](DISCOVERY.md) for the semantic model, offline assets and dependency-audit limitations.
 
+Restaurant accounts use the Restaurant login tab and are scoped to one venue. Credentials are listed in [DEMO_ACCOUNTS.txt](DEMO_ACCOUNTS.txt). Singpass/Corppass completion screens remain paused; the fixtures are already verified.
+
+For a rehearsal, run `npm run demo:prepare` against the running Compose stack. It replaces only the named practice scenarios and resets their practice accounts; it does not reset the six team accounts or unrelated bookings. See [TABLE_5_WALKTHROUGH.md](TABLE_5_WALKTHROUGH.md) for the sequence and [CHAPTER_5_ENGINEERING_EVIDENCE.md](CHAPTER_5_ENGINEERING_EVIDENCE.md) for report evidence. Prepare immediately before rehearsing because Cutoff follows the real clock.
+
 ## Code style
 
 `npm run format` formats TypeScript, JavaScript, CSS, JSON, YAML and Markdown. `npm run format:check` verifies formatting without changing files. Generated assets, the lockfile, model files and temporary files are excluded. Editor defaults are in `.editorconfig`; Prisma schema formatting uses `npx prisma format --schema backend/prisma/schema.prisma`. Python import scripts use Black with a 90-character line length.
