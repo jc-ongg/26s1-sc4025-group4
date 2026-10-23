@@ -53,10 +53,16 @@ export function AccountMenu({
         className="account-links"
         aria-label="Account"
       >
-        <a href="#/profile" onClick={() => setOpen(false)}>
+        <a
+          href={user.role === "BUSINESS" ? "#/business/profile" : "#/profile"}
+          onClick={() => setOpen(false)}
+        >
           Profile
         </a>
-        <a href="#/bookings" onClick={() => setOpen(false)}>
+        <a
+          href={user.role === "BUSINESS" ? "#/business/reservations" : "#/bookings"}
+          onClick={() => setOpen(false)}
+        >
           Bookings
         </a>
         <button

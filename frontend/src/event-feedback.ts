@@ -1,5 +1,5 @@
 import type { Group } from "./types";
-import { currentGroupStatus, dinerCount } from "./availability";
+import { currentGroupStatus } from "./availability";
 
 export function reservationProgress(group: Group, now = Date.now()) {
   const status = currentGroupStatus(group, now);
@@ -11,8 +11,7 @@ export function reservationProgress(group: Group, now = Date.now()) {
   if (status === "FULL_PRICE") return "Reservation confirmed at full price.";
   if (status === "CANCELLED") return "Event cancelled.";
   if (status === "EXPIRED") return "Event expired without confirmation.";
-  const missing = Math.max(0, group.slot.minimumPartySize - dinerCount(group));
-  return `Reservation pending · ${missing} more ${missing === 1 ? "diner" : "diners"} needed.`;
+  return "Reservation pending until the minimum is met.";
 }
 
 export function eventUpdateMessage(

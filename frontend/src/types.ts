@@ -6,6 +6,14 @@ export type User = {
   singpassVerified: boolean;
   age: number | null;
   gender: Gender | null;
+  role?: "BUSINESS";
+  restaurant?: {
+    id: string;
+    name: string;
+    address: string;
+    corppassVerified: boolean;
+    eatTogetherEnabled: boolean;
+  };
 };
 export type Restaurant = {
   id: string;
@@ -24,6 +32,8 @@ export type Restaurant = {
   sourceUrl?: string;
   tags: string[];
   signatureDishes: string[];
+  corppassVerified?: boolean;
+  eatTogetherEnabled?: boolean;
 };
 export type Slot = {
   id: string;
@@ -56,7 +66,14 @@ export type Group = {
     | "LAST_CALL"
     | "PRICE_DECISION"
     | "FULL_PRICE";
+  restaurantHosted?: boolean;
+  yourAttendance?: "UNRECORDED" | "ATTENDED" | "NO_SHOW";
+  theme?: string;
   cutoffAt?: string;
+  cutoffHeadcount?: number | null;
+  cutoffProcessed?: boolean;
+  initialHeldSeats?: number;
+  releasedAtCutoff?: number;
   heldSeats?: number;
   discount?: number;
   chatOpenedAt?: string | null;
@@ -66,6 +83,7 @@ export type Group = {
     userId: string;
     partySize: number;
     priceAccepted?: boolean;
+    attendance?: "UNRECORDED" | "ATTENDED" | "NO_SHOW";
     user: { id: string; name: string; age: number | null; gender: Gender | null };
   }[];
   booking: Booking | null;

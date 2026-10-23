@@ -8,6 +8,7 @@ import { currentGroupStatus, hasStarted, dinerCount } from "./availability";
 import { EventSocial, DinerSafety } from "./EventSocial";
 import { EventPreferences } from "./EventPreferences";
 import { InfoTip } from "./InfoTip";
+import { RestaurantMenu } from "./RestaurantMenu";
 import { Art, State, Status, date, time, useResource, type Actions } from "./dining-ui";
 
 export function GroupDetail({
@@ -21,7 +22,6 @@ export function GroupDetail({
     `/groups/${encodeURIComponent(id)}`,
     revision,
   );
-  const [cancelPrompt, setCancelPrompt] = useState(false);
   const [leavePrompt, setLeavePrompt] = useState(false);
   const g = data?.group,
     host = g?.hostId === user.id,
@@ -58,6 +58,9 @@ export function GroupDetail({
                     value={hasStarted(g.slot.startsAt) ? eventDisplayStatus(g) : status!}
                   />
                   <span className="small muted">Hosted by {g.host.name}</span>
+                  {g.restaurantHosted && (
+                    <span className="badge">Restaurant Event · Corppass verified</span>
+                  )}
                 </div>
               </div>
               <span className="big-discount">
@@ -90,9 +93,9 @@ export function GroupDetail({
                       <span className="eyebrow">EVENT CAPACITY</span>
                       {mutable && (
                         <InfoTip label="About Held Seats and Event Capacity">
-                          {g.heldSeats ?? count} seats are held for this Event. Further
-                          Joins share the restaurant’s remaining seats, up to its table
-                          limit. The discount is confirmed automatically at{" "}
+                          {g.heldSeats ?? count} seats are held for this Event. Before
+                          Cutoff, Joins share the restaurant’s remaining seats, up to its
+                          table limit. The discount is confirmed automatically at{" "}
                           {g.slot.minimumPartySize} diners.
                         </InfoTip>
                       )}
@@ -104,15 +107,25 @@ export function GroupDetail({
                   </div>
                 </div>
                 <EventPreferences event={g} />
+                {g.theme && <p className="small">Theme: {g.theme}</p>}
                 {g.cutoffAt && mutable && (
-                  <p className="small muted">
-                    Cutoff: {date(g.cutoffAt)} · {time(g.cutoffAt)}{" "}
-                    <InfoTip label="About Cutoff">
-                      Two hours before dining. If the minimum is not met, choose full
-                      price or decline without a penalty. A confirmed Event that drops
-                      below the minimum afterwards opens Last Call for replacement diners.
-                    </InfoTip>
-                  </p>
+                  <section className="event-cutoff">
+                    <h2>Cutoff</h2>
+                    <p>
+                      {date(g.cutoffAt)} · {time(g.cutoffAt)} · Singapore time
+                    </p>
+                    <p className="small">
+                      Two hours before dining. Unused holds are released and headcount
+                      cannot increase. If the minimum isn’t met, choose full price or
+                      decline without a penalty.{" "}
+                      <InfoTip label="About Cutoff">
+                        Two hours before dining. If the minimum is not met, choose full
+                        price or decline without a penalty. A confirmed Event that drops
+                        below the minimum afterwards opens Last Call for replacement
+                        diners.
+                      </InfoTip>
+                    </p>
+                  </section>
                 )}
                 {g.description && (
                   <>
@@ -126,6 +139,18 @@ export function GroupDetail({
                     {count} {count === 1 ? "diner" : "diners"}
                   </span>
                 </div>
+                {g.restaurantHosted && party && (
+                  <div className="restaurant-host-safety row">
+                    <span className="small">Restaurant Host · {g.host.name}</span>
+                    <DinerSafety
+                      group={g}
+                      target={g.host}
+                      revision={revision}
+                      act={act}
+                      busy={busy}
+                    />
+                  </div>
+                )}
                 <div className="participants">
                   {g.members.map((m) => (
                     <div className="participant" key={m.userId}>
@@ -175,12 +200,11 @@ export function GroupDetail({
                 <p>
                   {mutable ? reservationProgress(g) : "This Event is closed to changes."}
                 </p>
-                <p className="small">
-                  {count} / {g.capacity} diners
-                  {mutable &&
-                    ["OPEN", "FULL", "CONFIRMED", "LAST_CALL"].includes(status!) &&
-                    ` · ${remaining} seats remaining`}
-                </p>
+                <RestaurantMenu
+                  restaurantId={g.slot.restaurant.id}
+                  restaurantName={g.slot.restaurant.name}
+                  discount={g.discount ?? g.slot.discount}
+                />
                 {g.booking && party && (
                   <p className="small booking-reference">
                     Reservation #{g.booking.id.slice(0, 8).toUpperCase()}
@@ -304,7 +328,6 @@ export function GroupDetail({
                           disabled={busy}
                           onClick={() => {
                             setLeavePrompt(true);
-                            setCancelPrompt(false);
                           }}
                         >
                           Leave Event
@@ -336,53 +359,6 @@ export function GroupDetail({
                     View my bookings →
                   </a>
                 )}
-                {mutable &&
-                  host &&
-                  (cancelPrompt ? (
-                    <div className="cancel-prompt">
-                      <p>Cancel this Event for every Party and release its seats?</p>
-                      {g.leavePenalty && (
-                        <p className="small">
-                          This late cancellation records a reliability strike for you.
-                          Other diners receive no strike.
-                        </p>
-                      )}
-                      <button
-                        className="danger"
-                        disabled={busy}
-                        onClick={async () => {
-                          if (
-                            await perform(
-                              "cancel",
-                              "Event cancelled. The seats are available again.",
-                              { acknowledgeStrike: g.leavePenalty === true },
-                            )
-                          )
-                            setCancelPrompt(false);
-                        }}
-                      >
-                        Yes, cancel Event
-                      </button>
-                      <button
-                        className="text-button"
-                        disabled={busy}
-                        onClick={() => setCancelPrompt(false)}
-                      >
-                        Keep Event
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      className="text-button danger-text"
-                      disabled={busy}
-                      onClick={() => {
-                        setCancelPrompt(true);
-                        setLeavePrompt(false);
-                      }}
-                    >
-                      Cancel Event for everyone
-                    </button>
-                  ))}
               </aside>
             </div>
           </>

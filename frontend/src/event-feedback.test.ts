@@ -19,19 +19,22 @@ test("a first read, unchanged polling and navigating to another Event stay quiet
   assert.equal(eventUpdateMessage(event, { ...event, id: "another" }, "alice", now), "");
 });
 
-test("pending progress counts missing diners, not the number of Parties", () => {
+test("pending progress explains the condition without repeating occupancy counts", () => {
   const pending: Group = {
     ...event,
     status: "OPEN",
     members: [{ partySize: 3 }] as Group["members"],
   };
-  assert.match(reservationProgress(pending, now), /1 more diner needed/);
+  assert.equal(
+    reservationProgress(pending, now),
+    "Reservation pending until the minimum is met.",
+  );
   assert.match(
     reservationProgress(
       { ...pending, members: [{ partySize: 2 }] as Group["members"] },
       now,
     ),
-    /2 more diners needed/,
+    /Reservation pending until the minimum is met/,
   );
   assert.match(
     reservationProgress(

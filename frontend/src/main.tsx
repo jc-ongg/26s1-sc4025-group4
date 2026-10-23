@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { api, ApiError } from "./api";
 import { Footer } from "./Footer";
 import { DiningApp } from "./DiningApp";
+import { BusinessApp } from "./BusinessApp";
 import type { User } from "./types";
 import { EyeIcon } from "./icons";
 import { useContentMotion } from "./motion";
@@ -13,11 +14,14 @@ function App() {
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [audience, setAudience] = useState<"DINER" | "BUSINESS">("DINER");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  const account = useContentMotion<HTMLElement>(`${mode}:${loading}:${!!user}`);
+  const account = useContentMotion<HTMLElement>(
+    `${audience}:${mode}:${loading}:${!!user}`,
+  );
   useEffect(() => {
     api<{ user: User }>("/auth/me")
       .then((data) => setUser(data.user))
@@ -37,7 +41,16 @@ function App() {
     setBusy(true);
     setError("");
     try {
-      setUser((await api<{ user: User }>("/auth/login", { email, password })).user);
+      const account = (
+        await api<{ user: User }>("/auth/login", {
+          email,
+          password,
+          accountType: audience,
+        })
+      ).user;
+      setUser(account);
+      window.location.hash =
+        account.role === "BUSINESS" ? "/business/reservations" : "/restaurants";
       setPassword("");
       setPasswordVisible(false);
     } catch (e) {
@@ -46,27 +59,50 @@ function App() {
       setBusy(false);
     }
   }
-  if (user)
-    return (
-      <DiningApp
-        user={user}
-        onLogout={async () => {
-          await api("/auth/logout", {});
-          setUser(null);
-          window.location.hash = "";
-        }}
-      />
-    );
+  const logout = async () => {
+    await api("/auth/logout", {});
+    setUser(null);
+    window.location.hash = "";
+  };
+  if (user?.role === "BUSINESS") return <BusinessApp user={user} onLogout={logout} />;
+  if (user) return <DiningApp user={user} onLogout={logout} />;
   return (
     <>
       <header className="login-header">
         <a className="brand" href="#">
           <img src="/images/brand/eatigo.png" alt="Eatigo" />
         </a>
+        <nav className="mode-tabs login-audience" aria-label="Login type">
+          {[
+            ["DINER", "Diner"],
+            ["BUSINESS", "Restaurant"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={audience === value}
+              className={audience === value ? "selected" : ""}
+              onClick={() => {
+                setAudience(value as "DINER" | "BUSINESS");
+                setMode("login");
+                setEmail("");
+                setPassword("");
+                setPasswordVisible(false);
+                setError("");
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
       </header>
       <main className="login-main">
         <section className="intro">
-          <h1>Restaurant reservations</h1>
+          <h1>
+            {audience === "BUSINESS"
+              ? "Manage your restaurant"
+              : "Restaurant reservations"}
+          </h1>
           <img
             className="login-photo"
             src="/images/restaurants/joya.jpg"
@@ -104,7 +140,15 @@ function App() {
                   Register
                 </button>
               </div>
-              <h2>{mode === "login" ? "Log in" : "Create an account"}</h2>
+              <h2>
+                {mode === "login"
+                  ? audience === "BUSINESS"
+                    ? "Restaurant login"
+                    : "Log in"
+                  : audience === "BUSINESS"
+                    ? "Register your restaurant"
+                    : "Create an account"}
+              </h2>
               {mode === "login" ? (
                 <form onSubmit={login}>
                   <label htmlFor="email">Email address</label>
@@ -148,8 +192,16 @@ function App() {
                   aria-describedby="registration-verification-note"
                   onSubmit={(event) => event.preventDefault()}
                 >
-                  <label htmlFor="register-name">Full name</label>
-                  <input id="register-name" autoComplete="name" placeholder="Full name" />
+                  <label htmlFor="register-name">
+                    {audience === "BUSINESS" ? "Restaurant name" : "Full name"}
+                  </label>
+                  <input
+                    id="register-name"
+                    autoComplete="name"
+                    placeholder={
+                      audience === "BUSINESS" ? "Restaurant name" : "Full name"
+                    }
+                  />
                   <label htmlFor="register-email">Email address</label>
                   <input
                     id="register-email"
@@ -178,7 +230,9 @@ function App() {
                     id="registration-verification-note"
                     className="auth-verification-note"
                   >
-                    Please note that Singpass verification is required for some features!
+                    {audience === "BUSINESS"
+                      ? "Please note that Corppass verification is required to host Restaurant Events!"
+                      : "Please note that Singpass verification is required for some features!"}
                   </p>
                 </form>
               )}
@@ -186,7 +240,8 @@ function App() {
                 or
               </div>
               <button type="button" className="singpass-option" disabled>
-                {mode === "login" ? "Log in" : "Register"} with <span>Singpass</span>
+                {mode === "login" ? "Log in" : "Register"} with{" "}
+                <span>{audience === "BUSINESS" ? "Corppass" : "Singpass"}</span>
               </button>
             </>
           )}
