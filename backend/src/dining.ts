@@ -7,6 +7,9 @@ import {
   cutoffAt,
   processLifecycle,
   notify,
+  eventMinimum,
+  eventDiscount,
+  eventJoinLimit,
 } from "./event-lifecycle.js";
 import { check, HttpError } from "./http-error.js";
 export { HttpError } from "./http-error.js";
@@ -49,21 +52,30 @@ export function presentGroup(group: IncludedGroup, viewer?: DinerIdentity) {
     ...group,
     booking: group.booking ? { ...group.booking, deletedFor: undefined } : null,
     allocation: undefined,
-    slot: { ...group.slot, allocations: undefined },
+    slot: {
+      ...group.slot,
+      minimumPartySize: eventMinimum(group),
+      allocations: undefined,
+    },
     heldSeats: group.allocation?.seats ?? 0,
+    yourAttendance: viewer
+      ? group.members.find((m) => m.userId === viewer.id)?.attendance
+      : undefined,
     leavePenalty:
       !!viewer &&
       group.members.some((m) => m.userId === viewer.id) &&
       group.status === "CONFIRMED" &&
       new Date() >= cutoffAt(group.slot.startsAt) &&
-      !group.members.some((m) => viewer.blockedUserIds?.includes(m.userId)),
+      ![group.hostId, ...group.members.map((m) => m.userId)].some((id) =>
+        viewer.blockedUserIds?.includes(id),
+      ),
     capacity:
       group.slot.startsAt > new Date() &&
       ["OPEN", "FULL", "CONFIRMED", "LAST_CALL"].includes(group.status)
         ? Math.max(
             dinerCount(group.members),
             Math.min(
-              group.capacity,
+              eventJoinLimit(group),
               (group.allocation?.seats ?? 0) +
                 Math.max(
                   0,
@@ -77,24 +89,28 @@ export function presentGroup(group: IncludedGroup, viewer?: DinerIdentity) {
     discount:
       group.status === "FULL_PRICE" || group.status === "PRICE_DECISION"
         ? 0
-        : group.slot.discount,
+        : eventDiscount(group),
     host: participant(group.host),
-    members: group.members.map((member) => ({
-      ...member,
-      priceAccepted: member.userId === viewer?.id ? member.priceAccepted : undefined,
-      user: participant(member.user),
-    })),
+    members: group.members.map(
+      ({ attendance: _attendance, attendanceRecordedAt: _recordedAt, ...member }) => ({
+        ...member,
+        priceAccepted: member.userId === viewer?.id ? member.priceAccepted : undefined,
+        user: participant(member.user),
+      }),
+    ),
   };
 }
 
 export async function presentRestaurants<
   T extends {
+    eatTogetherEnabled?: boolean;
     slots: {
       id: string;
       capacity: number;
       minimumPartySize: number;
       discountedSeats: number | null;
       allocations: { groupId: string | null; bookingId: string | null; seats: number }[];
+      eatTogetherEnabled?: boolean;
     }[];
   },
 >(restaurants: T[], diner: DinerIdentity) {
@@ -132,6 +148,8 @@ export async function presentRestaurants<
           ...s,
           allocations: undefined,
           availableSeats: free,
+          eatTogetherEnabled:
+            r.eatTogetherEnabled !== false && s.eatTogetherEnabled !== false,
           eventIds,
           allocation: eventIds.length
             ? { groupId: eventIds[0], bookingId: null }
@@ -181,6 +199,15 @@ dining.use(async (req, res, next) => {
     session && session.expiresAt > new Date(),
     401,
     "Your session has expired. Please log in again.",
+  );
+  const account = await db.user.findUniqueOrThrow({
+    where: { id: session.userId },
+    select: { accountType: true },
+  });
+  check(
+    account.accountType === "DINER",
+    403,
+    "Use the restaurant workspace for this account.",
   );
   res.locals.userId = session.userId;
   res.locals.diner = await db.user.findUniqueOrThrow({
@@ -399,7 +426,9 @@ dining.post("/groups", async (req, res) => {
         await tx.restaurant.findUniqueOrThrow({
           where: { id: slot.restaurantId },
         })
-      ).active,
+      ).active &&
+        (await tx.restaurant.findUniqueOrThrow({ where: { id: slot.restaurantId } }))
+          .eatTogetherEnabled,
       409,
       "This restaurant is no longer available for new reservations.",
     );
@@ -511,8 +540,8 @@ dining.post("/groups/:id/:action", async (req, res, next) => {
     });
     check(canViewEvent(res.locals.diner, { ...event, slot }), 404, "Event not found.");
     const party = event.members.find((m) => m.userId === userId);
-    const blocked = event.members.some((m) =>
-      res.locals.diner.blockedUserIds.includes(m.userId),
+    const blocked = [event.hostId, ...event.members.map((m) => m.userId)].some((id) =>
+      res.locals.diner.blockedUserIds.includes(id),
     );
     const late =
       party &&
@@ -549,7 +578,11 @@ dining.post("/groups/:id/:action", async (req, res, next) => {
         await tx.groupDiningMember.delete({
           where: { groupId_userId: { groupId: id, userId } },
         });
-      if (action === "decline-price" && event.hostId === userId) {
+      if (
+        action === "decline-price" &&
+        !event.restaurantHosted &&
+        event.hostId === userId
+      ) {
         const next = event.members.find((m) => m.userId !== userId);
         if (next)
           await tx.groupDiningSession.update({
@@ -648,14 +681,14 @@ dining.post("/groups/:id/:action", async (req, res, next) => {
             "You already have an EatTogether seat at this time.",
           );
           check(
-            partySize < slot.minimumPartySize,
+            partySize < eventMinimum({ ...event, slot }),
             400,
             "A Party that meets the minimum can book directly.",
           );
           check(
             dinerCount(event.members) + partySize <=
               Math.min(
-                event.capacity,
+                eventJoinLimit(event),
                 allocation.seats + (await availableSeats(tx, slot)),
               ),
             409,
@@ -723,9 +756,9 @@ dining.post("/groups/:id/:action", async (req, res, next) => {
         // Retain the old endpoint for existing clients; it cannot force qualification.
         check(event.hostId === userId, 403, "Only the Host can do this.");
         check(
-          dinerCount(event.members) >= slot.minimumPartySize,
+          dinerCount(event.members) >= eventMinimum({ ...event, slot }),
           409,
-          `At least ${slot.minimumPartySize} diners are needed to confirm.`,
+          `At least ${eventMinimum({ ...event, slot })} diners are needed to confirm.`,
         );
       }
       await syncEvent(tx, id);

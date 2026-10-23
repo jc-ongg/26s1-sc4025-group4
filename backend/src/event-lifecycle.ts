@@ -8,7 +8,23 @@ import { centres, distance } from "./geography.js";
 export const cutoffAt = (startsAt: Date) => new Date(startsAt.getTime() - 2 * 3600000);
 export const dinerCount = (parties: { partySize: number }[]) =>
   parties.reduce((total, p) => total + p.partySize, 0);
+export const eventMinimum = (event: {
+  minimumPartySize?: number | null;
+  slot: { minimumPartySize: number };
+}) => event.minimumPartySize ?? event.slot.minimumPartySize;
+export const eventDiscount = (event: {
+  discount?: number | null;
+  slot: { discount: number };
+}) => event.discount ?? event.slot.discount;
 export const joinableStatuses = ["OPEN", "FULL", "CONFIRMED", "LAST_CALL"] as const;
+// Cutoff fixes the maximum headcount. Later Joins replace departures rather
+// than taking newly released inventory back from the restaurant.
+export function eventJoinLimit(event: {
+  capacity: number;
+  cutoffHeadcount?: number | null;
+}) {
+  return Math.min(event.capacity, event.cutoffHeadcount ?? event.capacity);
+}
 export async function notify(
   tx: Prisma.TransactionClient,
   userId: string,
@@ -48,7 +64,23 @@ export async function syncEvent(
       await notify(tx, member.userId, id, `${id}:${key}`, title, body);
   };
   if (!count) {
-    await tx.groupDiningSession.update({ where: { id }, data: { status: "CANCELLED" } });
+    if (event.restaurantHosted && now < cutoff) {
+      await tx.groupDiningSession.update({ where: { id }, data: { status: "OPEN" } });
+      await holdSeats(tx, event.slot, id, event.capacity);
+      return;
+    }
+    await tx.groupDiningSession.update({
+      where: { id },
+      data: {
+        status: "CANCELLED",
+        ...(now >= cutoff &&
+          !event.cutoffProcessed && {
+            cutoffProcessed: true,
+            cutoffHeadcount: 0,
+            releasedAtCutoff: event.allocation?.seats ?? 0,
+          }),
+      },
+    });
     await tx.booking.updateMany({
       where: { groupId: id },
       data: { status: "CANCELLED" },
@@ -58,13 +90,18 @@ export async function syncEvent(
   }
   const due = now >= cutoff,
     started = now >= event.slot.startsAt,
-    minimum = event.slot.minimumPartySize;
+    minimum = eventMinimum(event);
   if (due && !event.cutoffProcessed) {
     const released = Math.max(0, (event.allocation?.seats ?? minimum) - count);
     const status = count >= minimum ? "CONFIRMED" : "PRICE_DECISION";
     await tx.groupDiningSession.update({
       where: { id },
-      data: { cutoffProcessed: true, releasedAtCutoff: released, status },
+      data: {
+        cutoffProcessed: true,
+        cutoffHeadcount: count,
+        releasedAtCutoff: released,
+        status,
+      },
     });
     if (!started && status === "PRICE_DECISION")
       await send(
@@ -72,7 +109,7 @@ export async function syncEvent(
         "Choose your booking",
         "The Event did not reach its minimum. Accept full price or decline without a penalty before dining time.",
       );
-    event = { ...event, cutoffProcessed: true, status };
+    event = { ...event, cutoffProcessed: true, cutoffHeadcount: count, status };
   }
   if (event.status === "PRICE_DECISION") {
     if (!started && event.members.some((p) => !p.priceAccepted)) {
@@ -98,13 +135,14 @@ export async function syncEvent(
       await tx.groupDiningMember.deleteMany({
         where: { groupId: id, priceAccepted: false },
       });
-    const hostId = accepted.some((p) => p.userId === event.hostId)
-      ? event.hostId
-      : accepted.sort(
-          (a, b) =>
-            a.joinedAt.getTime() - b.joinedAt.getTime() ||
-            a.userId.localeCompare(b.userId),
-        )[0].userId;
+    const hostId =
+      event.restaurantHosted || accepted.some((p) => p.userId === event.hostId)
+        ? event.hostId
+        : accepted.sort(
+            (a, b) =>
+              a.joinedAt.getTime() - b.joinedAt.getTime() ||
+              a.userId.localeCompare(b.userId),
+          )[0].userId;
     await tx.groupDiningSession.update({
       where: { id },
       data: { status: "FULL_PRICE", hostId, chatOpenedAt: event.chatOpenedAt ?? now },
@@ -177,7 +215,12 @@ export async function syncEvent(
       ...(confirmed && !event.chatOpenedAt && { chatOpenedAt: now }),
     },
   });
-  await holdSeats(tx, event.slot, id, due ? count : Math.max(minimum, count));
+  await holdSeats(
+    tx,
+    event.slot,
+    id,
+    due ? count : event.restaurantHosted ? event.capacity : Math.max(minimum, count),
+  );
   if (confirmed) {
     await tx.booking.upsert({
       where: { groupId: id },
@@ -186,13 +229,13 @@ export async function syncEvent(
         groupId: id,
         userId: event.hostId,
         partySize: count,
-        discount: event.slot.discount,
+        discount: eventDiscount(event),
       },
       update: {
         status: "CONFIRMED",
         userId: event.hostId,
         partySize: count,
-        discount: event.slot.discount,
+        discount: eventDiscount(event),
       },
     });
     if (event.status !== "CONFIRMED" && !started)
@@ -289,7 +332,7 @@ async function inviteEventFeedback(now: Date) {
         return;
       // This is an invitation after dining time, not proof of attendance or a
       // completed meal. The feedback form still requires the diner's attestation.
-      for (const member of current.members)
+      for (const member of current.members.filter((m) => m.attendance !== "NO_SHOW"))
         await notify(
           tx,
           member.userId,

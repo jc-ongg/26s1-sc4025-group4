@@ -99,6 +99,7 @@ social.post("/groups/:id/safety", async (req, res) => {
   check(
     targetId !== userId &&
       (group.members.some((m) => m.userId === targetId) ||
+        (group.restaurantHosted && group.hostId === targetId) ||
         (await db.eventMessage.count({ where: { groupId, userId: targetId } }))),
     400,
     "Choose another diner from this Event.",
@@ -166,7 +167,8 @@ social.post("/groups/:id/feedback", async (req, res) => {
   check(
     group.slot.startsAt <= new Date() &&
       group.booking?.status === "CONFIRMED" &&
-      ["CONFIRMED", "FULL_PRICE"].includes(group.status),
+      ["CONFIRMED", "FULL_PRICE"].includes(group.status) &&
+      group.members.find((m) => m.userId === res.locals.userId)?.attendance !== "NO_SHOW",
     409,
     "Feedback opens after your booked dining time.",
   );

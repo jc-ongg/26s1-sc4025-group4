@@ -8,6 +8,7 @@ import { dining, HttpError } from "./dining.js";
 import { ageAt } from "./event-eligibility.js";
 import { social } from "./social.js";
 import { processLifecycle } from "./event-lifecycle.js";
+import { business } from "./business.js";
 
 const app = express();
 const cookieName = "eatigo_session";
@@ -19,6 +20,16 @@ const publicUser = {
   singpassVerified: true,
   dateOfBirth: true,
   gender: true,
+  accountType: true,
+  managedRestaurant: {
+    select: {
+      id: true,
+      name: true,
+      address: true,
+      corppassVerified: true,
+      eatTogetherEnabled: true,
+    },
+  },
 } as const;
 function accountView(user: {
   id: string;
@@ -27,9 +38,18 @@ function accountView(user: {
   singpassVerified: boolean;
   dateOfBirth: Date | null;
   gender: string | null;
+  accountType: string;
+  managedRestaurant: unknown;
 }) {
-  const { dateOfBirth, ...account } = user;
-  return { ...account, age: ageAt(dateOfBirth) };
+  const { dateOfBirth, accountType, managedRestaurant, ...account } = user;
+  return {
+    ...account,
+    age: ageAt(dateOfBirth),
+    ...(accountType === "BUSINESS" && {
+      role: "BUSINESS",
+      restaurant: managedRestaurant,
+    }),
+  };
 }
 app.disable("x-powered-by");
 app.use(express.json({ limit: "16kb" }));
@@ -52,6 +72,13 @@ app.post("/api/auth/login", async (req, res) => {
     res.status(401).json({ message: "Email or password is incorrect." });
     return;
   }
+  const requestedType = req.body?.accountType;
+  if (requestedType !== undefined && requestedType !== user.accountType) {
+    res.status(401).json({
+      message: `Use ${user.accountType === "BUSINESS" ? "restaurant" : "diner"} login for this account.`,
+    });
+    return;
+  }
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   await db.$transaction(async (tx) => {
@@ -64,9 +91,12 @@ app.post("/api/auth/login", async (req, res) => {
     await tx.session.create({ data: { token, userId: user.id, expiresAt } });
   });
   res.cookie(cookieName, token, { ...cookieOptions, expires: expiresAt });
-  const { id, name, email, singpassVerified, dateOfBirth, gender } = user;
+  const account = await db.user.findUniqueOrThrow({
+    where: { id: user.id },
+    select: publicUser,
+  });
   res.json({
-    user: accountView({ id, name, email, singpassVerified, dateOfBirth, gender }),
+    user: accountView(account),
   });
 });
 app.get("/api/auth/me", async (req, res) => {
@@ -92,6 +122,7 @@ app.post("/api/auth/logout", async (req, res) => {
   res.clearCookie(cookieName, cookieOptions).sendStatus(204);
 });
 // Dining middleware authenticates all downstream routes, including discovery.
+app.use("/api/business", business);
 app.use("/api", dining);
 app.use("/api", discovery);
 app.use("/api", social);

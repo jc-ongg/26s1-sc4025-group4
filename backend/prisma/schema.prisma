@@ -8,29 +8,32 @@ datasource db {
 }
 
 model User {
-  id                 String               @id @default(uuid())
-  email              String               @unique
-  name               String
-  demoPassword       String
-  reliabilityStrikes Int                  @default(0)
-  singpassVerified   Boolean              @default(false)
-  dateOfBirth        DateTime?            @db.Date
-  gender             Gender?
-  suspendedUntil     DateTime?
-  diningArea         String               @default("")
-  strikes            ReliabilityStrike[]
-  notifications      Notification[]
-  sentBlocks         DinerBlock[]         @relation("Blocker")
-  receivedBlocks     DinerBlock[]         @relation("Blocked")
-  messages           EventMessage[]
-  feedback           EventFeedback[]
-  reports            SafetyReport[]       @relation("ReportsSent")
-  reportsAbout       SafetyReport[]       @relation("ReportsReceived")
-  sessions           Session[]
-  hostedGroups       GroupDiningSession[]
-  memberships        GroupDiningMember[]
-  bookings           Booking[]
-  discoveryDecisions DiscoveryDecision[]
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  name                String
+  demoPassword        String
+  accountType         AccountType          @default(DINER)
+  managedRestaurantId String?
+  managedRestaurant   Restaurant?          @relation("BusinessAccounts", fields: [managedRestaurantId], references: [id])
+  reliabilityStrikes  Int                  @default(0)
+  singpassVerified    Boolean              @default(false)
+  dateOfBirth         DateTime?            @db.Date
+  gender              Gender?
+  suspendedUntil      DateTime?
+  diningArea          String               @default("")
+  strikes             ReliabilityStrike[]
+  notifications       Notification[]
+  sentBlocks          DinerBlock[]         @relation("Blocker")
+  receivedBlocks      DinerBlock[]         @relation("Blocked")
+  messages            EventMessage[]
+  feedback            EventFeedback[]
+  reports             SafetyReport[]       @relation("ReportsSent")
+  reportsAbout        SafetyReport[]       @relation("ReportsReceived")
+  sessions            Session[]
+  hostedGroups        GroupDiningSession[]
+  memberships         GroupDiningMember[]
+  bookings            Booking[]
+  discoveryDecisions  DiscoveryDecision[]
 }
 
 enum Gender {
@@ -38,27 +41,41 @@ enum Gender {
   FEMALE
 }
 
+enum AccountType {
+  DINER
+  BUSINESS
+}
+
+enum AttendanceStatus {
+  UNRECORDED
+  ATTENDED
+  NO_SHOW
+}
+
 model Restaurant {
-  id              String                      @id
-  name            String
-  cuisine         String
-  area            String
-  description     String
-  price           String
-  artwork         String
-  active          Boolean                     @default(true)
-  address         String                      @default("")
-  latitude        Float?
-  longitude       Float?
-  imagePath       String?
-  imageSource     String?
-  sourceUrl       String?
-  sourceCheckedAt String?
-  tags            String[]                    @default([])
-  signatureDishes String[]                    @default([])
-  embedding       Unsupported("vector(384)")?
-  embeddingHash   String?
-  slots           ReservationSlot[]
+  id                 String                      @id
+  name               String
+  cuisine            String
+  area               String
+  description        String
+  price              String
+  artwork            String
+  active             Boolean                     @default(true)
+  corppassVerified   Boolean                     @default(false)
+  eatTogetherEnabled Boolean                     @default(true)
+  businessAccounts   User[]                      @relation("BusinessAccounts")
+  address            String                      @default("")
+  latitude           Float?
+  longitude          Float?
+  imagePath          String?
+  imageSource        String?
+  sourceUrl          String?
+  sourceCheckedAt    String?
+  tags               String[]                    @default([])
+  signatureDishes    String[]                    @default([])
+  embedding          Unsupported("vector(384)")?
+  embeddingHash      String?
+  slots              ReservationSlot[]
 }
 
 model ReservationSlot {
@@ -108,12 +125,17 @@ model GroupDiningSession {
   slotId           String
   title            String
   description      String                      @default("")
+  restaurantHosted Boolean                     @default(false)
+  minimumPartySize Int?
+  discount         Int?
+  theme            String                      @default("")
   genderFilter     Gender?
   minAge           Int?
   maxAge           Int?
   capacity         Int
   status           GroupStatus                 @default(OPEN)
   cutoffProcessed  Boolean                     @default(false)
+  cutoffHeadcount  Int?
   lastCallRound    Int                         @default(0)
   chatOpenedAt     DateTime?
   confirmedAt      DateTime?
@@ -145,13 +167,15 @@ model DiscoveryDecision {
 }
 
 model GroupDiningMember {
-  groupId       String
-  userId        String
-  partySize     Int                @default(1)
-  joinedAt      DateTime           @default(now())
-  priceAccepted Boolean            @default(false)
-  group         GroupDiningSession @relation(fields: [groupId], references: [id])
-  user          User               @relation(fields: [userId], references: [id])
+  groupId              String
+  userId               String
+  partySize            Int                @default(1)
+  joinedAt             DateTime           @default(now())
+  priceAccepted        Boolean            @default(false)
+  attendance           AttendanceStatus   @default(UNRECORDED)
+  attendanceRecordedAt DateTime?
+  group                GroupDiningSession @relation(fields: [groupId], references: [id])
+  user                 User               @relation(fields: [userId], references: [id])
 
   @@id([groupId, userId])
 }
