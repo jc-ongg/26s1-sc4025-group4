@@ -1,0 +1,479 @@
+.login-audience {
+  min-width: 220px;
+  margin-left: auto;
+}
+.business-detail-list {
+  margin: 22px 0;
+}
+.business-detail-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e6e3de;
+}
+.business-detail-list dt {
+  color: #59616d;
+}
+.business-detail-list dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.seat-summary {
+  font-size: 13px;
+}
+.login-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.business-label {
+  margin-right: auto;
+  color: #555d68;
+  font-size: 13px;
+}
+.business-intro {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+}
+.business-intro h1 {
+  font-size: 32px;
+}
+.business-intro label {
+  font-size: 13px;
+}
+.business-identity {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+.business-identity h1 {
+  font-size: 28px;
+}
+.business-identity p {
+  margin: 5px 0 9px;
+}
+.business-venue-image {
+  width: 76px;
+  height: 76px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #e8e3dc;
+  display: grid;
+  place-items: center;
+}
+.business-venue-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.business-date {
+  flex-shrink: 0;
+}
+.business-date > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 5px;
+}
+.business-date input {
+  width: 165px;
+  margin: 0;
+}
+.business-date .date-step {
+  padding: 0;
+  width: 36px;
+  height: 43px;
+  font-size: 24px;
+  font-weight: 400;
+}
+.business-date .text-button {
+  font-size: 13px;
+}
+.business-main .section-heading > div > p {
+  margin: 6px 0 0;
+}
+.reservation-list {
+  gap: 0;
+  border: 1px solid #dedbd6;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+.reservation-columns,
+.reservation-entry {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) 80px 150px;
+  gap: 24px;
+  align-items: center;
+  padding: 19px 22px;
+}
+.reservation-columns {
+  background: #f0eeea;
+  font-size: 12px;
+  font-weight: 600;
+  color: #59616d;
+  border-bottom: 1px solid #dedbd6;
+}
+.reservation-entry + .reservation-entry {
+  border-top: 1px solid #e6e3de;
+}
+.reservation-time {
+  font-size: 15px;
+}
+.reservation-description {
+  min-width: 0;
+}
+.reservation-description h3 {
+  margin: 0 0 7px;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.reservation-description p {
+  margin: 4px 0;
+}
+.reservation-actions {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 10px;
+}
+.reservation-actions .button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #b9233a;
+  box-shadow: none;
+  font-size: 13px;
+}
+.reservation-actions .button:hover {
+  text-decoration: underline;
+}
+.business-event-note {
+  margin-bottom: 18px;
+}
+.business-event-note p {
+  margin-bottom: 0;
+}
+.business-event-main {
+  min-width: 0;
+}
+.attendance-person {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.attendance-person .avatar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  font-size: 15px;
+}
+.attendance-recorded {
+  color: #286142;
+  background: #e9f1e9;
+  border-color: #a8c5b0;
+}
+.business-slot .slot-availability {
+  display: block;
+  margin-top: 7px;
+  font-size: 12px;
+}
+.slot-chevron {
+  display: inline-block;
+  margin-left: 14px;
+  font-size: 18px;
+}
+.business-slot[open] .slot-chevron {
+  transform: rotate(180deg);
+}
+@media (max-width: 1000px) {
+  .business-intro {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+.business-tabs {
+  width: 100%;
+  margin: 0 0 28px;
+}
+.business-tabs a {
+  flex: 1;
+  padding: 14px;
+  text-align: center;
+  color: #414b5b;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.business-tabs a:hover {
+  background: #e9e6e1;
+}
+.business-list {
+  display: grid;
+  gap: 14px;
+}
+.business-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px;
+}
+.business-row h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.business-row p {
+  margin: 6px 0;
+}
+.business-row > div {
+  min-width: 0;
+}
+.business-row > div:last-child {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.business-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  margin: 14px 0;
+}
+.business-fields label {
+  min-width: 0;
+}
+.business-fields input,
+.business-fields select {
+  width: 100%;
+}
+.business-slot summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  padding: 4px;
+}
+.business-slot summary span {
+  color: #555d68;
+  font-size: 13px;
+}
+.business-slot form {
+  margin: 20px 0 0;
+}
+.business-event-form {
+  margin-bottom: 24px;
+}
+.business-event-form input,
+.business-event-form textarea,
+.business-event-form select {
+  width: 100%;
+}
+.business-event-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.attendance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #dedbd6;
+}
+.attendance-row p {
+  margin: 8px 0 0;
+}
+.attendance-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.attendance-actions button {
+  font-size: 13px;
+  padding: 10px 12px;
+}
+.business-chat,
+.feedback-summary {
+  margin-top: 24px;
+}
+.restaurant-host-safety {
+  padding: 12px;
+  background: #f3f1ed;
+  border: 1px solid #dedbd6;
+  border-radius: 5px;
+  margin-bottom: 16px;
+}
+.restaurant-host-safety .diner-safety {
+  width: auto;
+  max-width: 260px;
+}
+.event-cutoff {
+  margin: 24px 0;
+}
+.event-cutoff h2 {
+  margin-bottom: 12px;
+}
+.event-cutoff p {
+  margin: 8px 0;
+}
+.menu-trigger {
+  margin: 6px 0 16px;
+}
+.action-panel .menu-trigger,
+.booking-panel .menu-trigger {
+  width: 100%;
+}
+.menu-dialog {
+  width: min(640px, calc(100% - 32px));
+}
+.menu-discount {
+  padding: 16px 0;
+  border-bottom: 1px solid #dedbd6;
+}
+.menu-discount > span {
+  color: #b9233a;
+  font-weight: 600;
+}
+.menu-items {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+}
+.menu-items li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
+  border-bottom: 1px solid #e6e3de;
+}
+.menu-items li > span {
+  min-width: 0;
+}
+.menu-items li > div {
+  text-align: right;
+  flex-shrink: 0;
+}
+.menu-items del {
+  display: block;
+  color: #75716b;
+  font-size: 13px;
+  margin-top: 5px;
+}
+@media (max-width: 800px) {
+  .business-event-layout {
+    grid-template-columns: 1fr;
+  }
+  .business-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .business-venue-image {
+    width: 54px;
+    height: 54px;
+  }
+  .business-identity {
+    gap: 12px;
+  }
+  .business-identity h1 {
+    font-size: 22px;
+  }
+  .business-date input {
+    flex: 1;
+    min-width: 0;
+  }
+  .business-date {
+    width: 100%;
+  }
+  .reservation-columns {
+    display: none;
+  }
+  .reservation-entry {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px 16px;
+    padding: 18px;
+  }
+  .reservation-time {
+    grid-column: 1;
+  }
+  .reservation-description {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .reservation-diners {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+  }
+  .reservation-actions {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+  }
+  .reservation-actions .status {
+    font-size: 10px;
+  }
+  .login-audience {
+    min-width: 0;
+    width: 200px;
+  }
+  .login-audience button {
+    font-size: 12px;
+    padding: 10px;
+  }
+  .business-label {
+    display: none;
+  }
+  .business-intro {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .business-intro label {
+    width: 100%;
+    max-width: none;
+  }
+  .business-intro h1 {
+    font-size: 22px;
+  }
+  .business-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .business-row > div:last-child {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .business-fields {
+    grid-template-columns: 1fr;
+  }
+  .business-tabs a {
+    padding: 12px 6px;
+    font-size: 13px;
+  }
+  .attendance-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .menu-items li {
+    font-size: 14px;
+    gap: 12px;
+  }
+}

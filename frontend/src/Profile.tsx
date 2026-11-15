@@ -47,11 +47,11 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
               <span className="row start">
                 Reliability Score{" "}
                 <InfoTip label="About reliability">
-                  A strike is recorded when you Leave a confirmed Event after Cutoff (two
-                  hours before the meal). Strikes expire after 90 days. Three strikes
-                  within that period suspend new EatTogether participation for one week.
-                  Ordinary bookings stay available. Last Call and safety-related
-                  departures are penalty-free.
+                  A strike is recorded for a restaurant-recorded no-show or when you Leave
+                  a confirmed Event after Cutoff (two hours before the meal). Strikes
+                  expire after 90 days. Three strikes within that period suspend new
+                  EatTogether participation for one week. Ordinary bookings stay
+                  available. Last Call and safety-related departures are penalty-free.
                 </InfoTip>
               </span>
               <span className="badge">Private</span>
@@ -79,7 +79,8 @@ export function Profile({ user, revision, act, busy }: Actions & { user: User })
                   <ul className="plain-list">
                     {reliability.data.profile.strikes.map((s) => (
                       <li key={s.id} className="small">
-                        Late Leave · {date(s.createdAt)} · {time(s.createdAt)}
+                        {s.reason === "NO_SHOW" ? "No-show" : "Late Leave"} ·{" "}
+                        {date(s.createdAt)} · {time(s.createdAt)}
                       </li>
                     ))}
                   </ul>

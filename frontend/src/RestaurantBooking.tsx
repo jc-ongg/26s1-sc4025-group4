@@ -5,6 +5,7 @@ import { currentGroupStatus, dinerCount, hasStarted } from "./availability";
 import { slotState, eventJoinState } from "./booking-flow";
 import { Status, date, time, type Actions } from "./dining-ui";
 import { reducedMotion, useContentMotion } from "./motion";
+import { RestaurantMenu } from "./RestaurantMenu";
 
 export function RestaurantBooking({
   restaurant: r,
@@ -46,6 +47,10 @@ export function RestaurantBooking({
     mode === "group" && existing && !creating
       ? (existing.discount ?? slot?.discount)
       : slot?.discount;
+  const effectiveMinimum =
+    mode === "group" && existing && !creating
+      ? existing.slot.minimumPartySize
+      : slot?.minimumPartySize;
   const dayEvents = groups.filter((g) => daySlots.some((s) => s.id === g.slot.id));
   const state = slot && slotState(slot, r.active, now);
   const joinState = existing && eventJoinState(existing, 1, user.id, now);
@@ -60,6 +65,7 @@ export function RestaurantBooking({
   const canCreate =
     ["available", "event"].includes(state ?? "") &&
     slot!.eatTogetherEnabled !== false &&
+    r.eatTogetherEnabled !== false &&
     slot!.discount > 0 &&
     slot!.minimumPartySize > 1 &&
     user.singpassVerified &&
@@ -232,6 +238,11 @@ export function RestaurantBooking({
       </section>
       <aside ref={panel} className="panel booking-panel" aria-label="Booking options">
         <h2>Your booking</h2>
+        <RestaurantMenu
+          restaurantId={r.id}
+          restaurantName={r.name}
+          discount={effectiveDiscount}
+        />
         {!slot ? (
           <p className="note" role="status">
             Choose a date and time to see booking options.
@@ -244,7 +255,7 @@ export function RestaurantBooking({
               </strong>
               <span>
                 {effectiveDiscount === 0 ? "Full price" : `${effectiveDiscount}% off`} ·
-                minimum {slot.minimumPartySize} diners
+                minimum {effectiveMinimum} diners
               </span>
             </div>
             <form ref={form} onSubmit={submit}>

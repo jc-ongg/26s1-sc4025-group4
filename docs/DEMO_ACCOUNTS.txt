@@ -9,6 +9,21 @@ hansen@gmail.com
 
 Password for every account: password123
 
+Restaurant accounts (select Restaurant above the login form):
+joya@business.com        | Joya Onsen Cafe
+seorae@business.com      | Seorae Korean Charcoal BBQ
+peacock@business.com     | Peacock North Indian Restaurant
+lazy-lizard@business.com | Lazy Lizard
+yan-lai-ju@business.com  | Yan Lai Ju
+two-scoops@business.com  | 2SCOOPS
+il-cielo@business.com    | il Cielo
+lime@business.com        | Lime Restaurant
+
+Restaurant password: password123
+Each account can manage only its assigned restaurant.
+Corppass badges are preverified demo fixtures, not real identity checks.
+Registration, password recovery and Singpass/Corppass buttons are display-only.
+
 Fictional identity fixtures (not the students' personal details):
 Jacob    | Male   | 2005-03-15
 Chongwei | Male   | 2004-06-20
@@ -21,3 +36,8 @@ All six are preverified fixtures; no real Singpass connection exists.
 For an eligibility demo, Jacob can create a Men only Event with ages 21-22.
 Chongwei can see and Join it; Yojin (gender) and Harsh (age) cannot.
 The age example assumes the October 2026 presentation period.
+
+Optional Table 5 practice accounts (created by npm run demo:prepare):
+alex@demo.com | ava@demo.com | beth@demo.com | cara@demo.com | dan@demo.com
+All use password123 and preverified fictional identities.
+Interactive verification mock-ups are paused; D1/RT1 are not tested in this build.

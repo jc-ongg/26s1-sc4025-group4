@@ -142,9 +142,14 @@ type Message = {
   createdAt: string;
   user: { name: string };
 };
-function EventChat({ group, user, ...actions }: Actions & { group: Group; user: User }) {
+export function EventChat({
+  group,
+  user,
+  basePath = `/groups/${group.id}`,
+  ...actions
+}: Actions & { group: Group; user: User; basePath?: string }) {
   const { data, error } = useResource<{ messages: Message[] }>(
-    `/groups/${group.id}/messages`,
+    `${basePath}/messages`,
     actions.revision,
   );
   const [body, setBody] = useState("");
@@ -173,7 +178,7 @@ function EventChat({ group, user, ...actions }: Actions & { group: Group; user: 
                 <strong>{m.user.name}</strong>
                 <div className="row start">
                   <span className="muted">{time(m.createdAt)}</span>
-                  {m.userId !== user.id && (
+                  {m.userId !== user.id && user.role !== "BUSINESS" && (
                     <DinerSafety
                       group={group}
                       target={{ id: m.userId, name: m.user.name }}
@@ -193,8 +198,7 @@ function EventChat({ group, user, ...actions }: Actions & { group: Group; user: 
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            if (await actions.act(`/groups/${group.id}/messages`, { body }, ""))
-              setBody("");
+            if (await actions.act(`${basePath}/messages`, { body }, "")) setBody("");
           }}
           className="chat-compose"
         >
@@ -402,12 +406,14 @@ export function EventSocial({
           {chat && <EventChat group={group} user={user} {...actions} />}
         </details>
       )}
-      {hasStarted(group.slot.startsAt) && group.booking?.status === "CONFIRMED" && (
-        <details onToggle={(e) => setFeedback(e.currentTarget.open)}>
-          <summary>Event Feedback</summary>
-          {feedback && <MealFeedback group={group} user={user} {...actions} />}
-        </details>
-      )}
+      {hasStarted(group.slot.startsAt) &&
+        group.booking?.status === "CONFIRMED" &&
+        group.yourAttendance !== "NO_SHOW" && (
+          <details onToggle={(e) => setFeedback(e.currentTarget.open)}>
+            <summary>Event Feedback</summary>
+            {feedback && <MealFeedback group={group} user={user} {...actions} />}
+          </details>
+        )}
     </div>
   );
 }

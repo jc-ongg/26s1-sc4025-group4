@@ -76,4 +76,4 @@ Dining middleware authenticates all downstream diner/discovery/social routes. Ma
 
 See [TESTING.md](TESTING.md) for commands/evidence and [CI_CD.md](CI_CD.md) for GitHub checks and manual self-hosted deployment. [DISCOVERY.md](DISCOVERY.md) describes local ranking. [EATTOGETHER_SCOPE.md](EATTOGETHER_SCOPE.md) defines the implemented diner rules and limits.
 
-Restaurant management, Restaurant Events, Corppass, attendance evidence/no-show penalties, real identity-provider authentication and moderation workflows remain deferred. The report Word document and diagrams stay unchanged until the team's product scope is finalized.
+The restaurant workspace includes slot and reservation management, Restaurant and Themed Events, attendance, no-show penalties and aggregate Event Feedback. Real identity-provider authentication and moderation workflows remain deferred.

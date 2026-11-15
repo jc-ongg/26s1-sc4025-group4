@@ -45,7 +45,7 @@ async function due(group: { slotId: string }, started = false) {
   });
 }
 before(async () => {
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 10; i++) {
     const user = await db.user.create({
       data: {
         email: `${randomUUID()}@example.com`,
@@ -161,6 +161,32 @@ test("late Leave warns, records one strike, opens Last Call and refills the same
   assert.equal(
     await db.reliabilityStrike.count({ where: { groupId: g.id, userId: users[0].id } }),
     0,
+  );
+});
+
+test("Cutoff fixes headcount: later joins replace departures and cannot reclaim released seats", async () => {
+  const g = await event(6, 2, 6, 12);
+  for (const who of [7, 8, 9])
+    assert.equal((await request(`/groups/${g.id}/join`, who, {})).status, 200);
+  await due(g);
+  const closed = await request(`/groups/${g.id}`);
+  assert.equal(closed.data.group.cutoffHeadcount, 4);
+  assert.equal(closed.data.group.capacity, 4);
+  assert.equal((await request(`/groups/${g.id}/join`, 4, {})).status, 409);
+  for (const who of [7, 8, 9])
+    await request(`/groups/${g.id}/leave`, who, { acknowledgeStrike: true });
+  assert.equal((await request(`/groups/${g.id}`)).data.group.status, "LAST_CALL");
+  for (const who of [7, 8, 9])
+    assert.equal((await request(`/groups/${g.id}/join`, who, {})).status, 200);
+  assert.equal((await request(`/groups/${g.id}/join`, 4, {})).status, 409);
+  const restored = await request(`/groups/${g.id}`);
+  assert.equal(restored.data.group.status, "CONFIRMED");
+  assert.equal(restored.data.group.booking.id, closed.data.group.booking.id);
+  assert.equal(restored.data.group.members.length, 4);
+  // Restaurant can use the eight seats outside this fixed four-person booking.
+  assert.equal(
+    (await request("/bookings", 4, { slotId: g.slotId, partySize: 6 })).status,
+    201,
   );
 });
 test("Last Call invites only nearby eligible diners and unresolved seats revert to full price", async () => {

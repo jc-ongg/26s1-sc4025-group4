@@ -49,6 +49,27 @@ try {
       update: restaurant,
       create: restaurant,
     });
+    // Business identities are separate preverified fixtures, never diner seats.
+    await db.restaurant.update({
+      where: { id: restaurant.id! },
+      data: { corppassVerified: true },
+    });
+    await db.user.upsert({
+      where: { email: `${restaurant.id}@business.com` },
+      create: {
+        email: `${restaurant.id}@business.com`,
+        name: restaurant.name,
+        demoPassword,
+        accountType: "BUSINESS",
+        managedRestaurantId: restaurant.id,
+      },
+      update: {
+        name: restaurant.name,
+        demoPassword,
+        accountType: "BUSINESS",
+        managedRestaurantId: restaurant.id,
+      },
+    });
     for (let day = 0; day < 7; day++) {
       const date = new Date(`${todaySG}T00:00:00+08:00`);
       date.setTime(date.getTime() + day * 86400000);
@@ -152,6 +173,8 @@ try {
     const slot = await db.reservationSlot.findFirst({
       where: {
         restaurantId: demo.restaurantId,
+        eatTogetherEnabled: true,
+        restaurant: { eatTogetherEnabled: true },
         startsAt: { gte: new Date(`${tomorrowSG}T00:00:00+08:00`) },
         allocations: { none: {} },
       },
