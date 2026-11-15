@@ -2,7 +2,7 @@
 
 ## Purpose
 
-SC4025 academic MVP extending Eatigo with diner-created shared tables. The implementation must support Chapter 5 of the report and demonstrate the team's product decisions. The supplied report is a work in progress, not evidence that its hypotheses are validated.
+SC4025 academic MVP extending Eatigo with shared tables hosted by diners or restaurants.
 
 ## Scope
 
@@ -39,11 +39,9 @@ SC4025 academic MVP extending Eatigo with diner-created shared tables. The imple
 
 ## Priorities
 
-Demo reliability, coherent user flows, understandable code, straightforward local startup, responsive visual quality. Microservices, native apps, payments and cloud deployment are outside the current scope. Restaurant-side work is implemented; interactive identity verification and report moderation remain paused. The technical report was refreshed on 11 October; later app refinements are recorded in docs/CONCEPT_ALIGNMENT.md until another report update is requested.
+Demo reliability, coherent user flows, understandable code, straightforward local startup, responsive visual quality. Microservices, native apps, payments and cloud deployment are outside the current scope. Restaurant-side work is implemented; interactive identity verification and report moderation remain paused.
 
-## References and reporting
-
-Assignment: report PDF up to 30 pages including references/appendices, font 11 and 1.5 spacing; presentation up to 30 minutes. Include contribution breakdown, repository URL, and literature review. Record actual tests, limitations, and design decisions as work progresses; do not invent research or validation results.
+## Project documentation
 
 See docs/IMPLEMENTATION_PLAN.md for architecture, data model and API details.
 

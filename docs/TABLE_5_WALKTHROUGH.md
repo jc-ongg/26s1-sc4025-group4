@@ -1,6 +1,6 @@
 # Table 5 usability walkthrough
 
-This guide maps the non-verification tasks in the current report's Section 5.5 to the working application. It is a facilitator guide, not a participant script or a record of study results. All practice identities, reservations and historical ratings are fictional.
+This guide walks facilitators through the diner and restaurant practice tasks in the app. All practice identities, reservations and historical ratings are fictional.
 
 ## Prepare a session
 
@@ -56,4 +56,4 @@ The six existing team accounts still work. Use the practice identities during te
 
 `backend/src/table-five.test.ts` executes the ten non-verification task paths against the isolated CI database. Other integration tests cover authentication/ownership, races, inventory, immutable filters, expiry, strikes, feedback privacy and no-show corrections. These checks establish program behaviour; they do not establish usability success rates.
 
-Use participant codes and actual observations to complete the report's SEQ, SUS, task-completion and issue-log tables. Preloaded historical Feedback is demonstration data, never participant evidence. The report's D1/RT1 verification tasks remain on hold; do not report them as tested. See CHAPTER_5_ENGINEERING_EVIDENCE.md for the technical write-up structure.
+Use participant codes and observed outcomes to record SEQ, SUS, task completion and issues. Preloaded historical Feedback is demonstration data. The D1 and RT1 verification tasks remain on hold.

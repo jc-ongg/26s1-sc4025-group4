@@ -1,6 +1,6 @@
 # EatTogether implementation scope
 
-Current scope: 23 October 2026. Restaurant management is now included following the team's approval. The technical report and editable diagrams have not yet been refreshed for this addition. Sections 5.1 and 5.2 remain reserved for later product work. See CONCEPT_ALIGNMENT.md for implemented rules and agreed variations.
+Current scope as of 23 October 2026 includes restaurant management. See [CONCEPT_ALIGNMENT.md](CONCEPT_ALIGNMENT.md) for implemented rules and agreed variations.
 
 ## Seats and eligibility
 
@@ -59,4 +59,4 @@ Restaurants form one main collection with nested EatTogether Events, shared grid
 
 Interactive mock verification is paused; preverified demo accounts remain.
 
-Deferred: real Singpass/Corppass/UEN checks, working registration/password recovery, moderation/appeals, payments, mutual Connections and validated completion/KPI dashboards. Report moderation remains explicitly on hold. Do not claim real verification or deferred features in the report.
+Deferred: real Singpass/Corppass/UEN checks, working registration/password recovery, moderation/appeals, payments, mutual Connections and validated completion/KPI dashboards. Report moderation remains explicitly on hold.

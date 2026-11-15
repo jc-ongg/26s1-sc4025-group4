@@ -1,6 +1,6 @@
 # Five-minute Product Engineer presentation
 
-Allocate about four minutes to the live app, with 20 seconds to frame the problem and 40 seconds for the technical explanation. Rehearse with a timer; the times below are targets, not measured presentation times. The existing report and diagrams are unchanged.
+Allocate about four minutes to the live app, with 20 seconds to frame the problem and 40 seconds for the technical explanation. Rehearse with a timer; the times below are targets, not measured presentation times.
 
 ## Before presenting
 

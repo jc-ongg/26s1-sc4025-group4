@@ -66,7 +66,7 @@ See [TESTING.md](TESTING.md) for test coverage and [DISCOVERY.md](DISCOVERY.md) 
 
 Restaurant accounts use the Restaurant login tab and are scoped to one venue. Credentials are listed in [DEMO_ACCOUNTS.txt](DEMO_ACCOUNTS.txt). Singpass/Corppass completion screens remain paused; the fixtures are already verified.
 
-For a rehearsal, run `npm run demo:prepare` against the running Compose stack. It replaces only the named practice scenarios and resets their practice accounts; it does not reset the six team accounts or unrelated bookings. See [TABLE_5_WALKTHROUGH.md](TABLE_5_WALKTHROUGH.md) for the sequence and [CHAPTER_5_ENGINEERING_EVIDENCE.md](CHAPTER_5_ENGINEERING_EVIDENCE.md) for report evidence. Prepare immediately before rehearsing because Cutoff follows the real clock.
+For a rehearsal, run `npm run demo:prepare` against the running Compose stack. It replaces only the named practice scenarios and resets their practice accounts; it does not reset the six team accounts or unrelated bookings. See [TABLE_5_WALKTHROUGH.md](TABLE_5_WALKTHROUGH.md) for the sequence. Prepare immediately before rehearsing because Cutoff follows the real clock.
 
 ## Code style
 

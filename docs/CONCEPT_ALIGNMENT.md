@@ -1,6 +1,6 @@
 # EatTogether concept alignment
 
-Reviewed against the Product Lead's EatTogether concept dated 6 October 2026, updated on 23 October 2026. Restaurant-side demo controls are now approved and implemented. This records actual implementation, not evidence of product validation. The report and editable diagrams remain unchanged for this addition.
+Reviewed against the Product Lead's EatTogether concept dated 6 October 2026, updated on 23 October 2026. Restaurant-side demo controls are now approved and implemented. This records actual implementation, not evidence of product validation.
 
 | Concept                                  | Current implementation                                                                                                                                                                                                                                                                       |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
