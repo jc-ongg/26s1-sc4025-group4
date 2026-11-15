@@ -11,7 +11,7 @@ import {
   eventDiscount,
   eventJoinLimit,
 } from "./event-lifecycle.js";
-import { check, HttpError } from "./http-error.js";
+import { check } from "./http-error.js";
 export { HttpError } from "./http-error.js";
 import { lockSlot, availableSeats, holdSeats, poolSize } from "./inventory.js";
 import { recordLateLeave, strikeWindow } from "./reliability.js";
@@ -35,7 +35,6 @@ export const groupInclude = {
   },
   booking: true,
 } satisfies Prisma.GroupDiningSessionInclude;
-type Transaction = Prisma.TransactionClient;
 type IncludedGroup = Prisma.GroupDiningSessionGetPayload<{
   include: typeof groupInclude;
 }>;

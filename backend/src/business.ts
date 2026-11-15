@@ -5,7 +5,6 @@ import { groupInclude, presentGroup } from "./dining.js";
 import { availableSeats, holdSeats, lockSlot, poolSize } from "./inventory.js";
 import {
   cutoffAt,
-  dinerCount,
   eventMinimum,
   eventDiscount,
   notify,

@@ -24,7 +24,7 @@ Open http://localhost:3000. On another device on the same Wi-Fi, open http://HOS
 | harsh@gmail.com    | password123 |
 | hansen@gmail.com   | password123 |
 
-Use separate browser profiles/private sessions or devices for different users. Tabs in the same browser profile share the login cookie. Accounts are seeded in PostgreSQL; basic password matching happens on the server. Passwords are deliberately public plain-text demo fixtures. There are no roles or external identity providers. Registration and password reset are non-functional interface mockups; their submit controls are disabled. Sessions persist for 24 hours and are revoked on logout. HTTP-only cookies support local HTTP LAN access.
+Use separate browser profiles, private sessions, or devices for different users. Tabs in the same browser profile share the login cookie. The server checks passwords against intentionally public demo fixtures in PostgreSQL. Diner accounts use the Diner login tab. Restaurant accounts use the Restaurant tab and can manage only their assigned venue. See [Demo accounts](DEMO_ACCOUNTS.txt) for restaurant credentials. External identity verification, registration, and password reset are disabled. Sessions persist for 24 hours and are revoked on logout. HTTP-only cookies support local HTTP LAN access.
 
 ## Checks and maintenance
 
@@ -44,7 +44,7 @@ docker compose down
 
 `docker compose down` preserves database data. Startup applies migrations and inserts missing demo accounts without overwriting existing data.
 
-`npm test` runs both credential tests and frontend request/availability tests. `npm run test:web` runs only the frontend suite. Integration checks require the running stack. If Windows restricts the local test runner, credential tests can also run with `docker compose exec -T backend npm test`; this does not run the host-side frontend suite.
+`npm test` runs backend and frontend unit tests. `npm run test:web` runs the frontend suite. `npm run test:integration` exercises HTTP authentication against a running stack. Run `npm run ci:integration` to build and test an isolated Docker stack, including booking, restaurant, and semantic discovery checks.
 
 For frontend development, `npm run dev --workspace frontend` starts port 3000 and proxies /api to localhost:4000. Run the backend against a reachable PostgreSQL database with DATABASE_URL configured. The default Compose database intentionally has no host port.
 
@@ -64,12 +64,10 @@ GitHub Actions validates changes and prepares a source release for manual deploy
 
 See [TESTING.md](TESTING.md) for test coverage and [DISCOVERY.md](DISCOVERY.md) for the semantic model, offline assets and dependency-audit limitations.
 
-Restaurant accounts use the Restaurant login tab and are scoped to one venue. Credentials are listed in [DEMO_ACCOUNTS.txt](DEMO_ACCOUNTS.txt). Singpass/Corppass completion screens remain paused; the fixtures are already verified.
-
 For a rehearsal, run `npm run demo:prepare` against the running Compose stack. It replaces only the named practice scenarios and resets their practice accounts; it does not reset the six team accounts or unrelated bookings. See [TABLE_5_WALKTHROUGH.md](TABLE_5_WALKTHROUGH.md) for the sequence. Prepare immediately before rehearsing because Cutoff follows the real clock.
 
 ## Code style
 
 `npm run format` formats TypeScript, JavaScript, CSS, JSON, YAML and Markdown. `npm run format:check` verifies formatting without changing files. Generated assets, the lockfile, model files and temporary files are excluded. Editor defaults are in `.editorconfig`; Prisma schema formatting uses `npx prisma format --schema backend/prisma/schema.prisma`. Python import scripts use Black with a 90-character line length.
 
-Frontend styling is split into `styles/base.css`, `styles/features.css` and `styles/theme.css`, imported in that order. Booking history has its own `Bookings.tsx` component. Comments focus on shared inventory locks, asynchronous state, model reuse and per-account history semantics.
+Frontend styles load in the order defined by [style.css](../frontend/src/style.css). The files in `frontend/src/styles/` cover the base layout, features, theme, social features, controls, discovery, motion, and restaurant workspace.

@@ -18,21 +18,21 @@ SC4025 academic MVP extending Eatigo with shared tables hosted by diners or rest
 ## Booking rules
 
 - An Event combines individually booked diners at one restaurant slot. Each account represents one Solo Diner in new EatTogether reservations.
-- Each account reserves one EatTogether seat. Friends need separate accounts and Join the same Event individually. New Events and Joins require a slot minimum above one. Existing multi-diner records are preserved; their owner may explicitly reduce them to one seat. Ordinary reservations retain their party-size choice.
-- EatTogether creation/Join requires a verified adult with a stored birth date and gender. Six demo accounts have fictional preverified identity fixtures; real Singpass authentication remains disabled. Optional age/gender preferences are immutable and must include the Host. Ages are checked at dining time using Singapore dates, with adulthood required already at the time of the request.
+- Each account reserves one EatTogether seat. Friends need separate accounts and Join the same Event individually. A new Diner Event uses a slot minimum of at least two. A Restaurant Event can set its own minimum of at least two within the slot capacity. Existing multi-diner records are preserved, and their owner may explicitly reduce them to one seat. Ordinary reservations retain their party-size choice.
+- Diners must be verified adults with a stored birth date and gender to create or join an Event. Six demo accounts use fictional preverified identities. Optional age and gender filters are immutable and must include the Host of a Diner Event. Restaurant Hosts can set filters on Themed Events. Ages are checked at dining time in Singapore time, and diners must already be adults at the time of the request.
 - Only eligible Events enter discovery, map/card counts, saved items and direct-link reads. Hidden Event identifiers are concealed while free seats in the shared pool remain bookable. Existing members retain history access. Public participants expose exact ages and gender; birth dates and account credentials remain private. The six fictional verified identities are aged 21–26 in October 2026.
-- The creator is the Host. Total diners across Parties determine occupancy and confirmation, rather than the number of accounts.
+- The creator is the Host. A Restaurant Host represents the venue and occupies no diner seat. Total diners across Parties determine occupancy and confirmation.
 - Confirmation is automatic when the minimum is reached. The shared reservation stays open to Joins and Leaves until dining time, subject to capacity. Owners of older multi-diner reservations may explicitly reduce them to one seat.
 - Before Cutoff, falling below the minimum restores Waiting for diners. An existing reservation becomes PENDING until requalification, retaining its ID. After Cutoff, undersubscribed confirmed Events enter Last Call; short unconfirmed Events offer full-price acceptance/decline.
-- The Host can Leave. The earliest remaining Joining Party becomes Host, and shared-booking ownership moves with that role. Equal join timestamps use user ID as a deterministic tie-break.
-- If the last Party Leaves, the Event is cancelled and its table hold is released. The whole-Event cancellation button is removed; Leave performs Handover. The legacy cancellation API remains for compatibility.
+- When a Diner Host leaves, the earliest remaining Party becomes Host and takes ownership of the shared booking. Equal join timestamps use user ID as a deterministic tie-break. A Restaurant Host keeps that role when diners leave.
+- An empty Diner Event is cancelled and its table hold is released. An empty Restaurant Event keeps its hold before Cutoff unless the venue withdraws it. At or after Cutoff, an empty Restaurant Event is cancelled and its hold is released. The legacy cancellation API remains for compatibility.
 - At dining time, unanswered full-price choices expire. Accepted full-price and confirmed bookings remain as history; unfilled Last Call reservations revert to full price. Membership changes close once dining starts.
 - See docs/EATTOGETHER_SCOPE.md for alignment with the product lead's concept and deferred decisions.
 
 ## Engineering assumptions to keep explicit
 
 - Slots provide shared seat pools and a separate maximum table size. Each Event is one table; ordinary bookings draw from the same pool. Row locks serialize allocations and timing transitions.
-- Cutoff is two hours before dining. Short Events offer per-account full-price acceptance or penalty-free decline. Late undersubscription opens Last Call. See docs/EATTOGETHER_SCOPE.md for current rules, superseding earlier lifecycle assumptions above.
+- Cutoff is two hours before dining. It releases unused held seats and records a maximum headcount. Later Joins can replace departures up to that cap, subject to available inventory. See [EatTogether implementation scope](docs/EATTOGETHER_SCOPE.md) for the lifecycle rules.
 - Late-Leave reliability, private reports/blocks, member Chat, optional post-time feedback and persisted in-app notifications are implemented. Restaurant-recorded no-show penalties and corrections are implemented.
 - Demo account credentials are public fixtures, checked on the backend. Browser sessions identify the authenticated user; clients cannot supply an arbitrary acting user ID.
 - The prototype does not connect to Eatigo inventory or claim real reservations.

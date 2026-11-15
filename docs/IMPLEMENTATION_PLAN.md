@@ -8,23 +8,23 @@ React and TypeScript provide one responsive frontend. Express provides one backe
 
 ## Data model
 
-| Entity             | Main fields and constraints                                                                                        |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| User               | Unique email, fixture credentials/verified demographics, optional dining area, suspension expiry; no merchant role |
-| Session            | Random token, user ID, expiry; HTTP-only cookie                                                                    |
-| Restaurant         | Venue details, local photo, coordinates and active flag                                                            |
-| ReservationSlot    | Restaurant/time uniqueness, minimum, maximum table size, shared seat pool and EatTogether eligibility              |
-| SlotAllocation     | ID, indexed slot ID, seats and exactly one unique Event/booking owner                                              |
-| GroupDiningSession | Host, slot, title, preferences, maximum table size, state, Cutoff/Last Call metadata and Chat opening              |
-| GroupDiningMember  | Unique Event/account, legacy party size, join time and private price acceptance                                    |
-| Booking            | Unique optional Event ID, slot, owner, diner total, discount, state and per-diner history deletion                 |
-| ReliabilityStrike  | Timestamped private reason; unique account/Event/reason                                                            |
-| Notification       | Private account, optional Event, unique account/key, read time                                                     |
-| DinerBlock         | Unique blocker/blocked pair; symmetric exclusion with silent storage                                               |
-| EventMessage       | Event/member, plain text, time                                                                                     |
-| EventFeedback      | Unique Event/account, private six-question feedback and attendance attestation                                     |
-| SafetyReport       | Event, reporter, target, reason, pending status                                                                    |
-| DiscoveryDecision  | Per-account save/skip decisions                                                                                    |
+| Entity             | Main fields and constraints                                                                                      |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| User               | Unique email, demo credentials, diner or business account type, optional managed venue, and diner profile fields |
+| Session            | Random token, user ID, expiry; HTTP-only cookie                                                                  |
+| Restaurant         | Venue details, local photo, coordinates, activation, EatTogether settings, and fixture verification              |
+| ReservationSlot    | Restaurant/time uniqueness, minimum, maximum table size, shared seat pool and EatTogether eligibility            |
+| SlotAllocation     | ID, indexed slot ID, seats and exactly one unique Event/booking owner                                            |
+| GroupDiningSession | Host, slot, title, filters, capacity, state, optional restaurant theme and offer, and Cutoff/Last Call metadata  |
+| GroupDiningMember  | Unique Event/account, legacy party size, join time, private price acceptance, and attendance                     |
+| Booking            | Unique optional Event ID, slot, owner, diner total, discount, state and per-diner history deletion               |
+| ReliabilityStrike  | Timestamped private reason; unique account/Event/reason                                                          |
+| Notification       | Private account, optional Event, unique account/key, read time                                                   |
+| DinerBlock         | Unique blocker/blocked pair; symmetric exclusion with silent storage                                             |
+| EventMessage       | Event/member, plain text, time                                                                                   |
+| EventFeedback      | Unique Event/account, private six-question feedback and attendance attestation                                   |
+| SafetyReport       | Event, reporter, target, reason, pending status                                                                  |
+| DiscoveryDecision  | Per-account save/skip decisions                                                                                  |
 
 Pool availability is the pool size minus allocated seats. Event Capacity is bounded by the Event/table maximum and its own hold plus free seats. Slot locks serialize Event mutations, ordinary bookings and lifecycle transitions. Never trust a browser seat count. The maximum physical table size remains separate from aggregate inventory.
 
@@ -71,6 +71,21 @@ Each new member has one seat; legacy multi-diner records can shrink to one. Veri
 | GET        | /api/discovery/saved          | Current account shortlist                                             |
 
 Dining middleware authenticates all downstream diner/discovery/social routes. Malformed requests return 400; missing login 401; forbidden actions 403; hidden/unknown resources 404; inventory/timing conflicts 409. JSON errors use readable messages. A 30-second lifecycle worker catches up after restart; detail reads and mutations reconcile under the slot lock. Vanished maintenance/fixture rows are skipped, while unexpected worker failures are logged.
+
+### Restaurant workspace
+
+Routes under `/api/business` require a restaurant session. The server derives the managed venue from that account and scopes slots, reservations, and Events to the venue.
+
+| Method     | Path                   | Purpose                                                         |
+| ---------- | ---------------------- | --------------------------------------------------------------- |
+| GET        | /dashboard             | Venue, slots, Events, and reservations for a Singapore date     |
+| POST       | /settings              | Set venue-wide EatTogether availability                         |
+| POST       | /slots/:id             | Edit a future slot with allocation safeguards                   |
+| POST       | /events                | Create a Restaurant or Themed Event before Cutoff               |
+| GET        | /events/:id            | View Event details, attendance, and eligible aggregate feedback |
+| POST       | /events/:id/withdraw   | Withdraw an empty Restaurant Event before dining time           |
+| POST       | /events/:id/attendance | Record or correct attendance from dining time onward            |
+| GET / POST | /events/:id/messages   | Restaurant Host Chat once the Event has been confirmed          |
 
 ## Verification and scope
 
